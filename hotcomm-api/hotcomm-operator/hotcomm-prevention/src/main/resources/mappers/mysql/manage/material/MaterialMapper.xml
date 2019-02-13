@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.mysql.manage.material.MaterialMapper">
+
+	<!-- 根据物资存放点id查询详细信息 -->
+	<select id="selmaterialOnid"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.material.SelmaterialList">
+		SELECT m.id , m.num , a.areacode as areaid , a.addvb , m.`code` ,
+		m.lat , m.lng ,
+		m.usermaterialid1 as contactsid1 , u1.telephone as
+		telephone1 ,
+		m.usermaterialid2 as contactsid2 , u2.telephone as
+		telephone2 ,
+		m.usermaterialid3 as contactsid3 , u3.telephone as
+		telephone3 ,
+		m.updatetime , m.materialname , m.msg
+		FROM t_hk_material m
+		LEFT JOIN
+		t_hk_usermaterial um1 on um1.isdelete = 0 and um1.isenable =
+		1
+		and um1.id = m.usermaterialid1
+		LEFT JOIN t_user u1 on u1.isdelete = 0
+		and
+		u1.isenable = 1 and u1.id = um1.userid
+		LEFT JOIN t_hk_usermaterial
+		um2
+		on um2.isdelete = 0 and um2.isenable = 1
+		and um2.id =
+		m.usermaterialid2
+		LEFT JOIN t_user u2 on u2.isdelete = 0 and
+		u2.isenable = 1 and u2.id = um2.userid
+		LEFT JOIN t_hk_usermaterial um3
+		on um3.isdelete = 0 and um3.isenable = 1
+		and um3.id = m.usermaterialid3
+		LEFT JOIN t_user u3 on u3.isdelete = 0 and
+		u3.isenable = 1 and u3.id =
+		um3.userid
+		LEFT JOIN t_area a on a.areacode
+		= m.areacode
+		WHERE m.isdelete
+		= 0 and m.isenable = 1
+		<if test="id!='' and id!=null">
+			and m.id=#{id}
+		</if>
+	</select>
+	<!-- 查询物资存放点列表 -->
+	<select id="selmaterialList"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.material.SelmaterialList">
+		SELECT m.id , m.num , a.areacode as areaid , a.addvb , m.`code` ,
+		m.lat , m.lng ,
+		u1.contacts as contacts1 , u1.telephone as telephone1 ,
+		u2.contacts as contacts2 , u2.telephone as telephone2 ,
+		u3.contacts as
+		contacts3 , u3.telephone as telephone3 ,
+		m.updatetime , m.materialname
+		, m.msg
+		FROM t_hk_material m
+		LEFT JOIN
+		t_hk_usermaterial um1 on
+		um1.isdelete = 0 and um1.isenable = 1
+		and um1.id = m.usermaterialid1
+		LEFT JOIN t_user u1 on u1.isdelete = 0 and
+		u1.isenable = 1 and u1.id =
+		um1.userid
+		LEFT JOIN t_hk_usermaterial um2
+		on um2.isdelete = 0 and
+		um2.isenable = 1
+		and um2.id = m.usermaterialid2
+		LEFT JOIN t_user u2 on
+		u2.isdelete = 0 and
+		u2.isenable = 1 and u2.id = um2.userid
+		LEFT JOIN
+		t_hk_usermaterial um3
+		on um3.isdelete = 0 and um3.isenable = 1
+		and
+		um3.id = m.usermaterialid3
+		LEFT JOIN t_user u3 on u3.isdelete = 0 and
+		u3.isenable = 1 and u3.id = um3.userid
+		LEFT JOIN t_area a on a.areacode
+		= m.areacode
+		WHERE m.isdelete = 0 and m.isenable = 1
+		<if test="starttime!='' and starttime!=null">
+			and m.updatetime &gt;= #{starttime}
+		</if>
+		<if test="endtime!='' and endtime!=null">
+			and m.updatetime &lt;= #{endtime}
+		</if>
+		<if test="numorcode!='' and numorcode!=null">
+			and (m.num LIKE CONCAT('%',#{numorcode},'%') or
+			m.`materialname` LIKE CONCAT('%',#{numorcode},'%'))
+		</if>
+		<if test="areacode!='' and areacode!=null">
+			and a.areacode = #{areacode}
+		</if>
+		ORDER BY m.addtime DESC
+	</select>
+	<!-- 责任人选择列表 -->
+	<select id="selmaterialuser"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.material.Selmaterialuser">
+		SELECT um.id , u.contacts
+		FROM t_hk_usermaterial um
+		LEFT JOIN
+		t_user u on u.isdelete = 0 and u.isenable = 1 and u.id =
+		um.userid
+		WHERE um.isdelete = 0 and um.isenable = 1
+	</select>
+	<!-- 行政区选择列表 -->
+	<select id="selarea"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.material.Selarea">
+		SELECT areacode , addvb
+		FROM t_area
+		WHERE fatherid = 1
+	</select>
+	<!-- 查询所有物资点 -->
+	<select id="selall"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.material.SelmaterialList">
+		SELECT m.id , m.num , a.areacode as areaid , a.addvb ,
+		m.`code` , m.lat , m.lng ,
+		u1.contacts as contacts1 , u1.telephone as
+		telephone1 ,
+		u2.contacts as contacts2 , u2.telephone as telephone2 ,
+		u3.contacts as contacts3 , u3.telephone as telephone3 ,
+		m.updatetime ,
+		m.materialname , m.msg
+		FROM t_hk_material m
+		LEFT JOIN
+		t_hk_usermaterial
+		um1 on um1.isdelete = 0 and um1.isenable = 1
+		and um1.id =
+		m.usermaterialid1
+		LEFT JOIN t_user u1 on u1.isdelete = 0 and
+		u1.isenable = 1 and u1.id = um1.userid
+		LEFT JOIN t_hk_usermaterial um2
+		on um2.isdelete = 0 and um2.isenable = 1
+		and um2.id = m.usermaterialid2
+		LEFT JOIN t_user u2 on u2.isdelete = 0 and
+		u2.isenable = 1 and u2.id =
+		um2.userid
+		LEFT JOIN t_hk_usermaterial um3
+		on um3.isdelete = 0 and
+		um3.isenable = 1
+		and um3.id = m.usermaterialid3
+		LEFT JOIN t_user u3 on
+		u3.isdelete = 0 and
+		u3.isenable = 1 and u3.id = um3.userid
+		LEFT JOIN
+		t_area a on a.areacode
+		= m.areacode
+		WHERE m.isdelete = 0 and m.isenable
+		= 1
+	</select>
+
+	<!-- 批量导入 -->
+	<insert id="insertSelectives">
+		INSERT INTO
+		t_hk_material(materialname,num,code,lat,lng,addtime,areacode,msg)
+		VALUES
+		(#{pa.materialname},#{pa.num},#{pa.code},#{pa.lat},#{pa.lng},NOW(),#{pa.areacode},#{pa.msg})
+	</insert>
+
+	<select id="selectCode" resultType="java.lang.Integer">
+		SELECT COUNT(id) AS num from
+		t_hk_material WHERE num=#{num}
+	</select>
+
+	<insert id="addGroup">
+		INSERT INTO t_hk_material( areacode)
+		VALUES(#{areacode})
+	</insert>
+</mapper>

@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.dc.DCDeviceMapper">
+	<select id="selectList" resultType="com.hot.manage.entity.dc.vo.DCDeviceList">
+		SELECT
+		d.id,d.mac,d.devnum,dg.id as
+		groupid,dg.groupname,d.`code`,tu.contacts,d.addtime,d.lat,d.lng,
+		count(v.videoid) as count ,
+		d.Battery,d.x,d.y,ip.id
+		as
+		picid,ip.site,ip.picpath , d.own_id as own_id
+		FROM t_device_dc d
+		LEFT
+		JOIN t_dev_item_pic
+		dip ON dip.dev_id = d.id
+		AND dip.moduleid=1 AND
+		dip.isdelete!=1
+		LEFT JOIN t_item_pic ip ON
+		ip.id=dip.item_pic_id AND
+		ip.isdelete!=1
+		LEFT JOIN
+		t_device_group_relation dr ON dr.deviceid =
+		d.id AND
+		dr.moduleid=1 AND
+		dr.isdelete !=1
+		LEFT
+		JOIN t_device_group dg ON
+		dg.id = dr.groupid and
+		dg.isdelete !=1
+		LEFT JOIN t_user tu ON
+		tu.id =
+		d.own_id
+		RIGHT JOIN
+		t_user_dgroup_relation udr ON udr.devicegroupid
+		=
+		dg.id AND udr.userid
+		=#{userid}
+		AND udr.isdelete !=1 AND udr.isenable
+		!=0
+		LEFT JOIN t_dev_video_relation v on v.moduleid=1 AND
+		d.id=v.deviceid and v.isdelete=0
+
+		<where>
+			d.isdelete = 0 and d.isenable = 1
+			<if test="startTime!=null and startTime!=''">
+				AND
+				#{startTime}
+				&lt;=d.addtime
+			</if>
+			<if test="endTime!=null and endTime!=''">
+				AND
+				d.addtime &lt;=
+				#{endTime}
+			</if>
+
+			<if test="message!=null">
+				and
+				CONCAT_WS(&apos;/&apos;,d.devnum,dg.groupname,d.mac,d.`code`,tu.contacts)
+				LIKE
+				CONCAT(&apos;%&apos;,#{message},&apos;%&apos;)
+			</if>
+			<if test="Battery!=null and Battery!=''">
+				<choose>
+					<when test="Battery==2">
+						and d.Battery &gt;20
+					</when>
+					<when test="Battery==1">
+						and d.Battery &lt;=20
+					</when>
+					<otherwise>
+						
+					</otherwise>
+				</choose>
+			</if>
+			<if test="groupid!=null">
+				AND dg.id=#{groupid}
+			</if>
+		</where>
+		group by d.id
+	</select>
+	<select id="selectAllGroup" resultType="com.hot.manage.entity.dc.vo.DCDeviceAllGroup">
+		select
+		tdg.id,tdg.groupname,tu.contacts,tdg.x as lat,tdg.y as lng
+		FROM
+		t_device_group tdg
+		LEFT JOIN
+		t_user tu ON tu.id= tdg.managerid
+		RIGHT
+		JOIN
+		t_user_dgroup_relation udr
+		ON udr.devicegroupid = tdg.id AND
+		udr.userid=#{userid}
+		AND udr.isdelete
+		!=1 AND udr.isenable !=0
+		WHERE
+		tdg.moduleid =#{moduleid}
+	</select>
+	<select id="selectGroupPic" resultType="com.hot.manage.entity.dc.vo.DCGroupIMG">
+		select
+		tip.id,tip.site,tip.picpath FROM t_device_group tdg
+		LEFT JOIN
+		t_item_pic tip ON tip.itemid=tdg.id
+		LEFT JOIN t_user tu ON tu.id=
+		tdg.managerid
+		WHERE tdg.moduleid = #{moduleid} AND tdg.id=#{groupid}
+	</select>
+	<select id="updateDeviceXY" resultType="int">
+		select
+		Fun_updateDeviceXY(#{devid},#{imgX},#{imgY},#{picId})
+	</select>
+	<select id="selectDeviceById" resultType="com.hot.manage.entity.dc.vo.DCDeviceList">
+		SELECT
+		d.id,d.devnum,d.mac,dg.id as
+		groupid,dg.groupname,d.`code`,tu.contacts,d.addtime,d.lat,d.lng,d.Battery,d.x,d.y,ip.id
+		as picid,ip.site,ip.picpath , d.own_id as
+		own_id,GROUP_CONCAT(t666.`videoid`) AS videos
+		FROM t_device_dc d
+		LEFT
+		JOIN t_dev_item_pic
+		dip ON dip.dev_id = d.id
+		AND dip.moduleid=1 AND
+		dip.isdelete!=1
+		LEFT JOIN t_item_pic ip ON
+		ip.id=dip.item_pic_id AND
+		ip.isdelete!=1
+		LEFT JOIN
+		t_device_group_relation dr ON dr.deviceid =
+		d.id AND
+		dr.moduleid=1 AND
+		dr.isdelete !=1
+		LEFT
+		JOIN t_device_group dg ON
+		dg.id = dr.groupid and
+		dg.isdelete !=1
+		LEFT JOIN t_user tu ON
+		tu.id =
+		d.own_id
+		LEFT JOIN t_dev_video_relation t666
+		ON d.`id`=t666.`deviceid`
+		AND t666.`moduleid`=1
+		LEFT JOIN t_device_video t888
+		ON
+		t666.`videoid`=t888.`id`
+		AND t888.`isdelete`=0
+		RIGHT JOIN
+		t_user_dgroup_relation udr ON
+		udr.devicegroupid
+		= dg.id AND udr.userid
+		=1
+		AND udr.isdelete !=1 AND
+		udr.isenable
+		!=0
+		<where>
+			d.isdelete!=1 AND d.id=#{id}
+		</where>
+	</select>
+	<update id="updateDeviceREitem">
+		UPDATE t_device_group_relation dgr SET dgr.groupid =
+		#{groupid}
+		WHERE dgr.deviceid = #{devid} AND dgr.moduleid = 1
+	</update>
+
+	<select id="selectDevAllByGroup" resultType="int">
+		select COUNT(dc.id)
+		from
+		t_device_dc dc
+		LEFT JOIN t_device_group_relation dgr ON
+		dgr.deviceid =
+		dc.id
+		LEFT JOIN t_device_group dg ON dgr.groupid = dg.id
+		WHERE
+		dgr.moduleid = 1 AND dc.isdelete=0 AND dc.isenable=1 AND dg.id=#{groupid}
+	</select>
+
+	<select id="selectDeviceToFloor" resultType="com.hot.manage.entity.dc.vo.DCDeviceFloor">
+		select ip.id as
+		imgId,ip.site,ip.picpath,dg.id as groupid,dg.groupname FROM t_item_pic
+		ip
+		LEFT
+		JOIN t_device_group dg ON ip.itemid=dg.id
+		WHERE dg.id=#{groupid}
+	</select>
+
+	<select id="selectDeviceIMG" resultType="com.hot.manage.entity.dc.vo.DCDeviceIMG">
+		select
+		dc.id,dc.devnum,dc.x,dc.y FROM t_device_dc dc
+		LEFT JOIN t_dev_item_pic
+		dip ON dip.dev_id = dc.id AND dip.moduleid =1
+		WHERE
+		dip.item_pic_id=#{imgId} AND
+		dc.isdelete!=1
+	</select>
+	<update id="changeDevice">
+		UPDATE t_device_dc t
+		SET t.mac=#{mac}
+		WHERE t.id =
+		#{id}
+	</update>
+
+	<!-- 更换责任人 changeDevOwn -->
+	<update id="changeDevOwn" parameterType="java.util.List">
+		UPDATE t_device_dc SET
+		own_id=#{dCChangeUser.ownid} WHERE id in
+		<foreach collection="dCChangeUser.devid" index="index" item="item"
+			open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</update>
+	<!-- LKTAddSignDevList 加入到签到列表 -->
+	<insert id="LKTAddSignDevList">
+		CALL
+		Get_AddSignDevList(#{moduleid,jdbcType=INTEGER},#{devid,jdbcType=VARCHAR});
+	</insert>
+
+	<!-- 根据Mac查询设备id LKTHWDevIdByMac -->
+	<select id="LKTDCDevIdByMac" resultType="java.lang.Integer">
+		SELECT id
+		FROM
+		t_device_dc
+		WHERE mac = #{mac}
+	</select>
+</mapper>

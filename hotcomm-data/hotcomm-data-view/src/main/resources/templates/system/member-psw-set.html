@@ -1,0 +1,15 @@
+<form class="app-form" id="member-psw-form">
+	<input type="hidden" name="id" />
+	<div class="field">
+		<input type="password" class="easyui-textbox" id="oldPassword" name="oldPassword" style="width: 100%"
+			data-options="label:'原密码：',validType:['notSpecial','length[5,16]'],required:true" />
+	</div>
+	<div class="field">
+		<input type="password" class="easyui-textbox" id="newPassword" name="newPassword" style="width: 100%"
+			data-options="label:'新密码：',validType:['notSpecial','length[5,16]'],required:true" />
+	</div>
+	<div class="field">
+		<input type="password" class="easyui-textbox" id="newPassword2" name="newPassword2" style="width: 100%"
+			data-options="label:'确认新密码：',validType:['notSpecial','comfirmNewPassWord[\'#newPassword\']','length[5,16]'],required:true" />
+	</div>
+</form>

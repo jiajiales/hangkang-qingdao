@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.data.db.DeviceMapper">
+
+	<resultMap type="Device" id="DeviceMap">
+		<id column="device_id" property="deviceId" />
+		<result column="device_code" property="code" />
+		<result column="device_type_id" property="type" />
+		<result column="descript" property="desc" />
+		<result column="device_group_id" property="groupId" />
+		<result column="receive_num" property="receiveNum" />
+		<result column="is_delete" property="isDelete" />
+		<result column="device_status" property="status" />
+		<result column="create_time" property="createTime" />
+		<result column="create_user" property="createUser" />
+		<result column="update_time" property="updateTime" />
+		<result column="device_protocol" property="protocol" />
+		<result column="iot_tech" property="iotTech" />
+		<result column="lora_data" property="lora" />
+	</resultMap>
+
+	<resultMap type="LoraABPDeviceVO" id="ABPDeviceMap" extends="DeviceMap">
+		<result column="AppSKey" property="AppSKey" />
+		<result column="NwkSKey" property="NwkSKey" />
+		<result column="networkType" property="networkType" />
+		<result column="group_name" property="groupName" />
+		<result column="type_name" property="typeName" />
+	</resultMap>
+
+	<resultMap type="LoraOTAADeviceVO" id="OTAADeviceMap" extends="DeviceMap">
+		<result column="AppSKey" property="AppSKey" />
+		<result column="AppEUI" property="AppEUI" />
+		<result column="networkType" property="networkType" />
+		<result column="mac" property="mac" />
+		<result column="group_name" property="groupName" />
+		<result column="type_name" property="typeName" />
+	</resultMap>
+
+ 	<!-- 增加设备接收数据量 -->
+	<update id="receiveNumIncrement" parameterType="java.util.Map" >
+		UPDATE hk_device SET receive_num = (receive_num + 1) 
+		WHERE 
+		<if test="deviceId!=null">
+			device_id = #{deviceId}
+		</if>
+		<if test="deviceCode!=null">
+			device_code = #{deviceCode}
+		</if>
+	</update>
+
+ 	<!-- 	批量导入设备 -->
+	<insert id="batchAddDevice"  >
+		INSERT INTO hk_device 
+		(
+			device_code,device_type_id,descript,device_group_id,receive_num,is_delete,device_status,create_time,create_user,update_time,device_protocol,iot_tech,lora_data
+		)   VALUES
+		<foreach collection="devices" item="device" index="index" separator=",">
+		(
+			#{device.code},#{device.type},#{device.desc},#{device.groupId},#{device.receiveNum},#{device.isDelete},
+			#{device.status},#{device.createTime},#{device.createUser},#{device.updateTime},#{device.protocol},#{device.iotTech},#{device.lora}
+		)
+		</foreach>
+	</insert>
+
+ 	<select id="queryLoraABPDev" resultMap="ABPDeviceMap" parameterType="java.lang.Integer" >
+		 SELECT 
+			v1.*,
+			v1.lora_data->>'$.AppSKey' AppSKey,
+			v1.lora_data->>'$.NwkSKey' NwkSKey,
+			v1.lora_data->>'$.network_type' networkType
+		FROM hk_device v1 WHERE v1.device_id = #{deviceId} AND v1.is_delete=1
+ 	</select>
+ 
+ 	<select id="queryLoraOTAADev" resultMap="OTAADeviceMap" parameterType="java.lang.Integer" >
+ 		SELECT 
+			v1.*,
+			v1.lora_data->>'$.AppSKey' AppSKey, 
+			v1.lora_data->>'$.network_type' networkType,
+			v1.lora_data->>'$.AppEUI' AppEUI,
+			v1.lora_data->>'$.mac' mac
+		FROM hk_device v1 WHERE v1.device_id = #{deviceId} AND v1.is_delete=1
+ 	</select>
+ 
+ 	<update id="batchAllotDeviceGroup">
+		UPDATE hk_device 
+		SET device_group_id = #{deviceGroupId} 
+		WHERE device_id IN 
+		<foreach collection="deviceIds" item="deviceId" index="index" open="(" separator="," close=")">
+			#{deviceId}
+		</foreach>
+	</update>
+
+	<update id="updateLoraJson" parameterType="java.util.Map">
+		UPDATE 
+		hk_device SET lora_data = JSON_REPLACE(lora_data,'$.V','V' 
+		<if test="mac != null and mac != ''">
+			,'$.mac', #{mac}
+		</if>
+		<if test="AppEUI != null and AppEUI != ''">
+			,'$.AppEUI', #{AppEUI}
+		</if>
+		<if test="AppSKey != null and AppSKey != ''">
+			,'$.AppSKey', #{AppSKey}
+		</if>
+		<if test="networktype != null and networktype != ''">
+			,'$.network_type', #{networktype}
+		</if>
+		<if test="NwkSKey != null and NwkSKey != ''">
+			,'$.NwkSKey', #{NwkSKey}
+		</if>
+		)
+		WHERE device_id = #{deviceId};
+	</update>
+ 
+ 	<select id="existsCode" parameterType="Device" resultType="java.lang.Integer">
+ 		SELECT count(device_code) FROM hk_device WHERE device_id != #{deviceId} AND device_code = #{code};
+ 	</select>
+ 
+ 	<select id="queryPageLoraABPDev" resultMap="ABPDeviceMap" parameterType="com.hotcomm.data.bean.params.service.device.LoraABPDevicePageParam">
+ 		SELECT v1.device_id, v1.device_code, v1.descript, v1.device_status,
+			v1.create_time, v1.create_user, v1.device_protocol, v1.iot_tech,
+			v1.lora_data->>'$.AppSKey' AppSKey, v1.lora_data->>'$.NwkSKey' NwkSKey,
+			v1.lora_data->>'$.network_type' networkType, v2.group_name, v3.type_name
+		FROM hk_device v1
+		INNER JOIN hk_device_group v2 ON v1.device_group_id=v2.device_group_id
+		INNER JOIN hk_device_type v3 ON v1.device_type_id=v3.type_id
+		<where>
+			v1.is_delete = 1 AND v1.lora_data->'$.network_type'='ABP'
+			<include refid="lora_base_where" />
+		</where>
+		 ORDER BY v1.create_time DESC 
+ 	</select>
+ 
+ 	<select id="queryPageLoraOTAADev" resultMap="OTAADeviceMap" parameterType="com.hotcomm.data.bean.params.service.device.LoraOTAADevicePageParam">
+ 		 SELECT v1.device_id, v1.device_code, v1.descript, v1.device_status,
+ 		 	v1.create_time, v1.create_user, v1.device_protocol, v1.iot_tech,
+			v1.lora_data->>'$.AppSKey' AppSKey, v1.lora_data->>'$.network_type' networkType,
+			v1.lora_data->>'$.AppEUI' AppEUI, v1.lora_data->>'$.mac' mac,
+			v2.group_name, v3.type_name
+		FROM hk_device v1 
+		INNER JOIN hk_device_group v2 ON v1.device_group_id = v2.device_group_id
+		INNER JOIN hk_device_type v3 ON v1.device_type_id = v3.type_id
+		<where>
+			v1.is_delete=1 AND v1.lora_data->'$.network_type'='OTAA'
+			<include refid="lora_base_where" />
+		</where>
+		ORDER BY v1.create_time DESC, v1.device_group_id 
+ 	</select>
+ 
+ 	<sql id="lora_base_where">
+		<if test="memberType != null and memberId != null">
+			<if test="memberType == 2 ">
+				AND v1.device_group_id IN (SELECT v4.device_group_id FROM hk_device_group_member v4 WHERE v4.member_id = #{memberId})
+			</if>
+			<if test="memberType == 1">
+				AND  v1.device_group_id 
+					IN (SELECT v4.device_group_id FROM hk_device_group_member v4 WHERE v4.member_id 
+					IN (SELECT v5.customer_id FROM hk_customer_member v5 WHERE v5.member_id = #{memberId}))
+			</if>
+		</if>
+		<if test="code != null and code != ''">
+			AND v1.device_code = #{code} 
+		</if>
+		<if test="selectMemberId != null">
+			AND v1.device_group_id IN (SELECT v4.device_group_id FROM hk_device_group_member v4 WHERE v4.member_id = #{selectMemberId})
+		</if>
+		<if test="groupId != null">
+			AND v1.device_group_id = #{groupId}
+		</if>
+		<if test="typeId != null">
+			AND v1.device_type_id = #{typeId}
+		</if>
+<!-- 		<if test="minReceive != null"> -->
+<!-- 			AND v1.receive_num <![CDATA[>=]]> #{minReceive} -->
+<!-- 		</if> -->
+<!-- 		<if test="maxReceive != null"> -->
+<!-- 			AND v1.receive_num <![CDATA[<=]]> #{maxReceive} -->
+<!-- 		</if> -->
+ 	</sql>
+
+	<update id="delDeviceByDeviceGroupId" parameterType="java.lang.Integer">
+		UPDATE hk_device v1 
+		SET v1.device_code = CONCAT(v1.device_code, 'DEL@', v1.device_id), 
+			v1.is_delete = 2, v1.device_status = 2, v1.update_time = NOW()
+		WHERE v1.device_group_id = #{deviceGroupId}
+	</update>
+
+	<select id="getReceiveNumByDeviceCode" parameterType="java.lang.String" resultType="java.lang.Integer">
+		SELECT COUNT(1) 
+		FROM hk_data v1
+		INNER JOIN hk_data_queue v2 ON v1.data_id = v2.data_id
+		<where>
+			v1.device_code = #{deviceCode} AND v2.send_status = 3
+		</where>
+	</select>
+
+</mapper>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.data.db.DataPushReadyMapper">
+	
+	<update id="udpateDeviceStatus" parameterType="DataPushReady">
+		UPDATE hk_device_push_message SET device_status=#{deviceStatus}  WHERE device_code=#{deviceCode}
+	</update>
+	
+	<update id="updateDeviceType" parameterType="DataPushReady">
+		UPDATE hk_device_push_message v SET v.device_typeId=#{deviceTypeId},v.device_typeCode=(SELECT `code` FROM hk_device_type v1 WHERE v1.type_id=#{deviceTypeId}) WHERE v.device_code=#{deviceCode}
+	</update>
+	
+	<update id="udpateDeviceGroup" parameterType="DataPushReady">
+		UPDATE hk_device_push_message SET device_groupId=#{deviceGroupId}  WHERE device_code=#{deviceCode}
+	</update>
+	
+	<update  id="batchUpdateDeviceGroup" >
+		UPDATE hk_device_push_message SET device_groupId=#{deviceGroupId}  WHERE device_code in 
+		<foreach collection="deviceCodes" item="deviceCode" index="index" separator=","  open="("  close=")">
+		 #{deviceCode}
+		</foreach>
+	</update>
+	
+	<update id="updateVhostStatus" parameterType="DataPushReady">
+		UPDATE hk_device_push_message v SET v.vhost_status = #{vhostStatus} WHERE v.vhost_code = #{vhostCode}
+	</update>
+	
+	<update id="updateVhost" parameterType="DataPushReady">
+		UPDATE hk_device_push_message v
+		<trim prefix="SET" suffixOverrides=",">
+			<if test="vhostCode != null and vhostCode != ''">
+				v.vhost_code = #{vhostCode},
+			</if>
+			<if test="vhostStatus != null">
+				v.vhost_status = #{vhostStatus},
+			</if>
+			<if test="vhostName != null and vhostName != ''">
+				v.vhost_name = #{vhostName},
+			</if>
+ 		</trim>
+		WHERE v.member_id = #{memberId}
+	</update>
+	
+	<update id="updateVhostAfterVhostAuthor" parameterType="DataPushReady">
+		UPDATE hk_device_push_message v SET v.vhost_status = #{vhostStatus} WHERE v.vhost_code = #{vhostCode}
+	</update>
+	
+	<update id="updateQueueName" parameterType="DataPushReady">
+		UPDATE hk_device_push_message v SET v.queue_name = #{queueName} WHERE v.queue_id = #{queueId}
+	</update>
+	
+	<update id="updateQueueStatus" parameterType="DataPushReady">
+		UPDATE hk_device_push_message v SET v.queue_status = #{queueStatus} WHERE v.queue_id = #{queueId}
+	</update>
+	
+	<update id="updateQueueHoleTime" parameterType="DataPushReady">
+		UPDATE hk_device_push_message v SET v.queue_holeTime = #{queueHoleTime} WHERE v.queue_id = #{queueId}
+	</update>
+	
+	<update id="updateQueueSendFilterNums" parameterType="DataPushReady">
+		UPDATE hk_device_push_message v SET v.queue_sendFilterNums = #{queueSendFilterNums} WHERE v.queue_id = #{queueId}
+	</update>
+	
+	<delete id="delRecord" parameterType="java.util.Map">
+		DELETE FROM hk_device_push_message WHERE 1 = 0  
+		<if test="deviceCodes!=null">
+			OR device_code IN (SELECT device_code FROM hk_device v WHERE v.device_id IN 
+			<foreach collection="deviceCodes" item="deviceCode" index="index" separator=","  open="("  close="))">
+			 	#{deviceCode}
+			</foreach>
+		</if>
+		<if test="memberId!=null">
+			OR member_id=#{memberId}
+		</if>
+		<if test="groupId!=null">
+			OR device_groupId = #{groupId}
+		</if>
+	</delete>
+	
+</mapper>

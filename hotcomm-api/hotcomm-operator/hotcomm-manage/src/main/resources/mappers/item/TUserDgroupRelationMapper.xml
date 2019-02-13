@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.item.TUserDgroupRelationMapper">
+	<insert id="insertBatchData">
+		insert into t_user_dgroup_relation
+		(userid,devicegroupid,addtime,adduserid)
+		values
+		<foreach collection="params" item="item" index="index"
+			separator=",">
+			(#{item.userid},#{item.devicegroupid},#{item.addtime},#{item.adduserid})
+		</foreach>
+	</insert>
+	<update id="updateBatch">
+		update t_user_dgroup_relation
+		set isenable=#{params.isenable},
+		isdelete=#{params.isdelete}
+		where userid=#{params.userid} and devicegroupid in
+		<foreach collection="params.list" index="index" item="item"
+			separator="," open="(" close=")">
+			#{item}
+		</foreach>
+	</update>
+	<select id="selectOneByParam" resultType="com.hot.manage.entity.item.TUserDgroupRelation">
+		SELECT * FROM t_user_dgroup_relation
+		WHERE userid=#{id}
+		AND devicegroupid=#{groupids}
+	</select>
+	<select id="selectDevGroup" resultType="com.hot.manage.entity.item.TDeviceGroup">
+		SELECT g.* FROM t_device_group g
+		LEFT JOIN t_user_dgroup_relation r ON r.devicegroupid=g.id AND r.isenable=1 
+		WHERE r.userid=#{userid}
+		AND g.isenable=1
+		AND g.moduleid=#{moduleid}
+	</select>
+</mapper>

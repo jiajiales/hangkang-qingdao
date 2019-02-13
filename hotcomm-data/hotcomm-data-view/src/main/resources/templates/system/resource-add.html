@@ -1,0 +1,29 @@
+<form class="app-form" id="resource-form">
+	<div class="field">
+		<input class="easyui-textbox" name="name" style="width: 95%"
+			data-options="label:'资源名称：',validType:['notSpecial','length[2,50]'],required:true" />
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" id="type" name="type" style="width: 95%" 
+			data-options="label:'资源类型：',required:true" />
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" name="path" style="width: 95%"
+			data-options="label:'资源路径：',validType:['resourcePath','length[2,200]'],required:true" />
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" name="key" style="width: 95%"
+			data-options="label:'资源KEY值：',validType:['resourceKey','length[2,100]'],required:true" />
+	</div>
+	<div class="field">
+		<label class="textbox-label textbox-label-before">资源状态：</label>
+		<input class="easyui-switchbutton" name="status" data-options="onText:'启用',offText:'禁用',checked:true" value="1" />
+	</div>
+	<div class="field">
+		<input class="easyui-textbox " id="pname" name="pid" style="width: 95%" data-options="label:'父资源名称：'" />
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" id="weight" name="weight" style="width: 95%" 
+			data-options="label:'权重：',validType:'number',required:true" />
+	</div>
+</form>

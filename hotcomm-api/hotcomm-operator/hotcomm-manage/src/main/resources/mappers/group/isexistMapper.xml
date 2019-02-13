@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.group.IsxistMapper">
+	<!--查询设备和组是否重复-->
+	<select id="countdg" resultType="com.hot.manage.entity.group.Isexist">
+		<!--项目数-->
+		<if test="dgid==1001">select count(dg.id)as dgcount from t_device_group_relation as dg left join t_device_dc as d on dg.deviceid=d.id where (d.devnum=#{keywords1} or mac=#{keywords2}) and dg.isdelete=0 and moduleid=1 and d.id != #{devid}</if>
+		<if test="dgid==1002">select count(dg.id)as dgcount from t_device_group_relation as dg left join t_device_yg as d on dg.deviceid=d.id where (d.devnum=#{keywords1} or mac=#{keywords2}) and dg.isdelete=0 and moduleid=2  and d.id != #{devid}</if>
+		<if test="dgid==1003">select count(dg.id)as dgcount from t_device_group_relation as dg left join t_device_jg as d on dg.deviceid=d.id where (d.devnum=#{keywords1} or mac=#{keywords2}) and dg.isdelete=0 and moduleid=3  and d.id != #{devid}</if>
+		<if test="dgid==1004">select count(dg.id)as dgcount from t_device_group_relation as dg left join t_device_pm as d on dg.deviceid=d.id where (d.devnum=#{keywords1} or mac=#{keywords2}) and dg.isdelete=0 and moduleid=4  and d.id != #{devid}</if>
+		<if test="dgid==1005">select count(dg.id)as dgcount from t_device_group_relation as dg left join t_device_wt as d on dg.deviceid=d.id where (d.devnum=#{keywords1} or mac=#{keywords2}) and dg.isdelete=0 and moduleid=5  and d.id != #{devid}</if>
+		<if test="dgid==1006">select count(dg.id)as dgcount from t_device_group_relation as dg left join t_device_et as d on dg.deviceid=d.id where (d.devnum=#{keywords1} or mac=#{keywords2}) and dg.isdelete=0 and moduleid=6  and d.id != #{devid}</if>
+		<if test="dgid==1007">select count(dg.id)as dgcount from t_device_group_relation as dg left join t_device_sl as d on dg.deviceid=d.id where (d.devnum=#{keywords1} or mac=#{keywords2}) and dg.isdelete=0 and moduleid=7  and d.id != #{devid}</if>
+		<if test="dgid==1008">select count(dg.id)as dgcount from t_device_group_relation as dg left join t_device_hw as d on dg.deviceid=d.id where (d.devnum=#{keywords1} or mac=#{keywords2}) and dg.isdelete=0 and moduleid=8  and d.id != #{devid}</if>
+		<if test="dgid==1009">select count(dg.id)as dgcount from t_device_group_relation as dg left join t_device_ljt as d on dg.deviceid=d.id where (d.devnum=#{keywords1} or mac=#{keywords2}) and dg.isdelete=0 and moduleid=9  and d.id != #{devid}</if>
+		<if test="dgid==1010">select count(dg.id)as dgcount from t_device_group_relation as dg left join t_device_sj as d on dg.deviceid=d.id where (d.devnum=#{keywords1} or mac=#{keywords2}) and dg.isdelete=0 and moduleid=10  and d.id != #{devid}</if>
+		<if test="dgid==1011">select count(dg.id)as dgcount from t_device_group_relation as dg left join t_device_mc as d on dg.deviceid=d.id where (d.devnum=#{keywords1} or mac=#{keywords2}) and dg.isdelete=0 and moduleid=11  and d.id != #{devid}</if>
+		<if test="dgid==1012">select count(dg.id)as dgcount from t_device_group_relation as dg left join t_device_krq as d on dg.deviceid=d.id where (d.devnum=#{keywords1} or mac=#{keywords2}) and dg.isdelete=0 and moduleid=12  and d.id != #{devid}</if>
+		<if test="dgid==1013">select count(dg.id)as dgcount from t_device_group_relation as dg left join t_device_ywj as d on dg.deviceid=d.id where (d.devnum=#{keywords1} or mac=#{keywords2}) and dg.isdelete=0 and moduleid=12  and d.id != #{devid}</if>
+		<if test=" 100 > dgid">select count(id)as dgcount from t_device_group where (groupname=#{keywords1} or itemnum=#{keywords2}) and isdelete=0 and moduleid=#{dgid} and id !=#{devid}</if>
+
+	</select>
+
+	<select id="delgroup_before" resultType="com.hot.manage.entity.group.Isexist">
+		SELECT count(id)as dgcount FROM t_device_group_relation WHERE isdelete=0 and groupid = #{id}
+	</select>
+
+	<select id="selectsiterelation" resultType="com.hot.manage.entity.group.Isexist">
+		SELECT count(1) as dgcount from t_dev_item_pic where dev_id=#{devid} and moduleid=#{moduleid} and isdelete=0
+	</select>
+
+	<select id="selectsiterelation2" resultType="com.hot.manage.entity.group.Isexist">
+		SELECT count(1) as dgcount from t_dev_item_pic where item_pic_id=#{mapimgid} and moduleid=#{moduleid} and isdelete=0
+	</select>
+
+</mapper>

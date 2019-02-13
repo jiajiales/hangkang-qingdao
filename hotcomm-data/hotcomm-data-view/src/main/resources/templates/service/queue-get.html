@@ -1,0 +1,24 @@
+<form class="app-form" id="queue-get-form">
+	<div class="field">
+		<input class="easyui-textbox" id="queueName" name="queueName"
+			style="width: 100%" data-options="label:'队列名称：'" readonly="readonly"/>
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" id="holeTime" name="holeTime" style="width: 50%"
+			data-options="label:'队列有效期限：',labelWidth:95" readonly="readonly"/>
+		<input class="easyui-textbox" id="sendFilterInterval" name="sendFilterInterval" style="width: 49%"
+			data-options="label:'队列拦截基数：',labelWidth:95" readonly="readonly"/>
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" id="receiveDataNum" name="receiveDataNum" style="width: 50%"
+			data-options="label:'&nbsp;数据接收总量：',labelWidth:95" readonly="readonly"/>
+		<input class="easyui-textbox" id="waitSendNum" name="waitSendNum" style="width: 49%"
+			data-options="label:'&nbsp;数据库待发送数据量：',labelWidth:146" readonly="readonly"/>
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" id="messages" name="messages" style="width: 50%"
+			data-options="label:'通道中数据数量：',labelWidth:117,prompt:'点击按钮查询'" readonly="readonly"/>
+		<input class="easyui-textbox" id="consumers" name="consumers" style="width: 49%"
+			data-options="label:'&nbsp;队列消费者数量：',labelWidth:117,prompt:'点击按钮查询'" readonly="readonly"/>
+	</div>
+</form>

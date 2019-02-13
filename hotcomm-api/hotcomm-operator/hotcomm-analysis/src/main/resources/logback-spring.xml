@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+	<property name="log.system.path" value="/hot-manage/logs/system/" />
+	<property name="log.operation.path" value="/hot-manage/logs/operation/" />
+	<!-- 控制台日志输入 -->
+	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+		<layout class="ch.qos.logback.classic.PatternLayout">
+			<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+			</pattern>
+		</layout>
+	</appender>
+
+	<!-- 系统文件日志 -->
+	<appender name="system_log"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${log.system.path}%d{yyyy-MM-dd}.log
+			</fileNamePattern>
+			<maxHistory>30</maxHistory>
+			<totalSizeCap>1GB</totalSizeCap>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%d [%t] [%F:%L] %m%n</pattern>
+		</encoder>
+	</appender>
+	<!-- 用户操作文件日志 -->
+	<appender name="operation_log"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${log.operation.path}%d{yyyy-MM-dd}.log
+			</fileNamePattern>
+			<maxHistory>30</maxHistory>
+			<totalSizeCap>1GB</totalSizeCap>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%d [%t] [%F:%L] %m%n</pattern>
+		</encoder>
+	</appender>
+
+	<!--系统文件日志 -->
+	<logger level="error" additivity="false" name="com.hot.analysis">
+		<appender-ref ref="console" />
+		<appender-ref ref="system_log" />
+	</logger>
+
+	<root level="info">
+		<appender-ref ref="console" />
+		<appender-ref ref="system_log" />
+	</root>
+
+</configuration>

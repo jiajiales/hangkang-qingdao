@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+
+<head th:include="common">
+    <meta content="text/html;charset=UTF-8" />
+    <meta http-equiv="Access-Control-Allow-Origin" content="*" />
+    <meta name="keywords" content="keyword1,keyword2,keyword3"></meta>
+    <meta name="description" content="this is my page"></meta>
+    <meta name="content-type" content="text/html; charset=UTF-8"></meta>
+</head>
+<script type="text/javascript" src="/static/js/service/deviceABP.js"></script>
+
+<body style="height: 100%;">
+    <div class="easyui-layout">
+        <div id="device_search" data-options="region:'north',border:false" style="padding: 10px; overflow: hidden;">
+            <form id="device_search_from" class="searcher-form" enctype="multipart/form-data" method="post">
+                <div>
+	                <input name="code" class="easyui-textbox field" style="width: 300px;" label="设备硬件编号:" labelWidth="90" />
+<!-- 	                <span id="device-customer-list"> -->
+<!-- 	                	<input id="selectMemberId" name="selectMemberId" class="easyui-textbox field" label="关联客户:" labelWidth="60" /> -->
+<!-- 	                </span> -->
+	                <input id="groupId" name="groupId" class="easyui-textbox field" label="设备组:" labelWidth="50" style="width: 200px"/>
+	                <input id="typeId" name="typeId" class="easyui-textbox field" label="设备类型:" labelWidth="60" style="width:200px"/>
+	                <a id="device_search_button" class="easyui-linkbutton searcher" data-options="iconCls:'fa fa-search'">检索</a> 
+	                <a id="device_reset_button" class="easyui-linkbutton reset" data-options="iconCls:'fa fa-repeat'">重置</a>
+                </div>
+            </form>
+        </div>
+        <div>
+            <table class="easyui-datagrid" style="" id="device_datagrid"></table>
+        </div>
+    </div>
+    <script type="text/javascript">
+        $(function () {
+            $(".layout-panel").css("position", "static");
+        });
+    </script>
+    <script th:inline="javascript">
+  		$(function () {
+  	     	var b = [[${buttons}]];
+  	     	setButtons(b);
+  	        generateButtons(buttons);
+  		});
+     </script>
+</body>
+
+</html>

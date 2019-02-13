@@ -1,0 +1,19 @@
+<form class="app-form" id="customer-form">
+	<input type="hidden" name="id" />
+	<div class="field">
+		<input class="easyui-textbox" id="memberName" name="memberName" labelWidth="50" style="width: 100%"
+			data-options="label:'账号：',validType:['memberName','length[5,30]'],required:true" />
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" id="realName" name="realName" labelWidth="50" style="width: 100%"
+			data-options="label:'姓名：',validType:['realName','length[2,30]'],required:true" />
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" id="telephone" name="telephone" labelWidth="50" style="width: 100%"
+			data-options="label:'手机：',validType:'phoneNum'" />
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" id="email" name="email" labelWidth="50" style="width: 100%"
+			data-options="label:'邮箱：',validType:['email','length[5,50]']" />
+	</div>
+</form>

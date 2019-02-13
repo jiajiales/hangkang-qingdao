@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.system.TOperationLogMapper">
+	<select id="selectPageInfo" resultType="com.hot.manage.entity.system.TOperationLogVo">
+		SELECT u.loginname,u.realname,l.* FROM t_operation_log l
+		LEFT JOIN
+		t_user u ON u.id=l.userid
+		WHERE l.userid in
+		<foreach collection="params.list" item="item" open="("
+			separator="," close=")">
+			#{item}
+		</foreach>
+		<if test="params.starttime!=null and params.starttime!=''">
+			AND l.addtime &gt;=#{params.starttime}
+		</if>
+		<if test="params.endtime!=null and params.endtime!=''">
+			AND l.addtime &lt;=#{params.endtime}
+		</if>
+		<if test="params.loginname!=null and params.loginname!=''">
+			AND u.loginname LIKE CONCAT('%',#{params.loginname},'%')
+		</if>
+	</select>
+	<select id="selectByUserId" resultType="com.hot.manage.entity.system.TOperationLogVo">
+		SELECT
+		u.loginname,u.realname,l.* FROM t_operation_log l
+		LEFT JOIN t_user u ON
+		u.id=l.userid
+		WHERE l.userid=#{userid}
+		<if test="starttime!=null and starttime!=''">
+			AND l.addtime &gt;=#{starttime}
+		</if>
+		<if test="endtime!=null and endtime!=''">
+			AND l.addtime &lt;=#{endtime}
+		</if>
+		<if test="loginname!=null and loginname!=''">
+			AND u.loginname LIKE CONCAT('%',#{loginname},'%')
+		</if>
+	</select>
+</mapper>

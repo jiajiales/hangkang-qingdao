@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+
+<head th:include="common">
+    <meta content="text/html;charset=UTF-8" />
+    <meta http-equiv="Access-Control-Allow-Origin" content="*" />
+    <link rel="stylesheet" href="/css/system/member.css" />
+</head>
+<script type="text/javascript" src="/static/js/system/member.js"></script>
+
+<body style="height: 100%;">
+    <div class="easyui-layout">
+        <div id="member_search" data-options="region:'north',border:false" style="padding: 10px;overflow: hidden;">
+            <form id="member_search_from" class="searcher-form">
+                <input name="memberName" class="easyui-textbox field" label="账号：" labelWidth="45" />
+                <input name="telephone" class="easyui-textbox field" label="手机：" labelWidth="45" />
+                <select name="status" class="easyui-combobox field" label="状态：" labelWidth="45" editable="false" style="width:175px" data-options="valueField:'value', textField:'label', panelHeight:'auto'">
+                    <option value="">全部</option>
+                    <option value="1">有效</option>
+                    <option value="2">无效</option>
+                </select>
+                <a id="member_search_button" class="easyui-linkbutton searcher" data-options="iconCls:'fa fa-search'">检索</a>
+                <a id="member_reset_button" class="easyui-linkbutton reset" data-options="iconCls:'fa fa-repeat'">重置</a>
+            </form>
+        </div>
+        <div>
+            <table class="easyui-datagrid" id="member_datagrid"></table>
+        </div>
+    </div>
+    <script type="text/javascript">
+        $(function () {
+            $(".layout-panel").css("position", "static");
+        });
+    </script>
+    <script th:inline="javascript">
+        window.onload = function () {
+            var keys = [[${keys}]];
+            setKeys(keys);
+        }
+    </script>
+</body>
+
+</html>

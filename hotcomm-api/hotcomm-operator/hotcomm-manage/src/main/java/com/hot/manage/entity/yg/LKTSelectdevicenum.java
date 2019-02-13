@@ -1,0 +1,25 @@
+package com.hot.manage.entity.yg;
+
+import java.io.Serializable;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+
+@Data
+@EqualsAndHashCode(callSuper=false)
+@NoArgsConstructor
+public class LKTSelectdevicenum implements Serializable{
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	//(value="模块id")
+	private Integer moduleid;
+	
+	//(value="设备总数")
+	private Integer devicenum;
+	
+}

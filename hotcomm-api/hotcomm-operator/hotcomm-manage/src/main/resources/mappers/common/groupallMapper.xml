@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.common.group.GroupallMapper">
+	<sql id="motab">
+		<if test="moduleid==1">t_device_dc</if><if test="moduleid==2">t_device_yg</if><if test="moduleid==3">t_device_jg</if>
+		<if test="moduleid==4">t_device_pm</if><if test="moduleid==5">t_device_wt</if><if test="moduleid==6">t_device_et</if>
+		<if test="moduleid==7">t_device_sl</if><if test="moduleid==8">t_device_hw</if><if test="moduleid==9">t_device_ljt</if>
+		<if test="moduleid==10">t_device_sj</if><if test="moduleid==11">t_device_mc</if><if test="moduleid==12">t_device_krq</if>
+		<if test="moduleid==13">t_device_ywj</if><if test="moduleid==14">t_device_sxdl</if><if test="moduleid==15">t_device_sxdy</if>
+		<if test="moduleid==16">t_device_sy</if><if test="moduleid==17">t_device_sydl</if>
+	</sql>
+	
+	<select id="selectDevByGroupID" resultType="com.hot.manage.entity.common.AllDevByGroupID">
+		SELECT
+		t1.`id`,
+		t1.`x`,
+		t1.`y`,
+		t1.`state`,
+		t1.`code`,
+		t1.`devnum`,
+		t1.`battery`,
+		t1.`lng`,
+		t1.`lat`,
+		t3.`contacts`
+		FROM
+		<include refid="motab"></include>
+		t1
+		INNER JOIN t_device_group_relation t2
+		ON t1.`id` = t2.`deviceid`
+		AND
+		t2.`moduleid` = #{moduleid}
+		<if test="groupid!=null">
+		AND t2.`groupid` = #{groupid}
+		</if>
+		AND
+		t2.`isdelete` = 0
+		AND t2.`isenable` = 1
+		LEFT JOIN t_user t3
+		ON t3.`id` = t1.`own_id`
+		AND t3.`isdelete` = 0
+		AND t3.`isenable` = 1
+		WHERE t1.`isdelete` = 0
+		AND
+		t1.`isenable` = 1
+	</select>
+
+	<!--用户下的项目id(id,groupname)-->
+	<sql id="ugroupid">
+		select g.id,g.groupname
+		from t_user_dgroup_relation ug left join t_device_group g on ug.devicegroupid=g.id
+		where ug.isdelete=0 and g.isdelete=0 and userid=#{userid} and g.moduleid=#{moduleid}
+	</sql>
+
+	<!--带搜索的用户下的项目-->
+	<sql id="ug">
+		select g.id,g.groupname,g.groupcode,g.x,g.y,g.managerid,g.itemnum,g.addtime,g.imgpath,count(dg.deviceid)as devcount
+		from t_user_dgroup_relation ugroup left join t_device_group g on (ugroup.devicegroupid=g.id and ugroup.isdelete=0 and ugroup.userid=#{userid})
+		left join t_device_group_relation dg on (g.id=dg.groupid and dg.moduleid=#{moduleid} and dg.isdelete=0)
+		where g.isdelete=0 and g.moduleid=#{moduleid}
+		<if test="starttime!='' and starttime!=null">and g.addtime  &gt;= #{starttime}</if><if test="endtime!='' and endtime!=null">and g.addtime &lt;= #{endtime}</if><if test="keywords!='' and  keywords!=null">and (g.groupname LIKE CONCAT('%',#{keywords},'%') or g.itemnum LIKE CONCAT('%',#{keywords},'%'))</if>
+		group by g.id
+	</sql>
+
+
+	<!--用户下的设备id-->
+	<sql id="udevid">
+		select g.id,g.groupname,g.groupcode,g.x,g.y,g.managerid,g.itemnum,g.addtime,g.imgpath,dg.deviceid
+		from t_user_dgroup_relation ug left join t_device_group g on ug.devicegroupid=g.id left join t_device_group_relation dg on g.id=dg.groupid
+		where ug.isdelete=0 and ug.userid=#{userid} and g.isdelete=0 and g.moduleid=#{moduleid} and dg.moduleid=#{moduleid} and dg.isdelete=0
+	</sql>
+
+	<!--设备状态（devcount:全部,devcount0:正常,devcount1:报警,devcount2:故障）-->
+	<sql id="dev_state">
+	count(d.id)as devcount,count(d.state=0 OR NULL)as devcount0,count(d.state=1 OR NULL)as devcount1,count(d.state=2 OR NULL)as devcount2
+	</sql>
+
+	<!--项目下的设备id-->
+	<sql id="gdevid">
+	select
+	g.groupname,groupcode,g.x,g.y,g.addtime,g.managerid,dg.deviceid,dg.groupid
+	from t_device_group g 
+	left join t_device_group_relation dg on
+	g.id=dg.groupid 
+	RIGHT JOIN t_user_dgroup_relation ug on ug.userid = #{userid} and ug.devicegroupid = dg.groupid and ug.isdelete=0
+	where g.id=#{groupid} and dg.moduleid=#{moduleid} and
+	dg.isdelete=0 and dg.isenable=1 and g.isdelete=0
+	</sql>
+<!--=====================================================================================-->
+	<!--项目列表-->
+	<select id="selectgrouplist" resultType="com.hot.manage.entity.common.group.Grouplist">
+		select dg.id,dg.groupname,dg.groupcode,dg.x,dg.y,dg.itemnum,dg.addtime,dg.imgpath,tu.contacts,COUNT(dgr.id) as devcount
+		from t_device_group dg 
+		RIGHT JOIN t_user_dgroup_relation udr ON udr.devicegroupid=dg.id AND udr.isenable=1 AND udr.userid=#{userid}
+		LEFT JOIN t_device_group_relation dgr ON dgr.groupid= dg.id AND dgr.moduleid=#{moduleid} AND dgr.isenable=1
+		LEFT JOIN <include refid="motab"></include> dev ON dev.id=dgr.deviceid AND dev.isenable=1
+		LEFT JOIN t_user tu ON tu.id=dg.managerid AND tu.isenable=1
+		<where>
+			dg.moduleid=#{moduleid} AND dg.isenable=1  AND dg.isenable=1
+			<if test="starttime!=null and starttime!='' ">
+				and dg.addtime  &gt;=#{starttime}
+			</if>
+			<if test="endtime!=null and endtime!=''">
+				and dg.addtime  &lt;=#{endtime}
+			</if>
+			<if test="keywords!=null and keywords!=''">
+				and
+				CONCAT_WS(&apos;/&apos;,dg.itemnum,dg.groupname)
+				LIKE CONCAT(&apos;%&apos;,#{keywords},&apos;%&apos;)
+				COLLATE
+				utf8_unicode_ci
+			</if>
+		</where>
+		GROUP BY dg.id
+		ORDER BY dg.addtime desc
+	</select>
+
+	<!--项目下设备状态个数-->
+	<select id="selectgroupdevstate" resultType="com.hot.manage.entity.common.group.Groupdevstate">
+		SELECT dg.groupname,dg.id as groupid,dg.x as lng,dg.y as lat,COUNT(dev.id) as devcount,COUNT(CASE WHEN dev.state = 0 THEN dev.id END ) as  devcount0,
+		COUNT(CASE WHEN dev.state = 1 THEN dev.id END ) as  devcount1,COUNT(CASE WHEN dev.state = 2 THEN dev.id END ) as  devcount2
+		from t_device_group dg
+		LEFT JOIN t_device_group_relation dgr ON dgr.groupid = dg.id and dgr.isdelete=0 AND dgr.moduleid=#{moduleid}
+		LEFT JOIN <include refid="motab"></include> dev ON dev.id= dgr.deviceid AND dev.isdelete=0
+		RIGHT JOIN t_user_dgroup_relation udr ON udr.isdelete=0 AND udr.userid=#{userid} AND udr.devicegroupid = dg.id
+		where  dg.isdelete=0 and dg.moduleid=#{moduleid}
+		GROUP BY dg.id
+		ORDER BY dg.addtime desc
+	</select>
+
+	<!--项目分布-->
+	<select id="selectgroupmap" resultType="com.hot.manage.entity.common.group.Groupmap">
+		SELECT dg.id,dg.groupname,dg.x,dg.y,tu.contacts,tu.telephone,COUNT(dev.id) as devcount,
+				COUNT(CASE WHEN dev.state = 0 THEN dev.id END ) as  devcount0,
+				COUNT(CASE WHEN dev.state = 1 THEN dev.id END ) as  devcount1,
+				COUNT(CASE WHEN dev.state = 2 THEN dev.id END ) as   devcount2
+		from t_device_group dg 
+		LEFT JOIN t_device_group_relation dgr ON dgr.groupid = dg.id AND dgr.isdelete=0 AND dgr.moduleid=#{moduleid}
+		left JOIN t_user tu ON tu.id=dg.managerid and tu.isenable = 1	
+		LEFT JOIN <include refid="motab"></include>  dev on dev.id = dgr.deviceid AND dev.isdelete=0
+		RIGHT JOIN t_user_dgroup_relation udr ON udr.isenable=1 AND udr.devicegroupid = dg.id AND udr.userid=#{userid}
+		WHERE dg.isdelete=0 AND dg.moduleid=#{moduleid}
+		GROUP BY dg.id
+		ORDER BY dg.addtime desc
+	</select>
+
+	<!--项目详情-(地图弹框)-->
+	<select id="mapgroupdevstate" resultType="com.hot.manage.entity.common.group.Map_group_xq">
+		select gdevid.groupid as id,gdevid.x,gdevid.y,gdevid.groupname,t_user.contacts,count(d.id)as devcount,count(d.state=1 or null)as armcount,count(d.state=2 or null)as faultcount
+		from (<include refid="gdevid"></include>)as gdevid left join <include refid="motab"></include> as d on gdevid.deviceid=d.id left join t_user on t_user.id=gdevid.managerid
+		where d.isdelete=0 group by gdevid.groupid
+	</select>
+
+	<!--项目设备个数-->
+	<select id="selectgroupdevcount" resultType="com.hot.manage.entity.common.group.Groupdevcount">
+		select count(gdevid.deviceid)as groupdevcount
+		from (<include refid="gdevid"></include>) as gdevid
+	</select>
+
+	<!--根据id查项目-->
+	<select id="selectgroupbyid" resultType="com.hot.manage.entity.common.group.Groupone">
+		select id,groupname,x,y,groupcode,itemnum,managerid,imgpath,telephone from t_device_group where id=#{groupid}
+	</select>
+
+	<!--根据id删除项目-->
+	<update id="delgroup">
+		UPDATE t_device_group g,t_user_dgroup_relation u
+		SET u.isdelete = 1,u.isenable = 0,g.isdelete = 1,g.isenable = 0
+		WHERE g.id = #{groupid} and u.devicegroupid=#{groupid}
+	</update>
+	<update id="delitem">
+		UPDATE t_item_pic u
+		SET  u.isdelete = 1,u.isenable = 0
+		WHERE u.itemid=#{groupid}
+	</update>
+
+	<!--增加项目 -->
+	<insert id="insertgroup" keyProperty="id"  useGeneratedKeys="true" parameterType="com.hot.manage.entity.common.group.Groups">
+		INSERT INTO t_device_group(`moduleid`,`groupname`,`groupcode`,`x`,`y`,`adduserid`,`imgpath`,`addtime`,`itemnum`,`managerid`)
+		VALUES(#{moduleid},#{groupname},#{groupcode},#{x},#{y},#{userid},#{imgpath},now(),#{itemnum},#{managerid})
+	</insert>
+	<insert id="insertgroupimg">
+		INSERT INTO t_item_pic(picnum,picpath,site,itemid,addtime) VALUES(#{picnum},#{picpath},#{site},#{id},now())
+	</insert>
+	<insert id="insert_dev_group_user">
+		INSERT INTO t_user_dgroup_relation(userid,devicegroupid,adduserid,addtime) VALUES(#{userid},#{id},#{userid},now())
+	</insert>
+
+	<!--根据组查找设备地图-->
+	<select id="selectgroupmapimg" resultType="com.hot.manage.entity.common.group.Groupmapimg">
+		select picpath,site,itemid from t_item_pic where itemid=#{groupid} and isdelete=0
+	</select>
+
+	<!--根据组id查找项目下所有楼层和地图-->
+	<select id="selectgroupsite_imgpath" resultType="com.hot.manage.entity.common.group.Groupsiteimgpath">
+		select p.picpath,p.site,p.itemid as groupid,p.id as item_pic_id,count(dp.dev_id)as devcount from t_item_pic p left join t_dev_item_pic dp on (p.id=dp.item_pic_id and dp.isdelete=0 and dp.moduleid=#{moduleid}) where itemid=#{groupid} and p.isdelete=0 group by p.id;
+	</select>
+
+	<!--修改项目-->
+	<update id="updategroups" parameterType="com.hot.manage.entity.common.group.Groups">
+		UPDATE t_device_group SET id=#{id},imgpath=#{imgpath},itemnum=#{itemnum},groupname=#{groupname},groupcode=#{groupcode},x=#{x},y=#{y} WHERE t_device_group.id = #{id}
+	</update>
+
+
+	<!--查询楼层id对应的设备-->
+	<select id="selectsitedev" resultType="com.hot.manage.entity.common.group.Sitedev">
+		select d.id,d.x,d.y,d.state,d.code,d.battery,d.devnum,t_user.contacts
+		from t_dev_item_pic as dp left join <include refid="motab"></include> as d on dp.dev_id=d.id left join t_user on d.own_id=t_user.id
+		where dp.item_pic_id=#{mapimgidid} and dp.moduleid=#{moduleid} and dp.isdelete=0 and d.isdelete=0
+	</select>
+
+	<!--删除设备-->
+	<update id="deldev">
+		UPDATE t_device_group_relation dg,<include refid="motab"></include> as d SET dg.isdelete =1,dg.isenable=0,d.isdelete =1,d.isenable=0 WHERE dg.deviceid = #{devid} and dg.moduleid=#{moduleid} and d.id=#{devid}
+	</update>
+	<update id="deldev2">
+		UPDATE t_dev_item_pic SET isdelete =1,isenable=0 WHERE moduleid=#{moduleid} and dev_id=#{devid}
+	</update>
+
+	<!--修改项目xy-->
+	<update id="updategroupxy">
+		UPDATE t_device_group SET x=#{x},y=#{y},groupcode=#{groupcode} WHERE t_device_group.id = #{groupid}
+	</update>
+
+	<!--修改设备xy-->
+	<update id="updatedevxy">
+		UPDATE <include refid="motab"></include> SET x=#{x},y=#{y},code=#{code} 
+		WHERE id = #{id}
+	</update>
+
+
+	<!--删除项目的设备坐标图片-->
+	<update id="deldevmapimg">
+		UPDATE t_item_pic SET isdelete =1,isenable = 0 WHERE id = #{id}
+	</update>
+	<!-- 修改楼层图片 -->
+	<update id="updateItemPic">
+		UPDATE `t_item_pic` SET `picpath` =#{picurl},`updatetime` = #{updateTime} WHERE `id` =#{itemid};
+	</update>
+
+
+	<!--图片查询-->
+	<select id="selectmapimgcount" resultType="com.hot.manage.entity.common.group.Groupdevcount">
+		select count(id) as groupdevcount from t_item_pic where itemid=#{itemid} and site=#{site}
+	</select>
+
+	<select id="selectAllItem" resultType="com.hot.manage.entity.common.group.Grouplist">
+		SELECT g.*
+		FROM t_device_group g
+		LEFT JOIN t_user_dgroup_relation u ON u.devicegroupid=g.id AND u.isenable=1
+		WHERE u.userid=#{userid}
+		<if test="moduleid!=null">
+		AND g.moduleid=#{moduleid}
+		</if>
+		AND g.isenable=1
+		GROUP BY g.id
+		order by g.addtime desc
+	</select>
+
+
+	<!--======================================未用到===============================================-->
+	<!--添加设备组坐标图片-->
+	<insert id="insertdevmapimg">
+		INSERT INTO t_item_pic(picnum,picpath,site,itemid) VALUES(#{picnum},#{picpath},#{site},#{itemid})
+	</insert>
+
+	<!--修改的删除项目的设备坐标图片-->
+	<update id="delallgroupimg">
+		UPDATE t_item_pic SET isdelete =1,isenable = 0 WHERE itemid = #{groupid}
+	</update>
+
+	<!--设备联动视频-->
+	<insert id="insertvodrelation">
+		INSERT INTO t_dev_video_relation(deviceid,videoid,moduleid)
+		VALUES(7,<foreach collection="devids" item="item" open="(" separator="," close=")" > #{item}</foreach>,2);
+	</insert>
+</mapper>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.data.db.DeviceTypeMapper">
+
+	<resultMap type="DeviceTypePageVO" id="DeviceTypePageMap">
+		<id property="typeId" column="type_id" />
+		<result property="typeName" column="type_name" />
+		<result property="createTime" column="create_time" />
+		<result property="createUser" column="create_user" />
+		<result property="updateTime" column="update_time" />
+		<result property="code" column="code" />
+	</resultMap>
+
+	<resultMap type="DeviceType" id="DeviceTypeListMap">
+		<id property="typeId" column="type_id" />
+		<result property="typeName" column="type_name" />
+		<result property="code" column="code" />
+	</resultMap>
+
+	<select id="queryPage" resultMap="DeviceTypePageMap">
+		SELECT type_id, type_name, create_time, create_user, update_time,code
+		FROM hk_device_type
+		WHERE type_name LIKE CONCAT('%', #{typeName}, '%')
+		ORDER BY create_time DESC
+	</select>
+
+	<select id="queryList" resultMap="DeviceTypeListMap">
+		SELECT type_id, type_name, code FROM hk_device_type
+	</select>
+
+	<select id="checkDeviceTypeUsed" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+		SELECT 1 FROM hk_device v1 WHERE v1.device_type_id = #{typeId} LIMIT 1
+	</select>
+
+	<select id="checkDeviceTypeNameExist" parameterType="java.lang.String" resultType="java.lang.Integer">
+		SELECT 1 FROM hk_device_type WHERE type_name = #{typeName} LIMIT 1
+	</select>
+
+	<select id="countByCode" parameterType="java.lang.String" resultType="java.lang.Integer">
+		SELECT count(0) FROM hk_device_type WHERE code = #{code}
+	</select>
+
+</mapper>

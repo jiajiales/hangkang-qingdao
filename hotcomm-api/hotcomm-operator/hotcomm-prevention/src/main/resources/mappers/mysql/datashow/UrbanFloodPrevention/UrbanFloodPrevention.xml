@@ -1,0 +1,2475 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.hotcomm.prevention.db.mysql.datashow.UrbanFloodPrevention.UrbanFloodPreventionMapper">
+
+	<select id="floodPreventionSituation"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.FloodPreventionSituationVO">
+		SELECT
+		DRP,
+		DrpFrom,
+		<if test="timeType==1">
+		timeInfo,
+		</if>
+		<if test="timeType==2">
+		DATE_FORMAT(timeInfo, '%H:%i') AS timeInfo,
+		</if>
+		<if test="timeType==3">
+		DATE_FORMAT(timeInfo, '%m-%d') AS timeInfo,
+		</if>
+		<if test="timeType==4">
+		DATE_FORMAT(timeInfo, '%Y-%m') AS timeInfo,
+		</if>
+		CASE
+		WHEN AVG(Z) IS NULL
+		THEN 0
+		ELSE AVG(Z)
+		END AS Z,
+		CASE
+		WHEN GROUP_CONCAT(mybigdick.`STCD`) IS NULL
+		THEN ''
+		ELSE
+		GROUP_CONCAT(mybigdick.`STCD`)
+		END AS ZFrom
+		FROM
+		(SELECT
+		r1.`Z`,
+		<if test="timeType==1">
+			DATE_FORMAT(r1.`TM`, '%Y-%m-%d %H:%i:00') AS TM,
+		</if>
+		<if test="timeType==2">
+			DATE_FORMAT(r1.`TM`, '%Y-%m-%d %H:00:00') AS TM,
+		</if>
+		<if test="timeType==3">
+			DATE_FORMAT(r1.`TM`, '%Y-%m-%d 00:00:00') AS TM,
+		</if>
+		<if test="timeType==4"> 
+			DATE_FORMAT(r1.`TM`, '%Y-%m-01 00:00:00') AS TM,
+		</if>
+		r1.`STCD`
+		FROM
+		ST_RIVER_R r1
+		INNER JOIN ST_STBPRP_B b1
+		ON b1.`STCD` =
+		r1.`STCD`
+		<if test="stnm!=null and stnm!=''">
+		AND b1.`STNM` = #{stnm}
+		</if>
+		<if test="stcd!=null and stcd!=''">
+		AND b1.`STCD` = #{stcd}
+		</if>
+		WHERE DATE(r1.`TM`) >= DATE(#{startTime})
+		AND
+		DATE(r1.`TM`) &lt;= DATE(#{endTime})) mybigdick
+		RIGHT JOIN
+		(SELECT
+		CASE
+		WHEN
+		SUM(t1.`DRP`) IS NULL
+		THEN 0
+		ELSE SUM(t1.`DRP`)
+		END AS DRP,
+		CASE
+		WHEN
+		GROUP_CONCAT(t1.`STCD`) IS NULL
+		THEN ''
+		ELSE GROUP_CONCAT(t1.`STCD`)
+		END
+		AS DrpFrom,
+		timeTable.`timeInfo`
+		FROM
+		(SELECT
+		r1.`DRP`,
+		<if test="timeType==1">
+			DATE_FORMAT(r1.`TM`, '%Y-%m-%d %H:%i:00') AS TM,
+		</if>
+		<if test="timeType==2">
+			DATE_FORMAT(r1.`TM`, '%Y-%m-%d %H:00:00') AS TM,
+		</if>
+		<if test="timeType==3">
+			DATE_FORMAT(r1.`TM`, '%Y-%m-%d 00:00:00') AS TM,
+		</if>
+		<if test="timeType==4">
+			DATE_FORMAT(r1.`TM`, '%Y-%m-01 00:00:00') AS TM,
+		</if>
+		r1.`STCD`
+		FROM
+		ST_PPTN_R r1
+		INNER JOIN ST_STBPRP_B b1
+		ON b1.`STCD` =
+		r1.`STCD`
+		<if test="stnm!=null and stnm!=''">
+		AND b1.`STNM` = #{stnm}
+		</if>
+		<if test="stcd!=null and stcd!=''">
+		AND b1.`STCD` = #{stcd}
+		</if>
+		WHERE DATE(r1.`TM`) >= DATE(#{startTime})
+		AND
+		DATE(r1.`TM`) &lt;= DATE(#{endTime})) t1
+		RIGHT JOIN
+		(SELECT
+		<if test="timeType==1">
+			@tempMinute := DATE_ADD(@tempMinute, INTERVAL 1 MINUTE) AS
+			timeInfo
+		</if>
+		<if test="timeType==2">
+			@tempMinute := DATE_ADD(@tempMinute, INTERVAL 60 MINUTE)
+			AS timeInfo
+		</if>
+		<if test="timeType==3">
+			@tempMinute := DATE_ADD(@tempMinute, INTERVAL 1440 MINUTE)
+			AS timeInfo
+		</if>
+		<if test="timeType==4">
+			@tempMinute := DATE_ADD(@tempMinute, INTERVAL 1 MONTH)
+			AS timeInfo
+		</if>
+		FROM
+		t_power t
+		LEFT JOIN
+		(SELECT
+		<if test="timeType==1">
+			@tempMinute := DATE_SUB(#{startTime} , INTERVAL 1 MINUTE))
+			b
+		</if>
+		<if test="timeType==2">
+			@tempMinute := DATE_SUB(#{startTime} , INTERVAL 60
+			MINUTE)) b
+		</if>
+		<if test="timeType==3">
+			@tempMinute := DATE_SUB(#{startTime} , INTERVAL 1440
+			MINUTE)) b
+		</if>
+		<if test="timeType==4">
+			@tempMinute := DATE_SUB(#{startTime} , INTERVAL 44640
+			MINUTE)) b
+		</if>
+		ON 1 = 1
+		WHERE @tempMinute &lt; #{endTime}) AS timeTable
+		<if test="timeType!=4">
+		ON t1.`TM` =
+		timeTable.`timeInfo`,
+		</if>
+		<if test="timeType==4">
+		ON t1.`TM` =
+		DATE_FORMAT(timeTable.`timeInfo`, '%Y-%m-01 00:00:00'),
+		</if>
+		(SELECT
+		COUNT(*) AS countSt
+		FROM
+		ST_STBPRP_B b1) AS
+		countSt
+		GROUP BY timeTable.timeInfo) fuck
+		<if test="timeType!=4">
+		ON mybigdick.TM =
+		fuck.timeInfo
+		</if>
+		<if test="timeType==4">
+		ON mybigdick.TM =
+		DATE_FORMAT(fuck.timeInfo, '%Y-%m-01 00:00:00')
+		</if>
+		<if test="timeType!=4">
+		WHERE timeInfo &lt; DATE_SUB(#{endTime},INTERVAL -1 MONTH)
+		</if>
+		GROUP BY fuck.timeInfo
+		<if test="timeType==4">
+		LIMIT 1,12
+		</if>
+		<if test="timeType==2">
+		LIMIT 0,24
+		</if>
+	</select>
+	
+	<!-- 根据stcd查询 -->
+	<select id="floodPreventionSituationBystcd"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.FloodPreventionSituationVO">
+		SELECT
+		DRP,
+		DrpFrom,
+		<if test="timeType==1">
+		timeInfo,
+		</if>
+		<if test="timeType==2">
+		DATE_FORMAT(timeInfo, '%H:%i') AS timeInfo,
+		</if>
+		<if test="timeType==3">
+		DATE_FORMAT(timeInfo, '%m-%d') AS timeInfo,
+		</if>
+		<if test="timeType==4">
+		DATE_FORMAT(timeInfo, '%Y-%m') AS timeInfo,
+		</if>
+		CASE
+		WHEN AVG(Z) IS NULL
+		THEN 0
+		ELSE AVG(Z)
+		END AS Z,
+		CASE
+		WHEN GROUP_CONCAT(mybigdick.`STCD`) IS NULL
+		THEN ''
+		ELSE
+		GROUP_CONCAT(mybigdick.`STCD`)
+		END AS ZFrom
+		FROM
+		(SELECT
+		r1.`Z`,
+		<if test="timeType==1">
+			DATE_FORMAT(r1.`TM`, '%Y-%m-%d %H:%i:00') AS TM,
+		</if>
+		<if test="timeType==2">
+			DATE_FORMAT(r1.`TM`, '%Y-%m-%d %H:00:00') AS TM,
+		</if>
+		<if test="timeType==3">
+			DATE_FORMAT(r1.`TM`, '%Y-%m-%d 00:00:00') AS TM,
+		</if>
+		<if test="timeType==4"> 
+			DATE_FORMAT(r1.`TM`, '%Y-%m-01 00:00:00') AS TM,
+		</if>
+		r1.`STCD`
+		FROM
+		ST_RIVER_R r1
+		INNER JOIN ST_STBPRP_B b1
+		ON b1.`STCD` =
+		r1.`STCD`
+		AND b1.`STCD` = #{stcd}
+		WHERE r1.`TM` >= #{startTime}
+		AND
+		r1.`TM` &lt;= DATE_SUB(#{endTime},INTERVAL - 1 DAY)) mybigdick
+		RIGHT JOIN
+		(SELECT
+		CASE
+		WHEN
+		SUM(t1.`DRP`) IS NULL
+		THEN 0
+		ELSE SUM(t1.`DRP`)
+		END AS DRP,
+		CASE
+		WHEN
+		GROUP_CONCAT(t1.`STCD`) IS NULL
+		THEN ''
+		ELSE GROUP_CONCAT(t1.`STCD`)
+		END
+		AS DrpFrom,
+		timeTable.`timeInfo`
+		FROM
+		(SELECT
+		r1.`DRP`,
+		<if test="timeType==1">
+			DATE_FORMAT(r1.`TM`, '%Y-%m-%d %H:%i:00') AS TM,
+		</if>
+		<if test="timeType==2">
+			DATE_FORMAT(r1.`TM`, '%Y-%m-%d %H:00:00') AS TM,
+		</if>
+		<if test="timeType==3">
+			DATE_FORMAT(r1.`TM`, '%Y-%m-%d 00:00:00') AS TM,
+		</if>
+		<if test="timeType==4">
+			DATE_FORMAT(r1.`TM`, '%Y-%m-01 00:00:00') AS TM,
+		</if>
+		r1.`STCD`
+		FROM
+		ST_PPTN_R r1
+		INNER JOIN ST_STBPRP_B b1
+		ON b1.`STCD` =
+		r1.`STCD`
+		AND b1.`STCD` = #{stcd}
+		WHERE r1.`TM` >= #{startTime}
+		AND
+		r1.`TM` &lt;= DATE_SUB(#{endTime},INTERVAL - 1 DAY)) t1
+		RIGHT JOIN
+		(SELECT
+		<if test="timeType==1">
+			@tempMinute := DATE_ADD(@tempMinute, INTERVAL 1 MINUTE) AS
+			timeInfo
+		</if>
+		<if test="timeType==2">
+			@tempMinute := DATE_ADD(@tempMinute, INTERVAL 60 MINUTE)
+			AS timeInfo
+		</if>
+		<if test="timeType==3">
+			@tempMinute := DATE_ADD(@tempMinute, INTERVAL 1440 MINUTE)
+			AS timeInfo
+		</if>
+		<if test="timeType==4">
+			@tempMinute := DATE_ADD(@tempMinute, INTERVAL 1 MONTH)
+			AS timeInfo
+		</if>
+		FROM
+		t_power t
+		LEFT JOIN
+		(SELECT
+		<if test="timeType==1">
+			@tempMinute := DATE_SUB(#{startTime} , INTERVAL 1 MINUTE))
+			b
+		</if>
+		<if test="timeType==2">
+			@tempMinute := DATE_SUB(#{startTime} , INTERVAL 60
+			MINUTE)) b
+		</if>
+		<if test="timeType==3">
+			@tempMinute := DATE_SUB(#{startTime} , INTERVAL 1440
+			MINUTE)) b
+		</if>
+		<if test="timeType==4">
+			@tempMinute := DATE_SUB(#{startTime} , INTERVAL 44640
+			MINUTE)) b
+		</if>
+		ON 1 = 1
+		WHERE @tempMinute &lt; DATE_SUB(#{endTime}, INTERVAL 1 HOUR) ) AS timeTable
+		<if test="timeType!=4">
+		ON t1.`TM` =
+		timeTable.`timeInfo`,
+		</if>
+		<if test="timeType==4">
+		ON t1.`TM` =
+		DATE_FORMAT(timeTable.`timeInfo`, '%Y-%m-01 00:00:00'),
+		</if>
+		(SELECT
+		COUNT(*) AS countSt
+		FROM
+		ST_STBPRP_B b1) AS
+		countSt
+		GROUP BY timeTable.timeInfo) fuck
+		<if test="timeType!=4">
+		ON mybigdick.TM =
+		fuck.timeInfo
+		</if>
+		<if test="timeType==4">
+		ON mybigdick.TM =
+		DATE_FORMAT(fuck.timeInfo, '%Y-%m-01 00:00:00')
+		</if>
+		WHERE timeInfo &lt; DATE_SUB(#{endTime},INTERVAL -1 DAY) 
+		GROUP BY fuck.timeInfo
+		<if test="timeType==4">
+		LIMIT 12
+		</if>
+	</select>
+
+	<select id="selectSiteByType"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.SiteInfoByTypeVO">
+		SELECT t1.`STCD`,t1.`STNM`,CASE
+		WHEN t1.`STTP` = 'PP'
+		THEN '雨量站'
+		WHEN
+		t1.`STTP` = 'ZZ'
+		THEN '水位站'
+		WHEN t1.`STTP` = 'PZ'
+		THEN '一体站'
+		END AS sttp
+		FROM ST_STBPRP_B t1 WHERE 1=1
+		<if test="siteType==1">AND t1.`STTP`='PP'</if>
+		<if test="siteType==2">AND t1.`STTP`='ZZ'</if>
+		<if test="siteType==3">AND t1.`STTP`='PZ'</if>
+		GROUP BY t1.`STNM` 
+		ORDER BY t1.`STCD`
+	</select>
+
+	<select id="selectStationInfo"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.SelectStationInfoVO">
+	SELECT
+	test.STCD,
+	test.STNM,
+	test.areaname,
+	test.sttpName,
+	test.stateName,
+	test.stAreacode AS stAreacode,
+	test.ppLastTime AS ppLastTime,
+	test.zzLastTime AS zzLastTime,
+	test.ytppLastTime AS ytppLastTime,
+	test.ytzzLastTime AS ytzzLastTime,
+	test.ppLastDRP AS ppLastDRP,
+	test.zzLastZ AS zzLastZ,
+	test.ytppLastDRP AS ytppLastDRP,
+	test.ytzzLastZ
+	AS ytzzLastZ,
+	CASE
+	WHEN test.state = 3 THEN
+	'报警'
+	WHEN test.state = 2 THEN
+	'预警'
+	WHEN test.state = 0 THEN
+	'正常'
+	WHEN test.state IS NULL THEN
+	'正常'
+	END AS state
+	,test.LGTD,test.LTTD
+	,test.STTP
+	,test.ytz_z_state,test.ytz_drp_state
+	FROM
+	(
+
+	SELECT
+	dateAll.STCD,
+	dateAll.STNM,
+	state,
+	dateAll.areaname,
+	dateAll.sttpName,
+	dateAll.stateName,
+	dateAll.areacode AS stAreacode ,
+	dateAll.time1 AS ppLastTime ,
+	dateAll.time2 AS zzLastTime ,
+	dateAll.time3 AS ytppLastTime ,
+	dateAll.time4 AS ytzzLastTime ,
+	dateAll.DRP AS ppLastDRP ,
+	dateAll.Z AS zzLastZ ,
+	dateAll.drp0 AS
+	ytppLastDRP ,
+	dateAll.z0 AS ytzzLastZ
+	,dateAll.LGTD,dateAll.LTTD
+	,dateAll.STTP
+	,dateAll.ytz_z_state,dateAll.ytz_drp_state
+	FROM
+		<!-- 获取所有站点最新信息 -->
+		(SELECT
+		*,
+		CASE
+        WHEN z0 >= ZZ_AlarmValue 
+        AND sttpName = '一体站' 
+        THEN 2 
+        WHEN z0 &lt; ZZ_AlarmValue AND z0>=ZZ_YJValue
+        THEN 1
+        ELSE 0 
+      END AS ytz_z_state,
+      CASE
+        WHEN drp0 >= PP_AlarmValue 
+        AND sttpName = '一体站' 
+        THEN 2
+        WHEN drp0 &lt; PP_AlarmValue AND drp0>=PP_YJValue
+        THEN 1 
+        ELSE 0 
+      END AS ytz_drp_state,
+		CASE
+<!-- 		WHEN z0 > ZZ_AlarmValue -->
+<!-- 		AND drp0 > PP_AlarmValue -->
+<!-- 		THEN -->
+<!-- 		'水位雨量报警' -->
+<!-- 		WHEN z0 -->
+<!-- 		&lt;= ZZ_AlarmValue -->
+<!-- 		AND z0 > ZZ_YJValue -->
+<!-- 		AND (drp0 &lt;= -->
+<!-- 		PP_AlarmValue) -->
+<!-- 		AND drp0 > PP_YJValue -->
+<!-- 		THEN '水位雨量预警' -->
+<!-- 		WHEN z0 > ZZ_AlarmValue  -->
+<!--         AND drp0 &lt; PP_YJValue  -->
+<!--         THEN '水位报警雨量正常'  -->
+<!--         WHEN z0 > ZZ_AlarmValue  -->
+<!--         AND drp0 &lt; PP_AlarmValue  -->
+<!--         AND drp0 > PP_YJValue  -->
+<!--         THEN '水位报警雨量预警'  -->
+<!--         WHEN z0 &lt; ZZ_YJValue  -->
+<!--         AND drp0 &lt; PP_AlarmValue  -->
+<!--         AND drp0 > PP_YJValue  -->
+<!--         THEN '水位正常雨量预警'  -->
+<!--         WHEN z0 &lt; ZZ_YJValue  -->
+<!--         AND drp0 > PP_YJValue  -->
+<!--         THEN '水位正常雨量报警'  -->
+<!-- 		WHEN z0 &lt;= -->
+<!-- 		ZZ_YJValue -->
+<!-- 		AND z0 >= 0 -->
+<!-- 		AND drp0 &lt;= PP_YJValue -->
+<!-- 		AND drp0 >= 0 -->
+<!-- 		THEN -->
+<!-- 		'水位雨量正常' -->
+<!-- 		WHEN z0 > -->
+<!-- 		ZZ_AlarmValue -->
+<!-- 		THEN '水位报警' -->
+<!-- 		WHEN z0 &lt;= ZZ_AlarmValue -->
+<!-- 		AND z0 > ZZ_YJValue -->
+<!-- 		THEN '水位预警' -->
+<!-- 		WHEN z0 &lt;= ZZ_YJValue -->
+<!-- 		AND z0 >= 0 -->
+<!-- 		THEN -->
+<!-- 		'水位正常' -->
+<!-- 		WHEN Z > -->
+<!-- 		ZZ_AlarmValue -->
+<!-- 		THEN '水位报警' -->
+<!-- 		WHEN Z &lt;= ZZ_AlarmValue -->
+<!-- 		AND Z -->
+<!-- 		> ZZ_YJValue -->
+<!-- 		THEN '水位预警' -->
+<!-- 		WHEN Z &lt;= ZZ_YJValue -->
+<!-- 		AND Z >= 0 -->
+<!-- 		THEN '水位正常' -->
+<!-- 		WHEN drp0 > -->
+<!-- 		PP_AlarmValue -->
+<!-- 		THEN '雨量报警' -->
+<!-- 		WHEN drp0 &lt;= PP_AlarmValue -->
+<!-- 		AND -->
+<!-- 		drp0 > -->
+<!-- 		PP_YJValue -->
+<!-- 		THEN '雨量预警' -->
+<!-- 		WHEN drp0 &lt;= PP_YJValue -->
+<!-- 		AND drp0 >= 0 -->
+<!-- 		THEN -->
+<!-- 		'雨量正常' -->
+<!-- 		WHEN DRP > PP_AlarmValue -->
+<!-- 		THEN '雨量报警' -->
+<!-- 		WHEN DRP &lt;= -->
+<!-- 		PP_AlarmValue -->
+<!-- 		AND DRP > PP_YJValue -->
+<!-- 		THEN '雨量预警' -->
+<!-- 		WHEN DRP &lt;= PP_YJValue -->
+<!-- 		AND DRP >= 0 -->
+<!-- 		THEN '雨量正常' -->
+	  WHEN z0&lt;ZZ_YJValue AND drp0&lt;PP_YJValue AND sttpName='一体站' THEN '正常'
+      WHEN (z0&lt;ZZ_AlarmValue AND z0>=ZZ_YJValue AND sttpName='一体站') OR (drp0 &lt; PP_AlarmValue AND drp0 >= PP_YJValue AND sttpName='一体站') THEN '预警'
+      WHEN (z0>=ZZ_AlarmValue AND sttpName='一体站') OR (drp0 >= PP_AlarmValue AND sttpName='一体站') THEN '报警'
+      
+      WHEN Z>=ZZ_AlarmValue AND sttpName='水位站' THEN '报警'
+      WHEN Z&lt;ZZ_AlarmValue AND Z>=ZZ_YJValue AND sttpName='水位站' THEN '预警'
+      WHEN Z&lt;ZZ_YJValue AND sttpName='水位站' THEN '正常'
+      
+      WHEN DRP>=PP_AlarmValue AND sttpName='雨量站' THEN '报警'
+      WHEN DRP&lt;PP_AlarmValue AND DRP>=PP_YJValue AND sttpName='雨量站' THEN '预警'
+      WHEN DRP&lt;PP_YJValue AND sttpName='雨量站' THEN '正常'
+      
+      ELSE '正常'
+      
+		END AS stateName,
+		CASE
+<!-- 		WHEN z0 > ZZ_AlarmValue -->
+<!-- 		AND drp0 > -->
+<!-- 		PP_AlarmValue -->
+<!-- 		THEN 3 -->
+<!-- 		WHEN z0 &lt;= ZZ_AlarmValue -->
+<!-- 		AND z0 > -->
+<!-- 		ZZ_YJValue -->
+<!-- 		AND (drp0 &lt;= PP_AlarmValue) -->
+<!-- 		AND (drp0 > PP_YJValue) -->
+<!-- 		THEN -->
+<!-- 		2 -->
+<!-- 		WHEN z0 > ZZ_AlarmValue  -->
+<!--         AND drp0 &lt; PP_YJValue  -->
+<!--         THEN 3  -->
+<!--         WHEN z0 > ZZ_AlarmValue  -->
+<!--         AND drp0 &lt; PP_AlarmValue  -->
+<!--         AND drp0 > PP_YJValue  -->
+<!--         THEN 3  -->
+<!--         WHEN z0 &lt; ZZ_YJValue  -->
+<!--         AND drp0 &lt; PP_AlarmValue  -->
+<!--         AND drp0 > PP_YJValue  -->
+<!--         THEN 2  -->
+<!--         WHEN z0 &lt; ZZ_YJValue  -->
+<!--         AND drp0 > PP_YJValue  -->
+<!--         THEN 3  -->
+<!-- 		WHEN z0 -->
+<!-- 		&lt;= ZZ_YJValue -->
+<!-- 		AND z0 >= 0 -->
+<!-- 		AND drp0 &lt;= PP_YJValue -->
+<!-- 		AND -->
+<!-- 		drp0 >= 0 -->
+<!-- 		THEN -->
+<!-- 		0 -->
+<!-- 		WHEN z0 > ZZ_AlarmValue -->
+<!-- 		THEN 3 -->
+<!-- 		WHEN z0 &lt;= -->
+<!-- 		ZZ_AlarmValue -->
+<!-- 		AND z0 -->
+<!-- 		> ZZ_YJValue -->
+<!-- 		THEN 2 -->
+<!-- 		WHEN z0 &lt;= ZZ_YJValue -->
+<!-- 		AND z0 -->
+<!-- 		>= 0 -->
+<!-- 		THEN 0 -->
+<!-- 		WHEN -->
+<!-- 		Z > ZZ_AlarmValue -->
+<!-- 		THEN 3 -->
+<!-- 		WHEN Z &lt;= ZZ_AlarmValue -->
+<!-- 		AND Z > ZZ_YJValue -->
+<!-- 		THEN 2 -->
+<!-- 		WHEN Z &lt;= ZZ_YJValue -->
+<!-- 		AND Z >= 0 -->
+<!-- 		THEN 0 -->
+<!-- 		WHEN drp0 > -->
+<!-- 		PP_AlarmValue -->
+<!-- 		THEN 3 -->
+<!-- 		WHEN drp0 &lt;= PP_AlarmValue -->
+<!-- 		AND drp0 -->
+<!-- 		> -->
+<!-- 		PP_YJValue -->
+<!-- 		THEN 2 -->
+<!-- 		WHEN drp0 &lt;= PP_YJValue -->
+<!-- 		AND drp0 >= 0 -->
+<!-- 		THEN 0 -->
+<!-- 		WHEN DRP > PP_AlarmValue -->
+<!-- 		THEN 3 -->
+<!-- 		WHEN DRP &lt;= PP_AlarmValue -->
+<!-- 		AND DRP > -->
+<!-- 		PP_YJValue -->
+<!-- 		THEN 2 -->
+<!-- 		WHEN DRP &lt;= PP_YJValue -->
+<!-- 		AND DRP >= 0 -->
+<!-- 		THEN 0 -->
+	  WHEN z0&lt;ZZ_YJValue AND drp0&lt;PP_YJValue AND sttpName='一体站' THEN 0
+      WHEN (z0&lt;ZZ_AlarmValue AND z0>=ZZ_YJValue AND sttpName='一体站') OR (drp0 &lt; PP_AlarmValue AND drp0 >= PP_YJValue AND sttpName='一体站') THEN 2
+      WHEN (z0>=ZZ_AlarmValue AND sttpName='一体站') OR (drp0 >= PP_AlarmValue AND sttpName='一体站') THEN 3
+      
+      WHEN Z>=ZZ_AlarmValue AND sttpName='水位站' THEN 3
+      WHEN Z&lt;ZZ_AlarmValue AND Z>=ZZ_YJValue AND sttpName='水位站' THEN 2
+      WHEN Z&lt;ZZ_YJValue AND sttpName='水位站' THEN 0
+      
+      WHEN DRP>=PP_AlarmValue AND sttpName='雨量站' THEN 3
+      WHEN DRP&lt;PP_AlarmValue AND DRP>=PP_YJValue AND sttpName='雨量站' THEN 2
+      WHEN DRP&lt;PP_YJValue AND sttpName='雨量站' THEN 0
+      
+      ELSE 0
+		END
+		AS state
+		FROM
+		(SELECT
+		t1.LGTD,t1.LTTD,
+		t1.`STCD`,
+		t1.`STNM`,
+		t1.`STTP`,
+		t1.`PP_AlarmValue`,
+		t1.`ZZ_AlarmValue`,
+		t1.`PP_YJValue`,
+		t1.`ZZ_YJValue`,
+		test1.`DRP`,
+		test2.`Z`,
+		test1.`time1`,
+		test2.`time2`,
+		test3.`time3`,
+		test4.`time4`,
+		test3.`Z` AS z0,
+		test4.`DRP` AS drp0,
+		CASE
+		WHEN t1.`STTP` = 'PP'
+		THEN
+		'雨量站'
+		WHEN t1.`STTP` = 'ZZ'
+		THEN '水位站'
+		WHEN t1.`STTP` = 'PZ'
+		THEN '一体站'
+		END AS sttpName,
+		t6.areaname,
+		t6.areacode
+		FROM
+		ST_STBPRP_B t1
+		LEFT JOIN
+		(
+		<!-- 获取雨量站最新报警数据 -->
+		SELECT
+		t1.STCD AS STCD,
+		t1.TM AS time1,
+		t1.DRP AS DRP
+		FROM
+		(SELECT
+		MAX(t2.`TM`) AS time1,
+		t2.`STCD`
+		FROM
+		ST_PPTN_R t2
+		GROUP BY STCD)
+		little1
+		INNER JOIN ST_PPTN_R t1
+		ON t1.STCD = little1.STCD
+		AND t1.TM =
+		little1.time1
+<!-- 			SELECT  -->
+<!--             t1.STCD AS STCD, -->
+<!--             little1.time1 AS time1, -->
+<!--             SUM(CASE WHEN t1.TM>= DATE_ADD(little1.time1,INTERVAL -60 MINUTE) AND t1.TM&lt;=little1.time1 THEN t1.DRP ELSE 0 END) AS DRP  -->
+<!--           	FROM -->
+<!--             (SELECT  -->
+<!--             MAX(t2.`TM`) AS time1, -->
+<!--             t2.`STCD`  -->
+<!--             FROM -->
+<!--             ST_PPTN_R t2  -->
+<!--             GROUP BY STCD) little1  -->
+<!--             INNER JOIN ST_PPTN_R t1  -->
+<!--             ON t1.STCD = little1.STCD  -->
+<!--             GROUP BY t1.STCD -->
+		) test1
+		ON t1.`STCD` = test1.`STCD`
+		AND t1.`STTP` = 'PP'
+		LEFT JOIN
+		(
+		<!-- 获取水位站最新报警数据 -->
+		SELECT
+		t1.STCD AS STCD,
+		t1.TM AS time2,
+		t1.Z AS Z
+		FROM
+		(SELECT
+		MAX(t2.`TM`)
+		AS time1,
+		t2.`STCD`
+		FROM
+		ST_RIVER_R t2
+		GROUP BY
+		STCD) little1
+		INNER JOIN
+		ST_RIVER_R t1
+		ON t1.STCD = little1.STCD
+		AND
+		t1.TM = little1.time1
+		) test2
+		ON t1.`STCD` = test2.`STCD`
+		AND t1.`STTP` =
+		'ZZ'
+		LEFT JOIN
+		(
+		<!-- 获取一体站最新水位报警数据 -->
+		SELECT
+		t1.STCD AS STCD,
+		t1.TM AS time3,
+		t1.Z AS Z
+		FROM
+		(SELECT
+		MAX(t2.`TM`)
+		AS time3,
+		t2.`STCD`
+		FROM
+		ST_RIVER_R t2
+		GROUP BY STCD) little1
+		INNER JOIN
+		ST_RIVER_R t1
+		ON t1.STCD =
+		little1.STCD
+		AND t1.TM = little1.time3
+		) test3
+		ON t1.`STCD` =
+		test3.`STCD`
+		AND t1.`STTP` = 'PZ'
+		LEFT JOIN
+		(
+		<!-- 获取一体站最新雨量报警数据 -->
+		SELECT
+		t1.STCD AS STCD,
+		t1.TM AS time4,
+		t1.DRP AS DRP
+		FROM
+		(SELECT
+		MAX(t2.`TM`) AS
+		time4,
+		t2.`STCD`
+		FROM
+		ST_PPTN_R t2
+		GROUP BY STCD) little1
+		INNER JOIN
+		ST_PPTN_R t1
+		ON t1.STCD = little1.STCD
+		AND t1.TM =
+		little1.time4
+		) test4
+		ON t1.`STCD` = test4.`STCD`
+		AND t1.`STTP` = 'PZ'
+		LEFT JOIN t_area t6
+		ON
+		t6.`areacode` = t1.`ADCD`) testAll) dateAll
+		WHERE
+		1=1
+		AND
+		CONCAT(STCD, STNM,
+		 areaname, sttpName) LIKE
+		CONCAT(CONCAT('%',
+		<if test="context!=null">
+			#{context}
+		</if>
+		<if test="context==null">
+			''
+		</if>
+		,'%'))
+		<if test="queryType==0">
+
+		</if>
+		<if test="queryType==1">
+			AND sttpName='雨量站'
+		</if>
+		<if test="queryType==2">
+			AND sttpName='水位站'
+		</if>
+		<if test="queryType==3">
+			AND sttpName='一体站'
+		</if>
+		ORDER BY state DESC
+		
+		) test
+	</select>
+
+	<select id="selectStationAlarmRank"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.StationAlarmRankVO">
+		SELECT *,(@rowNum:=@rowNum+1) rankFROM
+		FROM (
+		SELECT * FROM (
+		SELECT
+		dateAll.STCD,
+		dateAll.STNM,
+		dateAll.allcount,
+		dateAll.areaname,
+		dateAll.sttpName,
+		dateAll.STTP
+		FROM
+		(SELECT
+		*,
+		SUM(
+		ppAlarmCount +
+		zzAlarmCount +
+		pzzzAlarmCount + pzppAlarmCount
+		) AS allcount
+		FROM
+		(SELECT
+		t1.`STTP`,
+		t1.`STCD`,
+		t1.`STNM`,
+		t1.`PP_AlarmValue`,
+		t1.`ZZ_AlarmValue`,
+		IF(
+		ISNULL(test1.`ppAlarmCount`),
+		0,
+		test1.`ppAlarmCount`
+		) AS
+		ppAlarmCount,
+		IF(
+		ISNULL(test2.`zzAlarmCount`),
+		0,
+		test2.`zzAlarmCount`
+		)
+		AS
+		zzAlarmCount,
+		IF(
+		ISNULL(test3.`pzzzAlarmCount`),
+		0,
+		test3.`pzzzAlarmCount`
+		) AS pzzzAlarmCount,
+		IF(
+		ISNULL(test4.`pzppAlarmCount`),
+		0,
+		test4.`pzppAlarmCount`
+		) AS
+		pzppAlarmCount,
+		CASE
+		WHEN t1.`STTP` = 'PP'
+		THEN '雨量站'
+		WHEN t1.`STTP` =
+		'ZZ'
+		THEN '水位站'
+		WHEN t1.`STTP` = 'PZ'
+		THEN '一体站'
+		END AS sttpName,
+		t6.areaname
+		FROM
+		ST_STBPRP_B t1
+		LEFT JOIN
+		(SELECT
+		SUM(
+		CASE
+		WHEN t2.DRP >=
+		tsb.PP_AlarmValue
+		THEN 1
+		ELSE 0
+		END
+		) AS ppAlarmCount,
+		t2.`STCD`
+		FROM
+		ST_PPTN_R t2
+		INNER JOIN ST_STBPRP_B tsb
+		ON t2.STCD = tsb.STCD
+		AND
+		tsb.STTP = 'PP'
+		<if test="startTime!=null">
+			AND t2.`TM`>=#{startTime}
+		</if>
+		<if test="endTime!=null">
+			AND t2.`TM` &lt;=#{endTime}
+		</if>
+		GROUP BY t2.`STCD`) test1
+		ON t1.`STCD` = test1.`STCD`
+		AND t1.`STTP` =
+		'PP'
+		LEFT JOIN
+		(SELECT
+		SUM(
+		CASE
+		WHEN t2.Z >=
+		tsb.ZZ_AlarmValue
+		THEN 1
+		ELSE 0
+		END
+		) AS zzAlarmCount,
+		t2.`STCD`
+		FROM
+		ST_RIVER_R t2
+		INNER JOIN ST_STBPRP_B
+		tsb
+		ON t2.STCD = tsb.STCD
+		AND
+		tsb.STTP = 'ZZ'
+		<if test="startTime!=null">
+			AND t2.`TM`>=#{startTime}
+		</if>
+		<if test="endTime!=null">
+			AND t2.`TM` &lt;=#{endTime}
+		</if>
+		GROUP BY t2.`STCD`) test2
+		ON t1.`STCD` = test2.`STCD`
+		AND t1.`STTP` =
+		'ZZ'
+		LEFT JOIN
+		(SELECT
+		SUM(
+		CASE
+		WHEN t2.Z >=
+		tsb.ZZ_AlarmValue
+		THEN 1
+		ELSE 0
+		END
+		) AS pzzzAlarmCount,
+		t2.`STCD`
+		FROM
+		ST_RIVER_R t2
+		INNER JOIN
+		ST_STBPRP_B tsb
+		ON t2.STCD = tsb.STCD
+		AND
+		tsb.STTP = 'PZ'
+		<if test="startTime!=null">
+			AND t2.`TM`>=#{startTime}
+		</if>
+		<if test="endTime!=null">
+			AND t2.`TM` &lt;=#{endTime}
+		</if>
+		GROUP BY t2.`STCD`) test3
+		ON t1.`STCD` = test3.`STCD`
+		AND t1.`STTP` =
+		'PZ'
+		LEFT JOIN
+		(SELECT
+		SUM(
+		CASE
+		WHEN t2.DRP >=
+		tsb.PP_AlarmValue
+		THEN 1
+		ELSE 0
+		END
+		) AS pzppAlarmCount,
+		t2.`STCD`
+		FROM
+		ST_PPTN_R t2
+		INNER JOIN ST_STBPRP_B
+		tsb
+		ON t2.STCD = tsb.STCD
+		AND
+		tsb.STTP = 'PZ'
+		<if test="startTime!=null">
+			AND t2.`TM`>=#{startTime}
+		</if>
+		<if test="endTime!=null">
+			AND t2.`TM` &lt;=#{endTime}
+		</if>
+		GROUP BY t2.`STCD`) test4
+		ON t1.`STCD` = test4.`STCD`
+		AND t1.`STTP` =
+		'PZ'
+		LEFT JOIN t_area t6
+		ON t6.`areacode` = t1.`ADCD`)
+		testAll
+		GROUP BY
+		STCD) dateAll
+		WHERE CONCAT(STCD, STNM, areaname,
+		sttpName) LIKE '%%'
+		)
+		forRank
+		WHERE 1=1
+		<if test="stationType==2">
+			AND STTP='ZZ'
+		</if>
+		<if test="stationType==3">
+			AND STTP='PP'
+		</if>
+		<if test="stationType==4">
+			AND STTP='PZ'
+		</if>
+		ORDER BY allcount DESC
+		) rankNum,(SELECT (@rowNum :=0) ) b
+	</select>
+
+	<select id="selectStationCount"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.StationCountVO">
+		SELECT
+		SUM(
+		CASE
+		WHEN t1.`STTP` = 'PP'
+		THEN 1
+		ELSE 0
+		END
+		) AS
+		ppCount,
+		SUM(
+		CASE
+		WHEN t1.`STTP` = 'ZZ'
+		THEN 1
+		ELSE 0
+		END
+		) AS zzCount,
+		SUM(
+		CASE
+		WHEN t1.`STTP` = 'PZ'
+		THEN 1
+		ELSE 0
+		END
+		) AS pzCount,
+		test.`materialCount`
+		FROM
+		ST_STBPRP_B t1,
+		(SELECT
+		COUNT(t2.`id`) AS
+		materialCount
+		FROM
+		t_hk_material t2
+		WHERE t2.`isdelete` = 0
+		AND
+		t2.`isenable` = 1) test
+	</select>
+
+	<update id="updateStationThreshold">
+		
+		UPDATE ST_STBPRP_B
+		<trim prefix="set" suffixOverrides=",">
+<!-- 			<if test="stationType==1"> -->
+				<if test="ppAlarmValue!=null and ppAlarmValue!=''">
+					PP_AlarmValue= ${ppAlarmValue},
+				</if>
+				<if test="ppYJValue!=null and ppYJValue!=''">
+					PP_YJValue= ${ppYJValue},
+				</if>
+<!-- 			</if> -->
+<!-- 			<if test="stationType==2"> -->
+				<if test="zzAlarmValue!=null and zzAlarmValue!=''">
+					ZZ_AlarmValue= ${zzAlarmValue},
+				</if>
+				<if test="zzYJValue!=null and zzYJValue!=''">
+					ZZ_YJValue= ${zzYJValue},
+				</if>
+<!-- 			</if> -->
+		</trim>
+		WHERE 1=1
+		<if test="stcd!=null and stcd!=''">
+			AND stcd = #{stcd}
+		</if>
+		<if test="stationType==1">
+			AND STTP != 'ZZ'
+		</if>
+		<if test="stationType==2">
+			AND STTP != 'PP'
+		</if>
+		
+	</update>
+	
+	<select id="queryStationInfo"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.StationInfo">
+		SELECT
+		SS.stcd,
+		SS.stnm,
+		SS.adcd,
+		SS.sttp,
+		SS.lgtd,
+		SS.lttd,
+		SS.`code`,
+		SS.tm,
+		SS.z,
+		SS.drp,
+		SS.swstatus,
+		SS.ylstatus
+		FROM(
+		(SELECT
+		RR.STCD AS stcd,
+		RR.STNM AS stnm,
+		RR.ADCD AS adcd,
+		RR.STTP AS sttp,
+		RR.LGTD AS lgtd,
+		RR.LTTD AS lttd,
+		RR.`CODE` AS `code`,
+		RR.TM AS tm,
+		RR.Z AS z,
+		RR.DRP AS drp,
+		CASE WHEN RR.Z&gt;=RR.ZZ_AlarmValue THEN 3
+		WHEN
+		RR.Z&gt;=RR.ZZ_YJValue AND RR.Z&lt; RR.ZZ_AlarmValue THEN 2
+		WHEN
+		RR.Z&lt; RR.ZZ_YJValue AND RR.Z&gt;=0 THEN 1
+		ELSE NULL END AS swstatus,
+		CASE WHEN RR.DRP&gt;=RR.PP_AlarmValue THEN 3
+		WHEN
+		RR.DRP&gt;=RR.PP_YJValue AND RR.DRP&lt; RR.PP_AlarmValue THEN 2
+		WHEN
+		RR.DRP&lt; RR.PP_YJValue AND RR.DRP&gt;=0 THEN 1
+		ELSE NULL END AS ylstatus
+		FROM
+		(SELECT
+		DD.STCD,
+		DD.ADCD,
+		DD.STTP,
+		DD.LGTD,
+		DD.LTTD,
+		DD.STNM,
+		NULL AS `CODE`,
+		DD.TM,
+		DD.PP_AlarmValue,
+		DD.PP_YJValue,
+		DD.ZZ_AlarmValue,
+		DD.ZZ_YJValue,
+		DD.Z AS Z,
+		DD.DRP AS DRP
+		FROM
+		(
+		(
+		SELECT
+		B.STCD,
+		B.ADCD,
+		B.STTP,
+		B.LGTD,
+		B.LTTD,
+		B.STNM,
+		BB.TM,
+		B.PP_AlarmValue,
+		B.PP_YJValue,
+		B.ZZ_AlarmValue,
+		B.ZZ_YJValue,
+		BB.Z AS Z,
+		NULL AS DRP
+		FROM
+		ST_STBPRP_B B
+		INNER JOIN (
+		SELECT
+		TT.STCD,
+		R.Z,
+		TT.TM
+		FROM
+		ST_RIVER_R R
+		INNER JOIN (
+		SELECT
+		T.STCD,
+		T.Z,
+		MAX(T.TM) AS TM
+		FROM
+		(
+		SELECT
+		STCD,
+		Z,
+		TM
+		FROM
+		ST_RIVER_R
+		) T
+		GROUP BY
+		T.STCD
+		) TT
+		ON TT.TM = R.TM
+		GROUP BY
+		TT.STCD
+		) BB ON BB.STCD = B.STCD
+		)
+		UNION
+		(
+		SELECT
+		B.STCD,
+		B.ADCD,
+		B.STTP,
+		B.LGTD,
+		B.LTTD,
+		B.STNM,
+		BB.TM,
+		B.PP_AlarmValue,
+		B.PP_YJValue,
+		B.ZZ_AlarmValue,
+		B.ZZ_YJValue,
+		NULL AS Z,
+		BB.DRP AS DRP
+		FROM
+		ST_STBPRP_B B
+		INNER JOIN (
+		SELECT
+		TT.STCD,
+		R.DRP,
+		TT.TM
+		FROM
+		ST_PPTN_R R
+		INNER JOIN (
+		SELECT
+		T.STCD,
+		T.DRP,
+		MAX(T.TM) AS TM
+		FROM
+		(
+		SELECT
+		STCD,
+		DRP,
+		TM
+		FROM
+		ST_PPTN_R
+		) T
+		GROUP BY
+		T.STCD
+		) TT ON TT.TM = R.TM
+		GROUP BY
+		TT.STCD
+		) BB
+		ON BB.STCD = B.STCD
+		)
+		) DD
+		#GROUP BY DD.TM,DD.STTP,DD.STCD
+		) RR)
+		UNION ALL
+		(SELECT
+		V.devnum
+		AS STCD,
+		'摄像头' AS STNM,
+		V.ADCD,
+		'SP' AS STTP,
+		V.lng AS LGTD,
+		V.lat AS LTTD,
+		V.`code` AS `CODE`,
+		NULL AS TM,
+		NULL AS Z,
+		NULL AS DRP,
+		NULL AS SWSTATUS,
+		NULL AS YLSTATUS
+		FROM
+		t_device_video V
+		GROUP BY id)
+		UNION ALL
+		(SELECT
+		V.num AS STCD,
+		'物资点' AS STNM,
+		V.areacode
+		AS ADCD,
+		'WZ' AS STTP,
+		V.lng AS LGTD,
+		V.lat AS LTTD,
+		V.`code` AS `CODE`,
+		NULL AS TM,
+		NULL AS Z,
+		NULL AS DRP,
+		NULL AS SWSTATUS,
+		NULL AS YLSTATUS
+		FROM t_hk_material V
+		GROUP BY id)) SS
+		WHERE SS.adcd=#{adcd}
+	</select>
+	<select id="queryScopeInfo" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.StationInfo">
+		
+		(SELECT
+		RR.STCD AS stcd,
+		RR.STNM AS stnm,
+		RR.ADCD AS adcd,
+		RR.STTP AS sttp,
+		RR.LGTD AS lgtd,
+		RR.LTTD AS lttd,
+		RR.`CODE` AS `code`,
+		RR.TM AS tm,
+<!-- 		RR.Z AS z, -->
+<!-- 		RR.DRP AS drp, -->
+		CASE WHEN RR.Z IS NULL THEN 0 ELSE RR.Z END AS z,
+ 		CASE WHEN RR.DRP IS NULL THEN 0 ELSE RR.DRP END AS drp,
+		CASE WHEN RR.Z>=RR.ZZ_AlarmValue THEN 3
+		WHEN
+		RR.Z>=RR.ZZ_YJValue AND RR.Z&lt; RR.ZZ_AlarmValue THEN 2
+		WHEN
+		RR.Z &lt; RR.ZZ_YJValue AND RR.Z>=0 THEN 1
+		ELSE NULL END AS swstatus,
+		CASE WHEN RR.DRP>=RR.PP_AlarmValue THEN 3
+		WHEN
+		RR.DRP>=RR.PP_YJValue AND RR.DRP&lt; RR.PP_AlarmValue THEN 2
+		WHEN
+		RR.DRP&lt; RR.PP_YJValue AND RR.DRP>=0 THEN 1
+		ELSE NULL END AS ylstatus
+		FROM
+		(SELECT
+		DD.STCD,
+		DD.ADCD,
+		DD.STTP,
+		DD.LGTD,
+		DD.LTTD,
+		DD.STNM,
+		NULL AS `CODE`,
+		DD.TM,
+		DD.PP_AlarmValue,
+		DD.PP_YJValue,
+		DD.ZZ_AlarmValue,
+		DD.ZZ_YJValue,
+		DD.Z AS Z,
+		DD.DRP AS DRP
+		FROM
+		(
+		(
+		SELECT
+		B.STCD,
+		B.ADCD,
+		B.STTP,
+		B.LGTD,
+		B.LTTD,
+		B.STNM,
+		BB.TM,
+		B.PP_AlarmValue,
+		B.PP_YJValue,
+		B.ZZ_AlarmValue,
+		B.ZZ_YJValue,
+		BB.Z AS Z,
+		NULL AS DRP
+		FROM
+		ST_STBPRP_B B
+		INNER JOIN (
+		SELECT
+		TT.STCD,
+		R.Z,
+		TT.TM
+		FROM
+		ST_RIVER_R R
+		INNER JOIN (
+		SELECT
+		T.STCD,
+		T.Z,
+		MAX(T.TM) AS TM
+		FROM
+		(
+		SELECT
+		STCD,
+		Z,
+		TM
+		FROM
+		ST_RIVER_R
+		) T
+		GROUP BY
+		T.STCD
+		) TT
+		ON TT.TM = R.TM
+		GROUP BY
+		TT.STCD
+		) BB ON BB.STCD = B.STCD
+		)
+		UNION
+		(
+		SELECT
+		B.STCD,
+		B.ADCD,
+		B.STTP,
+		B.LGTD,
+		B.LTTD,
+		B.STNM,
+		BB.TM,
+		B.PP_AlarmValue,
+		B.PP_YJValue,
+		B.ZZ_AlarmValue,
+		B.ZZ_YJValue,
+		NULL AS Z,
+		BB.DRP AS DRP
+		FROM
+		ST_STBPRP_B B
+		INNER JOIN (
+		SELECT
+		TT.STCD,
+		R.DRP,
+		TT.TM
+		FROM
+		ST_PPTN_R R
+		INNER JOIN (
+		SELECT
+		T.STCD,
+		T.DRP,
+		MAX(T.TM) AS TM
+		FROM
+		(
+		SELECT
+		STCD,
+		DRP,
+		TM
+		FROM
+		ST_PPTN_R
+		) T
+		GROUP BY
+		T.STCD
+		) TT ON TT.TM = R.TM
+		GROUP BY
+		TT.STCD
+		) BB
+		ON BB.STCD = B.STCD
+		)
+		) DD
+		#GROUP BY DD.TM,DD.STTP,DD.STCD
+		) RR)
+		UNION ALL
+		(SELECT
+		V.devnum
+		AS STCD,
+		'摄像头' AS STNM,
+		V.ADCD,
+		'SP' AS STTP,
+		V.lng AS LGTD,
+		V.lat AS LTTD,
+		V.`code` AS `CODE`,
+		NULL AS TM,
+		NULL AS Z,
+		NULL AS DRP,
+		NULL AS SWSTATUS,
+		NULL AS YLSTATUS
+		FROM
+		t_device_video V
+		GROUP BY id)
+		UNION ALL
+		(SELECT
+		V.num AS STCD,
+		'物资点' AS STNM,
+		V.areacode
+		AS ADCD,
+		'WZ' AS STTP,
+		V.lng AS LGTD,
+		V.lat AS LTTD,
+		V.`code` AS `CODE`,
+		NULL AS TM,
+		NULL AS Z,
+		NULL AS DRP,
+		NULL AS SWSTATUS,
+		NULL AS YLSTATUS
+		FROM t_hk_material V
+		WHERE V.isenable = 1
+		GROUP BY id)
+	</select>
+
+	<select id="selectDataStatisticsOfRainfallMonitoringStations">
+		<if test="timeType==1">
+			SELECT
+			CASE
+			WHEN SUM(t1.`DRP`) IS NULL
+			THEN 0
+			ELSE
+			SUM(t1.`DRP`)
+			END AS DRP,
+			CASE
+			WHEN GROUP_CONCAT(t1.`STCD`) IS NULL
+			THEN
+			''
+			ELSE GROUP_CONCAT(t1.`STCD`)
+			END AS DrpFrom,
+			timeTable.`timeInfo`
+			FROM
+			(SELECT
+			r1.`DRP`,
+			DATE_FORMAT(r1.`TM`, '%Y-%m-%d %h:%i:00') AS TM,
+			r1.`STCD`
+			FROM
+			ST_PPTN_R r1
+			WHERE r1.`STCD` = '00000012') t1
+			RIGHT JOIN
+			(SELECT
+			@tempMinute := DATE_ADD(@tempMinute, INTERVAL 1 MINUTE) AS
+			timeInfo
+			FROM
+			t_power t
+			LEFT JOIN
+			(SELECT
+			@tempMinute := DATE_SUB(
+			'2018-06-25 08:00:00',
+			INTERVAL 1 MINUTE
+			)) b
+			ON 1 = 1
+			WHERE @tempMinute
+			&lt; '2018-06-25 09:00:00') AS timeTable
+			ON t1.`TM` =
+			timeTable.`timeInfo`,(SELECT
+			COUNT(*) AS countSt
+			FROM
+			st_stbprp_b b1) AS
+			countSt
+			GROUP BY timeTable.timeInfo
+		</if>
+		<if test="timeType==2">
+			SELECT
+			CASE
+			WHEN SUM(t1.`DRP`) IS NULL
+			THEN 0
+			ELSE
+			SUM(t1.`DRP`)
+			END AS DRP,
+			CASE
+			WHEN GROUP_CONCAT(t1.`STCD`) IS NULL
+			THEN
+			''
+			ELSE GROUP_CONCAT(t1.`STCD`)
+			END AS DrpFrom,
+			timeTable.`timeInfo`
+			FROM
+			(SELECT
+			r1.`DRP`,
+			r1.`TM`,
+			r1.`STCD`
+			FROM
+			ST_PPTN_R r1
+			WHERE r1.`STCD`
+			= '00000012') t1
+			RIGHT JOIN
+			(SELECT
+			@tempMinute := DATE_ADD(@tempMinute,
+			INTERVAL 60 MINUTE) AS timeInfo
+			FROM
+			t_power t
+			LEFT JOIN
+			(SELECT
+			@tempMinute := DATE_SUB(
+			'2018-06-25 00:00:00',
+			INTERVAL 60 MINUTE
+			)) b
+			ON 1 = 1
+			WHERE @tempMinute &lt; '2018-06-26 00:00:00') AS timeTable
+			ON
+			DATE_FORMAT(t1.`TM`, '%Y-%m-%d %h:00:00') =
+			timeTable.`timeInfo`,(SELECT
+			COUNT(*) AS countSt
+			FROM
+			st_stbprp_b b1) AS
+			countSt
+			GROUP BY timeTable.timeInfo
+		</if>
+		<if test="timeType==3">
+			SELECT
+			CASE
+			WHEN SUM(t1.`DRP`) IS NULL
+			THEN 0
+			ELSE
+			SUM(t1.`DRP`)
+			END AS DRP,
+			CASE
+			WHEN GROUP_CONCAT(t1.`STCD`) IS NULL
+			THEN
+			''
+			ELSE GROUP_CONCAT(t1.`STCD`)
+			END AS DrpFrom,
+			timeTable.`timeInfo`
+			FROM
+			(SELECT
+			r1.`DRP`,
+			r1.`TM`,
+			r1.`STCD`
+			FROM
+			ST_PPTN_R r1
+			WHERE r1.`STCD`
+			= '00000012') t1
+			RIGHT JOIN
+			(SELECT
+			@tempMinute := DATE_ADD(@tempMinute,
+			INTERVAL 1440 MINUTE) AS timeInfo
+			FROM
+			t_power t
+			LEFT JOIN
+			(SELECT
+			@tempMinute := DATE_SUB(
+			'2018-06-01 00:00:00',
+			INTERVAL 1440 MINUTE
+			))
+			b
+			ON 1 = 1
+			WHERE @tempMinute &lt; '2018-06-30 00:00:00') AS timeTable
+			ON DATE_FORMAT(t1.`TM`, '%Y-%m-%d 00:00:00') = timeTable.`timeInfo`
+			GROUP BY timeTable.timeInfo
+		</if>
+	</select>
+
+	<select id="selectPositionVO"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.PositionVO">
+		(SELECT a.addvb,a.lat,a.lng,WW.ADCD AS areacode,WW.STTP AS
+		sttp,WW.SWSTATUS AS swStatus,WW.YLSTATUS AS ylStatus FROM t_area a
+		INNER JOIN
+		(
+		SELECT XX.ADCD,XX.STTP,MAX(XX.SWSTATUS) AS SWSTATUS,MAX(XX.YLSTATUS) AS YLSTATUS FROM(
+		SELECT QQ.ADCD,QQ.STTP,
+		CASE WHEN QQ.Z&gt;=QQ.ZZ_AlarmValue
+		THEN 3
+		WHEN QQ.Z&gt;=QQ.ZZ_YJValue AND QQ.Z&lt;QQ.ZZ_AlarmValue THEN 2
+		WHEN QQ.Z&lt;QQ.ZZ_YJValue AND QQ.Z&gt;=0 THEN 1
+		ELSE NULL END AS
+		SWSTATUS,
+		CASE WHEN QQ.DRP&gt;=QQ.PP_AlarmValue THEN 3
+		WHEN
+		QQ.DRP&gt;=QQ.PP_YJValue AND QQ.DRP&lt;QQ.PP_AlarmValue THEN 2
+		WHEN
+		QQ.DRP&lt;QQ.PP_YJValue AND QQ.DRP &gt;=0 THEN 1
+		ELSE NULL END AS
+		YLSTATUS
+		FROM(
+		SELECT
+		DD.STCD,
+		DD.ADCD,
+		DD.STTP,
+		DD.PP_AlarmValue,
+		DD.PP_YJValue,
+		DD.ZZ_AlarmValue,
+		DD.ZZ_YJValue,
+		SUM(DD.Z) AS Z,
+		SUM(DD.DRP) AS DRP
+		FROM
+		(
+		(
+		SELECT
+		B.STCD,
+		B.ADCD,
+		B.STTP,
+		B.PP_AlarmValue,
+		B.PP_YJValue,
+		B.ZZ_AlarmValue,
+		B.ZZ_YJValue,
+		BB.Z AS Z,
+		NULL AS DRP
+		FROM
+		ST_STBPRP_B B
+		INNER JOIN (
+		SELECT
+		TT.STCD,
+		R.Z,
+		TT.TM
+		FROM
+		ST_RIVER_R R
+		INNER
+		JOIN (
+		SELECT
+		T.STCD,
+		T.Z,
+		MAX(T.TM) AS TM
+		FROM
+		(
+		SELECT
+		STCD,
+		Z,
+		TM
+		FROM
+		ST_RIVER_R
+		) T
+		GROUP BY
+		T.STCD
+		) TT ON TT.TM = R.TM
+		GROUP BY
+		TT.STCD
+		) BB ON
+		BB.STCD = B.STCD
+		)
+		UNION ALL
+		(
+		SELECT
+		B.STCD,
+		B.ADCD,
+		B.STTP,
+		B.PP_AlarmValue,
+		B.PP_YJValue,
+		B.ZZ_AlarmValue,
+		B.ZZ_YJValue,
+		NULL AS Z,
+		BB.DRP AS DRP
+		FROM
+		ST_STBPRP_B B
+		INNER JOIN (
+		SELECT
+		TT.STCD,
+		R.DRP,
+		TT.TM
+		FROM
+		ST_PPTN_R R
+		INNER JOIN (
+		SELECT
+		T.STCD,
+		T.DRP,
+		MAX(T.TM) AS TM
+		FROM
+		(
+		SELECT
+		STCD,
+		DRP,
+		TM
+		FROM
+		ST_PPTN_R
+		) T
+		GROUP BY
+		T.STCD
+		) TT ON TT.TM = R.TM
+		GROUP BY
+		TT.STCD
+		) BB ON BB.STCD = B.STCD
+		)
+		) DD
+		GROUP BY DD.STCD) QQ
+		) XX
+		
+		GROUP
+		BY XX.STTP,XX.ADCD
+		) WW ON
+		WW.ADCD=a.areacode)
+		UNION ALL
+		(
+		SELECT
+		a.addvb,a.lat,a.lng,v.ADCD AS
+		areacode,'SP' AS sttp,NULL AS
+		swstatus,NULL AS ylstatus FROM t_area a
+		INNER JOIN t_device_video v ON
+		a.areacode=v.ADCD AND v.isenable=1
+		GROUP BY a.areacode
+		)
+		UNION ALL
+		(
+		SELECT
+		a.addvb,a.lat,a.lng,v.areacode,'WZ' AS sttp,NULL AS
+		swstatus,NULL AS
+		ylstatus FROM t_area a
+		INNER JOIN t_hk_material v ON
+		a.areacode=v.areacode AND v.isenable=1
+		GROUP BY a.areacode
+		)
+	</select>
+
+	<select id="selectStationDataStatistics"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.StationDataStatisticsVO">
+		SELECT
+		CASE
+		WHEN nowDrp IS NULL
+		THEN 0
+		ELSE nowDrp
+		END nowDrp,
+		CASE
+		WHEN
+		drpMax IS NULL
+		THEN 0
+		ELSE drpMax
+		END drpMax,
+		CASE
+		WHEN drpMin IS NULL
+		THEN
+		0
+		ELSE drpMin
+		END drpMin,
+		CASE
+		WHEN drpCount IS NULL
+		THEN 0
+		ELSE drpCount
+		END drpCount,
+		CASE
+		WHEN drpAvg IS NULL
+		THEN 0
+		ELSE drpAvg
+		END drpAvg,
+		CASE
+		WHEN ZMax IS NULL
+		THEN 0
+		ELSE ZMax
+		END ZMax,
+		CASE
+		WHEN ZMin IS NULL
+		THEN 0
+		ELSE ZMin
+		END ZMin,
+		CASE
+		WHEN ZAvg IS NULL
+		THEN 0
+		ELSE ZAvg
+		END ZAvg
+		,CASE
+		WHEN PP_AlarmValue IS NULL
+		THEN 0
+		ELSE PP_AlarmValue
+		END PP_AlarmValue,
+		CASE
+		WHEN ZZ_AlarmValue IS NULL
+		THEN 0
+		ELSE ZZ_AlarmValue
+		END
+		ZZ_AlarmValue,
+		CASE
+		WHEN PP_YJValue IS NULL
+		THEN 0
+		ELSE PP_YJValue
+		END
+		PP_YJValue,
+		CASE
+		WHEN ZZ_YJValue IS NULL
+		THEN 0
+		ELSE ZZ_YJValue
+		END
+		ZZ_YJValue
+		,
+		CASE
+		WHEN nowZ IS NULL
+		THEN 0
+		ELSE nowZ
+		END nowZ
+		FROM
+		(SELECT
+		PP_AlarmValue,ZZ_AlarmValue,PP_YJValue,ZZ_YJValue
+		FROM
+		ST_STBPRP_B
+		WHERE STCD = #{stcd}) fuck,
+		(SELECT
+		CASE WHEN COUNT(t1.`STCD`)=0 THEN 0 ELSE t1.`Z` END AS nowZ
+		FROM
+		ST_RIVER_R
+		t1
+		WHERE 1 = 1
+		AND t1.`STCD` = #{stcd}
+		AND t1.TM = (SELECT 
+		MAX(TM)
+		FROM
+			ST_RIVER_R
+		WHERE
+		`STCD` = #{stcd})
+		<!-- ORDER BY
+		t1.`TM` DESC
+		LIMIT 1 -->)
+		test0,
+		(SELECT
+		CASE WHEN COUNT(t1.`STCD`)=0 THEN 0 ELSE t1.`DRP` END AS nowDrp 
+		FROM
+		ST_PPTN_R t1
+		WHERE 1 = 1
+		AND
+		t1.`STCD` =
+		#{stcd}
+		AND t1.TM = (SELECT
+			MAX(TM)
+		FROM ST_PPTN_R
+		WHERE
+		`STCD` = #{stcd})
+		<!-- ORDER BY t1.`TM` DESC
+		LIMIT 1 -->) test1,
+		(SELECT
+		MAX(t1.`DRP`) AS
+		drpMax,
+		MIN(t1.`DRP`) AS drpMin,
+		SUM(t1.`DRP`) AS
+		drpCount,
+		AVG(t1.`DRP`) AS
+		drpAvg
+		FROM
+		ST_PPTN_R t1
+		WHERE 1 = 1
+		<if test="startTime!=null">
+			AND DATE(t1.`TM`) >= #{startTime}
+		</if>
+		<if test="endTime!=null">
+			AND DATE(t1.`TM`) &lt;= #{endTime}
+		</if>
+		AND t1.`STCD` = #{stcd}) test2,
+		(SELECT
+		MAX(t1.`Z`) AS ZMax,
+		MIN(t1.`Z`)
+		AS ZMin,
+		AVG(t1.`Z`) AS ZAvg
+		FROM
+		ST_RIVER_R t1
+		WHERE 1 = 1
+		<if test="startTime!=null">
+			AND DATE(t1.`TM`) >= #{startTime}
+		</if>
+		<if test="endTime!=null">
+			AND DATE(t1.`TM`) &lt;= #{endTime}
+		</if>
+		AND t1.`STCD` = #{stcd}) test3
+	</select>
+
+	<select id="selectLastSevenTimesDrp"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.LastSevenTimesDrp">
+		SELECT
+		TM AS time,DRP as drp
+		FROM
+		ST_PPTN_R t1
+		WHERE 1 = 1
+		AND t1.`STCD` =
+		#{stcd}
+		<if test="startTime!=null">
+			AND DATE(t1.`TM`) >=#{startTime}
+		</if>
+		<if test="endTime!=null">
+			AND DATE(t1.`TM`) &lt;=#{endTime}
+		</if>
+		ORDER BY t1.`TM` DESC
+		LIMIT 7
+	</select>
+
+	<select id="selectLastSevenTimesZ"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.LastSevenTimesZ">
+		SELECT
+		Z AS Z,TM as time
+		FROM
+		ST_RIVER_R t1
+		WHERE 1 = 1
+		AND t1.`STCD` =
+		#{stcd}
+		<if test="startTime!=null">
+			AND t1.`TM`>=#{startTime}
+		</if>
+		<if test="endTime!=null">
+			AND t1.`TM`&lt;=#{endTime}
+		</if>
+		ORDER BY t1.`TM` DESC
+		LIMIT 7
+	</select>
+	
+	<select id="selectThreshold" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.StationThresholdVO">
+		SELECT
+		CASE
+		WHEN t1.`STTP`='PP' OR t1.`STTP`='PZ'
+		THEN t1.`PP_AlarmValue`
+		ELSE 0
+		END PP_AlarmValue,
+		CASE
+		WHEN t1.`STTP`='PP' OR t1.`STTP`='PZ'
+		THEN t1.`PP_YJValue`
+		ELSE 0
+		END PP_YJValue,
+		CASE
+		WHEN t1.`STTP`='ZZ' OR t1.`STTP`='PZ'
+		THEN t1.`ZZ_AlarmValue`
+		ELSE 0
+		END ZZ_AlarmValue,
+		CASE
+		WHEN t1.`STTP`='ZZ' OR t1.`STTP`='PZ'
+		THEN t1.`ZZ_YJValue`
+		ELSE 0
+		END ZZ_YJValue
+		FROM
+		ST_STBPRP_B t1
+		WHERE t1.`STCD` = #{stcd}
+	</select>
+	
+	<select id="selectMaterial" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.MaterialVo">
+		SELECT thm.lat,thm.lng ,thm.materialname,ta.id as areaid,ta.areaname
+		FROM t_hk_material thm
+		LEFT JOIN t_area ta ON ta.areacode=thm.areacode
+		WHERE thm.isdelete!=1 AND thm.isenable=12
+		AND ta.id=#{areaid}		
+	</select>
+	<select id="selectMaterialInfo" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.MaterialInfoVo">
+		SELECT
+			thm.id AS materialid,
+			thm.materialname,
+			thm.`code`,
+			ta.areaname,
+			ta.id AS areaid,
+			tu1.contacts AS user1,
+			tu1.telephone AS telephone1,
+			tu2.contacts AS user2,
+			tu2.telephone AS telephone2,
+			tu3.contacts AS user3,
+			tu3.telephone as telephone3, 
+			thm.msg
+		FROM
+			t_hk_material thm
+		LEFT JOIN t_area ta ON ta.areacode = thm.areacode
+		LEFT JOIN t_hk_usermaterial thu1 ON thu1.id=thm.usermaterialid1 AND thu1.isdelete!=1 AND thu1.isenable=1
+		LEFT JOIN t_hk_usermaterial thu2 ON thu2.id=thm.usermaterialid2 AND thu2.isdelete!=1 AND thu2.isenable=1
+		LEFT JOIN t_hk_usermaterial thu3 ON thu3.id=thm.usermaterialid3 AND thu3.isdelete!=1 AND thu3.isenable=1
+		LEFT JOIN t_user tu1 ON tu1.id = thu1.userid AND tu1.isdelete != 1 AND tu1.isenable = 1 
+		LEFT JOIN t_user tu2 ON tu2.id = thu2.userid AND tu2.isdelete != 1 AND tu2.isenable = 1
+		LEFT JOIN t_user tu3 ON tu3.id = thu3.userid AND tu3.isdelete != 1 AND tu3.isenable = 1
+		WHERE
+			thm.isdelete != 1
+		AND thm.isenable = 1
+		AND thm.num = #{materialnum}
+	</select>
+	
+	<select id="queryVideoList" resultType="java.util.HashMap">
+SELECT 
+  v.`devnum`,
+  v.`code`,
+  CASE
+    WHEN v.`state` = 0 
+    THEN '正常' 
+    WHEN v.`state` = 1 
+    THEN '故障' 
+  END AS state,
+  v.`factory` 
+FROM
+  t_device_video v 
+	</select>
+	
+	<select id="selectDevOptionalUser" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.DevOptionalUser">
+		SELECT
+		u.id,u.contacts
+		FROM
+		t_user u
+		WHERE
+		u.id=#{userid} OR u.fatherid = #{userid} and u.isdelete!=1
+	</select>
+	
+	<select id="selectAppDeviceType" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.DeviceType">
+		select *
+		from
+		t_dev_type
+		where moduleid=#{moduleid} AND isdelete=0
+	</select>
+	
+	<select id="getDeviceRelationVideoPage" resultType="com.hotcomm.prevention.bean.mysql.datashow.video.DeviceRelationVideoVo">
+		SELECT
+		t1.`id`,
+		t1.`devnum` videoNum,
+		t1.`factory`,
+		t1.`code`,
+		t1.`lng`,
+		t1.`lat`,
+		t1.`x`,
+		t1.`y`,
+		t1.`addtime`,
+		t1.`state`,
+		IF(COUNT(t2.`deviceid`),COUNT(t2.`deviceid`),0) AS relationDevCount,
+		GROUP_CONCAT(t2.`deviceid`) AS relationDev,
+		t1.`videoPath`
+		<if test="param.lat!=null and param.lng!=null">
+			,
+			ROUND(
+			6378.138 * 2 * ASIN(
+			SQRT(
+			POW(
+			SIN(
+			(
+			${param.lat} *
+			PI() / 180 - t1.`lat` * PI() / 180
+			) / 2
+			),
+			2
+			) + COS(${param.lat} * PI()
+			/ 180) * COS(t1.`lat` * PI() / 180) * POW(
+			SIN(
+			(
+			${param.lng} * PI() /
+			180 - t1.`lng` * PI() / 180
+			) / 2
+			),
+			2
+			)
+			)
+			) * 1000
+			) AS distance
+		</if>
+		FROM
+		t_device_video t1
+		LEFT JOIN t_dev_video_relation t2
+		ON t1.`id` =
+		t2.`videoid`
+		AND t2.`isdelete` = 0
+		<if test="param.moduleid!=null">
+			AND t2.`moduleid`=#{param.moduleid}
+			INNER JOIN
+			<if test="param.moduleid == 1">t_device_dc</if>
+			<if test="param.moduleid == 2">t_device_yg</if>
+			<if test="param.moduleid == 3">t_device_jg</if>
+			<if test="param.moduleid == 8">t_device_hw</if>
+			<if test="param.moduleid == 9">t_device_ljt</if>
+			<if test="param.moduleid == 10">t_device_sj</if>
+			<if test="param.moduleid == 11">t_device_mc</if>
+			<if test="param.moduleid == 12">t_device_krq</if>
+			<if test="param.moduleid == 13">t_device_ywj</if>
+			<if test="param.moduleid == 14">t_device_sxdl</if>
+			<if test="param.moduleid == 15">t_device_sxdy</if>
+			<if test="param.moduleid == 16">t_device_sy</if>
+			<if test="param.moduleid == 17">t_device_sydl</if>
+			t3
+			ON t3.`isdelete` = 0
+			AND t2.`deviceid`=t3.`id`
+			<if test="param.devId!=null and param.devId.size()>0">
+				AND t3.`id` IN
+				<foreach collection="param.devId" index="index" item="item"
+					open="(" separator="," close=")">
+					#{item}
+				</foreach>
+			</if>
+			INNER JOIN t_device_group_relation t4
+			ON
+			1=1
+			AND t4.`deviceid` = t3.`id`
+			AND t4.`moduleid` = #{param.moduleid}
+			INNER JOIN t_device_group t5
+			ON
+			t5.`id` = t4.`groupid`
+			AND t5.`isdelete` = 0
+		</if>
+		INNER JOIN t_user t6
+		ON t6.`id` = #{param.userid}
+		WHERE
+		1=1
+		<if test="param.address!=null">
+			AND t1.`code` like
+			concat(concat('%',#{param.address}),'%')
+		</if>
+		<if test="param.devNum!=null">
+			AND t1.`devnum` like
+			concat(concat('%',#{param.devNum}),'%')
+		</if>
+		<if test="param.state!=null">
+			AND t1.`state` = #{param.state}
+		</if>
+		GROUP BY t1.`id`
+		<if test="param.lat!=null and param.lng!=null">
+			ORDER BY distance ASC
+		</if>
+	</select>
+	
+	<update id="dropTemporaryTable">
+		DROP TEMPORARY TABLE IF EXISTS t_getAppAlarm
+	</update>
+	
+	<update id="createTemporaryTable">
+		CREATE TEMPORARY TABLE IF NOT EXISTS t_getAppAlarm ENGINE = InnoDB (
+		select * from (
+			select aa.moduleid as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac
+			from t_device_all aa
+			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1
+			where aa.isdelete=0 and aa.isenable=1
+<!-- 			UNION ALL -->
+<!-- 			(select 2 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac -->
+<!-- 			from t_device_yg aa -->
+<!-- 			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1 -->
+<!-- 			where aa.isdelete=0 and aa.isenable=1) -->
+<!-- 			UNION ALL -->
+<!-- 			(select 3 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac -->
+<!-- 			from t_device_jg aa -->
+<!-- 			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1 -->
+<!-- 			where aa.isdelete=0 and aa.isenable=1) -->
+<!-- 			UNION ALL -->
+<!-- 			(select 4 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac -->
+<!-- 			from t_device_pm aa -->
+<!-- 			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1 -->
+<!-- 			where aa.isdelete=0 and aa.isenable=1) -->
+<!-- 			UNION ALL -->
+<!-- 			(select 5 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac -->
+<!-- 			from t_device_wt aa -->
+<!-- 			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1 -->
+<!-- 			where aa.isdelete=0 and aa.isenable=1) -->
+<!-- 			UNION ALL -->
+<!-- 			(select 6 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac -->
+<!-- 			from t_device_et aa -->
+<!-- 			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1 -->
+<!-- 			where aa.isdelete=0 and aa.isenable=1) -->
+<!-- 			UNION ALL -->
+<!-- 			(select 7 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac -->
+<!-- 			from t_device_sl aa -->
+<!-- 			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1 -->
+<!-- 			where aa.isdelete=0 and aa.isenable=1) -->
+<!-- 			UNION ALL -->
+<!-- 			(select 8 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac -->
+<!-- 			from t_device_hw aa -->
+<!-- 			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1 -->
+<!-- 			where aa.isdelete=0 and aa.isenable=1) -->
+<!-- 			UNION ALL -->
+<!-- 			(select 9 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac -->
+<!-- 			from t_device_ljt aa -->
+<!-- 			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1 -->
+<!-- 			where aa.isdelete=0 and aa.isenable=1) -->
+<!-- 			UNION ALL -->
+<!-- 			(select 10 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac -->
+<!-- 			from t_device_sj aa -->
+<!-- 			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1 -->
+<!-- 			where aa.isdelete=0 and aa.isenable=1) -->
+<!-- 			UNION ALL -->
+<!-- 			(select 11 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac -->
+<!-- 			from t_device_mc aa -->
+<!-- 			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1 -->
+<!-- 			where aa.isdelete=0 and aa.isenable=1) -->
+<!-- 			UNION ALL -->
+<!-- 			(select 12 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac -->
+<!-- 			from t_device_krq aa -->
+<!-- 			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1 -->
+<!-- 			where aa.isdelete=0 and aa.isenable=1) -->
+<!-- 			UNION ALL -->
+<!-- 			(select 13 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac -->
+<!-- 			from t_device_ywj aa -->
+<!-- 			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1 -->
+<!-- 			where aa.isdelete=0 and aa.isenable=1) -->
+<!-- 			UNION ALL -->
+<!-- 			(select 14 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac -->
+<!-- 			from t_device_sxdl aa -->
+<!-- 			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1 -->
+<!-- 			where aa.isdelete=0 and aa.isenable=1) -->
+<!-- 			UNION ALL -->
+<!-- 			(select 15 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac -->
+<!-- 			from t_device_sxdy aa -->
+<!-- 			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1 -->
+<!-- 			where aa.isdelete=0 and aa.isenable=1) -->
+<!-- 			UNION ALL -->
+<!-- 			(select 16 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac -->
+<!-- 			from t_device_sy aa -->
+<!-- 			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1 -->
+<!-- 			where aa.isdelete=0 and aa.isenable=1) -->
+<!-- 			UNION ALL -->
+<!-- 			(select 17 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac -->
+<!-- 			from t_device_sydl aa -->
+<!-- 			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1 -->
+<!-- 			where aa.isdelete=0 and aa.isenable=1) -->
+			) as a
+		)
+	</update>
+	
+	<select id="selectAppDeviceforDevnum" resultType="com.hotcomm.prevention.bean.mysql.common.DeviceForDevnum">
+		select
+		dev.id,dev.devnum,dev.moduleid,tm.`name`,dev.mac
+		from t_getAppAlarm dev
+		LEFT
+		JOIN t_module tm on tm.id=dev.moduleid
+		where dev.devnum=#{devnum}
+	</select>
+	
+	<insert id="insertAPPDevice" useGeneratedKeys="true"
+		keyProperty="deviceInsertParam.insertId" parameterType="com.hotcomm.prevention.bean.mysql.common.DeviceInsertParam">
+		<include refid="insertDevice"></include>
+	</insert>
+	
+	<sql id="insertDevice">
+		<if test="moduleid==1">
+			<!-- 地磁 -->
+			INSERT INTO `t_device_all` ( `devnum`, `mac`, `code`, `lat`, `lng`,
+			`coordinate`, `isenable`, `isdelete`, `addtime`, `adduserid`,
+			`state`, `battery`, `x`, `y`, `own_id`,`devtype`,`moduleid`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.code}, #{deviceInsertParam.lat},
+			#{deviceInsertParam.lng}, 1, 1, 0,
+			#{deviceInsertParam.addtime},#{userid}, 0,'100',
+			#{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype},1);
+		</if>
+
+		<if test="moduleid==2">
+			<!-- #烟感 -->
+			INSERT INTO `t_device_all` ( `devnum`, `mac`, `code`, `addtime`,
+			`isdelete`, `isenable`, `adduserid`, `lat`, `lng`, `state`,
+			`battery`, `x`, `y`, `own_id`,`devtype`,`moduleid`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.code}, #{deviceInsertParam.addtime}, 0, 1,
+			#{userid}, #{deviceInsertParam.lat}, #{deviceInsertParam.lng}, 0,
+			'100', #{deviceInsertParam.x},#{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype},2);
+		</if>
+
+		<if test="moduleid==3">
+			<!-- #井盖 -->
+			INSERT INTO `t_device_all` ( `devnum`, `mac`, `code`, 
+			`state`, `lng`, `lat`, `addtime`, `adduserid`, `isdelete`,
+			`isenable`, `Battery`, `x`, `y`, `own_id`,`devtype`,`moduleid`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.code}, '0', #{deviceInsertParam.lng},
+			#{deviceInsertParam.lat}, #{deviceInsertParam.addtime}, #{userid},
+			'0', '1', '100' , #{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype},3);
+		</if>
+
+		<if test="moduleid==4">
+			<!-- #PM2.5 -->
+			INSERT INTO `t_device_all` (`mac`, `code`, `x`, `y`, `state`,
+			`adduserid`, `addtime`, `isenable`, `isdelete`, `devnum`, `lat`,
+			`lng`, `own_id`,`devtype`,`moduleid`)
+			VALUES ( #{deviceInsertParam.mac}, #{deviceInsertParam.code},
+			#{deviceInsertParam.x}, #{deviceInsertParam.y}, '0', #{userid},
+			#{deviceInsertParam.addtime}, '1', '0', #{deviceInsertParam.devnum},
+			#{deviceInsertParam.lat}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype},4);
+		</if>
+
+		<if test="moduleid==5">
+			<!-- #水表 -->
+			INSERT INTO `t_device_all` ( `mac`, `code`, `x`, `y`, `state`,
+			`adduserid`, `addtime`, `isenable`, `isdelete`, `devnum`, `lat`,
+			`lng`, `own_id`,`devtype`,`moduleid`)
+			VALUES ( #{deviceInsertParam.mac}, #{deviceInsertParam.code},
+			#{deviceInsertParam.x}, #{deviceInsertParam.y}, '0', #{userid},
+			#{deviceInsertParam.addtime}, '1', '0', #{deviceInsertParam.devnum},
+			#{deviceInsertParam.lat}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype},5);
+		</if>
+
+		<if test="moduleid==6">
+			<!-- #电表 -->
+			INSERT INTO `t_device_all` ( `mac`, `code`, `x`, `y`, `state`,
+			`adduserid`, `addtime`, `isenable`, `isdelete`, `devnum`, `lat`,
+			`lng`, `own_id`,`devtype`,`moduleid`)
+			VALUES ( #{deviceInsertParam.mac}, #{deviceInsertParam.code},
+			#{deviceInsertParam.x}, #{deviceInsertParam.y}, '0', #{userid},
+			#{deviceInsertParam.addtime}, '1', '0', #{deviceInsertParam.devnum},
+			#{deviceInsertParam.lat}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype},6);
+		</if>
+
+		<if test="moduleid==7">
+			<!-- #路灯 -->
+			INSERT INTO `t_device_all` ( `mac`, `code`, `x`, `y`, `state`,
+			`adduserid`, `addtime`, `isenable`, `isdelete`, `devnum`, `lat`,
+			`lng`, `own_id`,`devtype`,`moduleid`)
+			VALUES ( #{deviceInsertParam.mac}, #{deviceInsertParam.code},
+			#{deviceInsertParam.x}, #{deviceInsertParam.y}, '0', #{userid},
+			#{deviceInsertParam.addtime}, '1', '0', #{deviceInsertParam.devnum},
+			#{deviceInsertParam.lat}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype},7);
+		</if>
+
+		<if test="moduleid==8">
+			<!-- #红外 -->
+			INSERT INTO `t_device_all` ( `mac`, `code`, `lng`, `lat`, `state`,
+			`battery`, `addtime`, `isenable`, `isdelete`, `adduserid`, `x`, `y`,
+			`devnum`, `own_id`,`devtype`,`moduleid`)
+			VALUES ( #{deviceInsertParam.mac}, #{deviceInsertParam.code},
+			#{deviceInsertParam.lng}, #{deviceInsertParam.lat}, 0, '100',
+			#{deviceInsertParam.addtime}, '1', '0', #{userid},
+			#{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.devnum},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype},8);
+		</if>
+
+		<if test="moduleid==9">
+			<!-- #垃圾桶 -->
+			INSERT INTO `t_device_all` ( `mac`, `lng`, `lat`, `state`, `battery`,
+			`addtime`, `isenable`, `isdelete`, `adduserid`, `code`, `devnum`,
+			`x`, `y`, `own_id`,`devtype`,`moduleid`)
+			VALUES ( #{deviceInsertParam.mac},#{deviceInsertParam.lng},
+			#{deviceInsertParam.lat}, 0, '100' , #{deviceInsertParam.addtime}, 1,
+			0, #{userid}, #{deviceInsertParam.code}, #{deviceInsertParam.devnum},
+			#{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype},9);
+		</if>
+
+		<if test="moduleid==10">
+			<!-- #水浸 -->
+			INSERT INTO `t_device_all` ( `mac`, `lng`, `lat`, `state`, `battery`,
+			`addtime`, `isenable`, `isdelete`, `adduserid`, `code`, `devnum`,
+			`x`, `y`, `own_id`,`devtype`,`moduleid`)
+			VALUES ( #{deviceInsertParam.mac}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.lat}, 0, '100' , #{deviceInsertParam.addtime}, 1,
+			0, #{userid}, #{deviceInsertParam.code}, #{deviceInsertParam.devnum},
+			#{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype},10);
+		</if>
+
+		<if test="moduleid==11">
+			<!-- #门磁 -->
+			INSERT INTO `t_device_all` ( `devnum`, `mac`, `lng`, `lat`, `state`,
+			`battery`, `addtime`, `isenable`, `isdelete`, `adduserid`, `code`,
+			`x`, `y`, `own_id`,`devtype`,`moduleid`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.lng}, #{deviceInsertParam.lat}, '0', '100',
+			#{deviceInsertParam.addtime}, '1', '0', #{userid},
+			#{deviceInsertParam.code}, #{deviceInsertParam.x},
+			#{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype},11);
+		</if>
+
+		<if test="moduleid==12">
+			<!-- #可燃气 -->
+			INSERT INTO `t_device_all` ( `devnum`, `mac`, `code`, `x`, `y`,
+			`isenable`, `isdelete`, `addtime`, `adduserid`, `state`, `lat`,
+			`lng`, `battery`, `own_id`,`devtype`,`moduleid`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.code}, #{deviceInsertParam.x},
+			#{deviceInsertParam.y}, '1', '0', #{deviceInsertParam.addtime},
+			#{userid}, '0', #{deviceInsertParam.lat}, #{deviceInsertParam.lng},
+			'100', #{deviceInsertParam.own_id},#{deviceInsertParam.devtype},12);
+		</if>
+
+		<if test="moduleid==13">
+			<!-- #液位计 -->
+			INSERT INTO `t_device_all` ( `devnum`, `mac`, `code`, `lng`, `lat`,
+			`state`, `battery`, `addtime`, `isenable`, `isdelete`, `adduserid`,
+			`x`, `y`, `own_id`,`devtype`,`moduleid`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.code}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.lat}, '0', '100', #{deviceInsertParam.addtime},
+			'1', '0', #{userid}, #{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype},13);
+		</if>
+		<if test="moduleid==14">
+			INSERT INTO `t_device_all` ( `devnum`, `mac`, `code`,
+			`lng`, `lat`, `state`, `battery`, `addtime`, `isenable`, `isdelete`,
+			`adduserid`, `x`, `y`, `own_id`,`devtype`,`moduleid`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.code}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.lat}, '0', '100', #{deviceInsertParam.addtime},
+			'1', '0', #{userid}, #{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype},14);
+		</if>
+		<if test="moduleid==15">
+			INSERT INTO `t_device_all` ( `devnum`, `mac`, `code`,
+			`lng`, `lat`, `state`, `battery`, `addtime`, `isenable`, `isdelete`,
+			`adduserid`, `x`, `y`, `own_id`,`devtype`,`moduleid`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.code}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.lat}, '0', '100', #{deviceInsertParam.addtime},
+			'1', '0', #{userid}, #{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype},15);
+		</if>
+		<if test="moduleid==16">
+			INSERT INTO `t_device_all` ( `devnum`, `mac`, `code`,
+			`lng`, `lat`, `state`, `battery`, `addtime`, `isenable`, `isdelete`,
+			`adduserid`, `x`, `y`, `own_id`,`devtype`,`moduleid`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.code}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.lat}, '0', '100', #{deviceInsertParam.addtime},
+			'1', '0', #{userid}, #{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype},16);
+		</if>
+		<if test="moduleid==17">
+			INSERT INTO `t_device_all` ( `devnum`, `mac`, `code`,
+			`lng`, `lat`, `state`, `battery`, `addtime`, `isenable`, `isdelete`,
+			`adduserid`, `x`, `y`, `own_id`,`devtype`,`moduleid`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.code}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.lat}, '0', '100', #{deviceInsertParam.addtime},
+			'1', '0', #{userid}, #{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype},17);
+		</if>
+	</sql>
+	
+	<insert id="insertDevReGroup">
+		INSERT INTO `t_device_group_relation` ( `deviceid`,
+		`groupid`, `moduleid`, `addtime`, `adduserid`, `isenable`, `isdelete`)
+		VALUES ( #{devid}, #{groupid}, #{moduleid}, #{addtime}, #{userid},
+		'1', '0');
+	</insert>
+	
+	<insert id="insertDevReVideo">
+		INSERT INTO `t_dev_video_relation` ( `deviceid`,
+		`videoid`, `isdelete`, `moduleid`)
+		VALUES ( #{devid}, #{videoid}, '0', #{moduleid});
+	</insert>
+	
+	<insert id="insertDevItemPic">
+		INSERT INTO `t_dev_item_pic` ( `item_pic_id`,
+		`dev_id`, `moduleid`, `addtime`, `isenable`, `isdelete`)
+		VALUES (#{itempicid}, #{devid}, #{moduleid}, #{addtime}, '1', '0');
+	</insert>
+	
+	<select id="AppDeviceInfo" resultType="com.hotcomm.prevention.bean.mysql.common.DeviceInfo">
+		SELECT
+		dev.id as deviceid,tm.id as moduleid,dev.devnum,tm.`name` as
+		modulename,dg.groupname,tu.contacts AS
+		managername,dev.addtime,tu1.contacts AS
+		addname,GROUP_CONCAT(dv.videoPath) AS videoPath
+		FROM
+		t_device_all
+		dev
+		LEFT JOIN t_module tm ON tm.id=#{moduleid} AND tm.isdelete=0
+		LEFT
+		JOIN t_device_group_relation dgr ON dgr.deviceid = dev.id AND
+		dgr.moduleid = #{moduleid} AND dgr.isdelete = 0
+		LEFT JOIN t_user tu ON
+		tu.isdelete = 0 AND tu.id = dev.own_id
+		LEFT JOIN t_user tu1 ON
+		tu1.isdelete = 0 AND tu1.id = dev.adduserid
+		LEFT JOIN t_device_group dg
+		ON dg.id = dgr.groupid AND dg.isdelete = 0 AND dg.moduleid =
+		#{moduleid}
+		LEFT JOIN t_dev_video_relation dvr ON dvr.deviceid = dev.id
+		AND dvr.moduleid = #{moduleid} AND dvr.isdelete = 0
+		LEFT JOIN
+		t_device_video dv ON dv.id = dvr.videoid AND dv.isenable = 1
+		where
+		dev.id=#{deviceid}
+		GROUP BY dev.id
+	</select>
+	
+	<select id="getDeviceAlarmHandleTime" resultType="com.hotcomm.prevention.bean.mysql.common.DeviceHandleTime">
+		SELECT tda.id
+		as alarmid,tda.addtime,tda.handlestate,tu.contacts as
+		`name`,tda.handleTime,das.state_name,dhs.state_name as handlename
+		FROM
+		t_dev_alarm tda
+		LEFT JOIN t_dev_alarm_state das ON das.id=tda.alarmstateid AND
+		das.module_id=#{moduleid} AND das.isdelete=0
+		LEFT JOIN
+		t_dev_handle_state dhs ON dhs.id=tda.handlestate AND
+		dhs.module_id=#{moduleid} AND dhs.isdelete=0
+		LEFT JOIN t_user tu on
+		tu.id=tda.`handler` AND tu.isenable=1
+		where tda.moduleid=#{moduleid}
+		AND tda.deviceid=#{deviceid}
+	</select>
+	
+</mapper>

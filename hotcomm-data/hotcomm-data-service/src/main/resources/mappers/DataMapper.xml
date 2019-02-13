@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.data.db.DataMapper">
+
+	<resultMap type="DataVO" id="DataPageMap">
+		<result property="memberId" column="member_id" />
+		<result property="deviceCode" column="device_code" />
+		<result property="ucode" column="ucode" />
+		<result property="frameCnt" column="frameCnt" />
+		<result property="rssiSnr" column="rssi/snv" />
+		<result property="channel" column="channel" />
+		<result property="sf" column="sf" />
+		<result property="createTime" column="create_time" />
+		<result property="sendStatus" column="send_status" />
+		<result property="receiveData" column="receive_data" />
+		<result property="queueName" column="queue_key" />
+		<result property="dataId" column="data_id" />	
+		<result property="memberId" column="member_id" />
+		<result property="gwip" column="gwip" />
+		<result property="dataSource" column="data_source" />
+	</resultMap>
+
+
+	<sql id="dataQuery">
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="params.memberType != null and params.memberId != null">
+				<if test="params.memberType == 2 ">
+					AND v1.member_id = #{params.memberId}
+				</if>
+				<if test="params.memberType == 1">
+					AND v1.member_id IN (SELECT v3.customer_id FROM hk_customer_member v3 WHERE v3.member_id = #{params.memberId})
+				</if>
+			</if>
+			<if test="params.longStartTime != null">
+				AND v2.`create_time` <![CDATA[>=]]>  #{params.longStartTime}
+			</if>
+			<if  test="params.longEndTime != null">
+				AND v2.`create_time` <![CDATA[<=]]> #{params.longEndTime}
+			</if>
+			<if test="params.deviceCode != null and params.deviceCode != ''">
+				AND v2.device_code = #{params.deviceCode}
+			</if>
+			<if test="params.queueName != null and params.queueName != ''">
+				AND v1.queue_key = #{params.queueName}
+			</if>
+			<if test="params.dataSource != null">
+				AND v2.data_source = #{params.dataSource}
+			</if>
+			<if test="params.sendStatus != null">
+				AND v1.send_status = #{params.sendStatus}
+			</if>
+		</trim>
+	</sql>
+
+	<select id="queryPage" resultMap="DataPageMap">
+		SELECT v1.member_id, v2.device_code, SUBSTRING(v2.data, 1, 30) receive_data,
+			v2.source_data->>'$.extra.frameCnt' frameCnt,
+			CONCAT(v2.source_data->'$.extra.rssi', ' / ', v2.source_data->'$.extra.snr') `rssi/snv`,
+			v2.source_data->>'$.extra.channel' channel,
+			v2.source_data->>'$.extra.sf' sf, v2.create_time,
+			v1.queue_key, v1.send_status, v1.ucode, v1.data_id,
+			v2.source_data->>'$.extra.gwip' gwip, v2.data_source
+		FROM hk_data_queue v1
+		INNER JOIN hk_data v2 ON v1.`data_id` = v2.`data_id`
+		<include refid="dataQuery"/>
+		ORDER BY v2.create_time DESC, v1.member_id ASC
+<!-- 		ORDER BY v2.source_data ->> '$.extra.frameCnt' ASC -->
+	    LIMIT #{params.startIndex}, #{params.endIndex}
+	</select>
+
+	<select id="queryPageCount" resultType="java.lang.Long">
+		select count(0)  
+		FROM hk_data_queue v1
+		INNER JOIN hk_data v2 ON v1.`data_id` = v2.`data_id`
+		<include refid="dataQuery"/>
+	</select>
+
+	<update id="updateDataStatus">
+		UPDATE hk_data_queue SET send_status = #{params.modifyStatus} 
+		WHERE ucode = #{params.targetUcode} AND send_status = {params.targetStatus}
+	</update>
+
+	<select id="getData" resultType="java.lang.String">
+		SELECT data FROM hk_data WHERE data_id = #{dataId}
+	</select>
+
+	<select id="getDevUnsentQueueNum"  resultType="java.lang.Long">
+		SELECT COUNT(*) 
+		FROM hk_data_queue v1 
+		INNER JOIN hk_data v2 ON v2.data_id = v1.data_id
+			AND v2.device_code = (SELECT v3.device_code FROM hk_device v3 WHERE v3.device_id = #{devId})
+		WHERE v1.send_status = 1 OR v1.send_status = 2
+	</select>
+
+<select id="queryLoadReadyMsg"  resultType="DataPushReady"   parameterType="java.lang.String">
+		SELECT  
+			v1.device_code deviceCode,
+			v1.device_status deviceStatus,
+			v1.device_type_id deviceTypeId,
+			v1.device_group_id deviceGroupId,
+			(SELECT v7.code FROM hk_device_type v7 WHERE v7.type_id=v1.`device_type_id`) deviceTypeCode,
+			v3.member_id memberId, 
+			v4.status memberStatus , 
+			v5.vhost_code vhostCode,
+			v5.`vhost_status` vhostStatus,
+			v5.`vhost` vhostName,
+			v6.queue_name queueName, 
+			v6.queue_id queueId, 
+			v6.queue_status queueStatus, 
+			v6.`hole_time` queueHoldTime, 
+			v6.send_filter_interval queueSendFilterNums
+		FROM hk_device v1
+		INNER JOIN hk_device_group v2 ON v1.device_group_id = v2.device_group_id AND v2.is_delete = 1 AND v2.group_status = 1
+		INNER JOIN hk_device_group_member v3 ON v3.device_group_id = v2.device_group_id
+		INNER JOIN sys_member v4 ON v3.member_id = v4.member_id
+		INNER JOIN hk_member_vhost v5 ON v5.member_id = v4.member_id
+		INNER JOIN hk_queue v6 ON v6.member_id = v3.member_id
+		<where>
+			v1.`device_code` = #{deviceCode}
+			and v6.`type` = 1
+			and v4.user_type = 2
+			and v5.vhost_status = 3
+		</where>
+	</select>
+
+</mapper>

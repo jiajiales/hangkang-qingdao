@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.mysql.common.ModuleMapper">
+	<select id="selectTModuleByUserId" resultType="com.hotcomm.prevention.bean.mysql.common.entity.TModule">
+		SELECT m.* FROM t_module m
+		LEFT JOIN t_device_group g ON m.id=g.moduleid AND g.isenable=1
+		LEFT JOIN t_user_dgroup_relation r ON g.id=r.devicegroupid AND r.isenable=1
+		WHERE r.userid=#{userid}
+		GROUP BY m.id
+	</select>
+</mapper>

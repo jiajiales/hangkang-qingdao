@@ -1,0 +1,578 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.sxdl.SXDLDevMapper">
+
+	<select id="SXDLDevList" resultType="com.hot.manage.entity.sxdl.SXDLDevList">
+		SELECT y.id as devid , y.devnum as devnum , y.mac as mac ,
+		dg.groupname as groupname , y.code as code , dg.managerid as managerid
+		,t7.`site`,t7.picpath,
+		(SELECT contacts FROM t_user WHERE
+		id=y.`own_id`) AS contacts, y.addtime as addtime , y.lat as lat ,
+		y.lng as lng ,
+		y.state as state , y.battery as battery ,y.lastValue as
+		lastValue,y.addrcode
+		as addrcode,y.lessalarmvalue as lessalarmvalue,
+		y.topalarmvalue as
+		topalarmvalue,y.alarmset as alarmset,
+		y.x as x,y.y as
+		y,
+		count(v.videoid) as count ,
+		y.adduserid as adduserid,
+		y.lastalarmtime
+		as lastalarmtime , y.own_id as own_id
+		FROM t_device_sxdl y
+		INNER JOIN
+		t_device_group_relation tg on
+		tg.moduleid = #{moduleid} and tg.deviceid
+		= y.id
+		<if test="groupid !='' and groupid !=null">
+			and tg.groupid=#{groupid}
+		</if>
+		INNER JOIN t_device_group dg on dg.id = tg.groupid
+		INNER JOIN
+		t_user_dgroup_relation tt ON tt.devicegroupid=dg.id
+		INNER JOIN t_user u
+		on u.id=tt.userid
+		LEFT JOIN t_dev_video_relation v on v.moduleid=
+		#{moduleid} AND y.id=v.deviceid
+		LEFT JOIN t_dev_item_pic t6
+		ON
+		t6.`dev_id`=y.`id`
+		AND t6.`moduleid`=14
+		LEFT JOIN t_item_pic t7
+		ON
+		t6.`item_pic_id`=t7.`id`
+		AND t7.`isenable`=1
+		WHERE y.isenable = 1
+		<if test="Starttime!='' and Starttime!=null">
+			and y.addtime &gt;= #{Starttime}
+		</if>
+		<if test="Endtime!='' and Endtime!=null">
+			and y.addtime &lt;= #{Endtime}
+		</if>
+		<if test="context!='' and context!=null">
+			and (y.devnum LIKE CONCAT('%',#{context},'%') or
+			y.code
+			LIKE CONCAT('%',#{context},'%') or
+			y.mac LIKE
+			CONCAT('%',#{context},'%'))
+		</if>
+		<if test="Batterytype==1">
+			and y.battery &lt; 20
+		</if>
+		<if test="Batterytype==2">
+			and y.battery &gt;= 20
+		</if>
+		group by y.id
+	</select>
+	<update id="SXDLUpdateDev">
+		UPDATE t_device_sxdl jg , t_device_group_relation dg
+		SET jg.id = jg.id
+		<if test="devnum!='' and devnum!=null">
+			, jg.devnum = #{devnum}
+		</if>
+		<if test="code !='' and code !=null">
+			, jg.code = #{code}
+		</if>
+		<if test="lat!='' and lat!=null">
+			, jg.lat = #{lat}
+		</if>
+		<if test="lng!='' and lng!=null">
+			, jg.lng = #{lng}
+		</if>
+		<if test="x!='' and x!=null">
+			, jg.x = #{x}
+		</if>
+		<if test="y!='' and y!=null">
+			, jg.y = #{y}
+		</if>
+		<if test=" lessalarmvalue !='' and lessalarmvalue !=null">
+			, jg.lessalarmvalue = #{lessalarmvalue}
+		</if>
+		<if test=" topalarmvalue !='' and topalarmvalue !=null">
+			, jg.topalarmvalue = #{topalarmvalue}
+		</if>
+		<if test=" ownId !='' and ownId !=null">
+			, jg.own_id = #{ownId}
+		</if>
+		<if test="groupid!='' and groupid!=null">
+			, dg.groupid = #{groupid}
+		</if>
+		WHERE jg.id = #{devid}
+		<if test="groupid!='' and groupid!=null">
+			and dg.moduleid = #{moduleid} and dg.deviceid = #{devid}
+		</if>
+	</update>
+	<!-- 删除关联 -->
+	<update id="SXDLUpdateDevVideoDel">
+		UPDATE t_dev_video_relation
+		SET isdelete =1
+		WHERE
+		moduleid = #{moduleid} and deviceid = #{deviceid} and isdelete = 0
+	</update>
+	<!-- 修改关联 -->
+	<update id="SXDLUpdateDevVideo">
+		UPDATE t_dev_video_relation
+		SET isdelete = 0
+		WHERE
+		moduleid = #{moduleid} and deviceid = #{deviceid} and videoid =
+		#{videoid}
+	</update>
+	<!-- 插入关联 -->
+	<insert id="SXDLUpdateDevVideoAdd">
+		INSERT INTO
+		t_dev_video_relation(deviceid,videoid,moduleid)
+		VALUES(#{deviceid},#{videoid},#{moduleid})
+	</insert>
+	<insert id="SXDLUpdateDevAddPic">
+		call
+		Get_UpdateDevAddPic(#{devid,jdbcType=INTEGER},#{itempicid,jdbcType=INTEGER},#{moduleid,jdbcType=INTEGER});
+	</insert>
+	<select id="SXDLGroupList" resultType="com.hot.manage.entity.sxdl.SXDLGroupList">
+		SELECT g.id as id , g.groupname as groupname, g.groupcode as groupcode
+		,GROUP_CONCAT(p.id) as
+		itempicid , GROUP_CONCAT(p.picpath) as picpath ,
+		GROUP_CONCAT(p.site)
+		as site , g.x as lng , g.y as lat , g.itemnum as
+		itemnum , u.contacts as contacts,
+		g.addtime as addtime , g.imgpath as
+		imgpath
+		FROM t_device_group g
+		RIGHT JOIN t_user_dgroup_relation ug on
+		ug.userid = #{userid} and ug.devicegroupid = g.id and ug.isdelete = 0
+		and ug.isenable = 1
+		LEFT JOIN t_item_pic p on p.itemid = g.id
+		LEFT JOIN
+		t_user u on u.id = g.managerid
+		WHERE g.isdelete = 0 and g.moduleid =
+		#{moduleid}
+		<if test="id!=null">
+			and g.id = #{id}
+		</if>
+		<if test="groupname!='' and groupname!=null">
+			and g.groupname = #{groupname}
+		</if>
+		<if test="itemnum!='' and itemnum!=null">
+			and g.itemnum = #{itemnum}
+		</if>
+		GROUP BY g.id
+	</select>
+	<update id="SXDLDeleteDev">
+		update t_device_sxdl j , t_device_group_relation g
+		set j.isdelete = 1 , j.isenable = 0 , g.isdelete = 1 , g.isenable = 0
+		where j.id = #{devid} and g.deviceid = j.id and g.moduleid =
+		#{moduleid}
+	</update>
+	<update id="SXDLDeleteDevPic">
+		update t_dev_item_pic p
+		set p.isdelete = 1 ,
+		p.isenable = 0
+		where p.dev_id = #{devid} and p.moduleid = #{moduleid}
+	</update>
+	<delete id="SXDLDeleteDevVideo">
+		update t_dev_video_relation set isdelete = 1 WHERE
+		moduleid = #{moduleid}
+		and deviceid = #{deviceid}
+	</delete>
+	<select id="SXDLSelectOnId" resultType="com.hot.manage.entity.sxdl.SXDLSelectOnId">
+		SELECT jg.id as id , jg.devnum as devnum , jg.lat as lat , jg.lng as
+		lng , jg.mac as mac,jg.code as code,jg.own_id as own_id,
+		jg.x as x
+		,jg.y as y ,g.id as groupid,g.groupname as groupname ,p.id as
+		itempicid,
+		p.picpath as picpath , p.site as site,jg.lastalarmtime as
+		lastalarmtime,
+		jg.lastValue as lastValue,jg.addrcode as
+		addrcode,jg.lessalarmvalue as
+		lessalarmvalue,jg.topalarmvalue as
+		topalarmvalue,
+		jg.alarmset as
+		alarmset,GROUP_CONCAT(t666.`videoid`) AS
+		videos
+		FROM t_device_sxdl jg
+		LEFT JOIN t_device_group_relation dg on
+		dg.moduleid = #{moduleid} and dg.deviceid = jg.id and dg.isenable = 1
+		LEFT JOIN t_user_dgroup_relation ug on ug.userid = #{userid} and
+		ug.devicegroupid = dg.groupid
+		LEFT JOIN t_dev_item_pic dp on dp.dev_id
+		= dg.deviceid and dp.moduleid = dg.moduleid
+		LEFT JOIN t_item_pic p on
+		p.id = dp.item_pic_id and p.isenable = 1
+		LEFT JOIN t_device_group g on
+		g.id = dg.groupid and g.isenable = 1
+		LEFT JOIN t_dev_video_relation
+		t666
+		ON jg.`id`=t666.`deviceid`
+		AND t666.`moduleid`=14
+		LEFT JOIN
+		t_device_video t888
+		ON t666.`videoid`=t888.`id`
+		AND t888.`isdelete`=0
+		WHERE jg.isenable = 1
+		<if test="devid != null">
+			and jg.id = #{devid}
+		</if>
+		<if test="devnum!=null and devnum!=''">
+			and jg.devnum = #{devnum}
+		</if>
+		<if test="macAddr!=null and macAddr!=''">
+			and jg.mac = #{macAddr}
+		</if>
+		GROUP BY jg.`id`
+	</select>
+	<insert id="SXDLAddDev" keyProperty="id" useGeneratedKeys="true">
+		INSERT INTO t_device_sxdl
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="devnum!='' and devnum!=null">
+				devnum,
+			</if>
+			<if test="macAddr!='' and macAddr!=null">
+				mac,
+			</if>
+			<if test="code!='' and code!=null">
+				`code`,
+			</if>
+			<if test="lng!='' and lng!=null">
+				lng,
+			</if>
+			<if test="lat!='' and lat!=null">
+				lat,
+			</if>
+			<if test="x != null and x != ''">
+				x,
+			</if>
+			<if test="y != null and y != ''">
+				y,
+			</if>
+			<if test="addrcode != null and addrcode != ''">
+				addrcode,
+			</if>
+			<if test="addtime!='' and addtime!=null">
+				addtime,
+			</if>
+			<if test="userid != null">
+				adduserid,
+			</if>
+			<if test="own_id != null">
+				own_id,
+			</if>
+			<if test="lessalarmvalue != null">
+				lessalarmvalue,
+			</if>
+			<if test="topalarmvalue != null">
+				topalarmvalue,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="devnum!='' and devnum!=null">
+				#{devnum},
+			</if>
+			<if test="macAddr!='' and macAddr!=null">
+				#{macAddr},
+			</if>
+			<if test="code!='' and code!=null">
+				#{code},
+			</if>
+			<if test="lng!='' and lng!=null">
+				#{lng},
+			</if>
+			<if test="lat!='' and lat!=null">
+				#{lat},
+			</if>
+			<if test="x != null and x != ''">
+				#{x},
+			</if>
+			<if test="y != null and y != ''">
+				#{y},
+			</if>
+			<if test="addrcode != null and addrcode != ''">
+				#{addrcode},
+			</if>
+			<if test="addtime!='' and addtime!=null">
+				#{addtime},
+			</if>
+			<if test="userid!=null">
+				#{userid},
+			</if>
+			<if test="own_id != null">
+				#{own_id},
+			</if>
+			<if test="lessalarmvalue != null">
+				#{lessalarmvalue},
+			</if>
+			<if test="topalarmvalue != null">
+				#{topalarmvalue}
+			</if>
+		</trim>
+	</insert>
+	<insert id="SXDLAddDevVideo">
+		INSERT INTO
+		t_dev_video_relation(deviceid,videoid,moduleid)
+		VALUES(#{deviceid},#{videoid},#{moduleid})
+	</insert>
+	<insert id="SXDLAddDevGroup">
+		INSERT INTO t_device_group_relation
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="id != null">
+				deviceid,
+			</if>
+			<if test="groupid != null">
+				groupid,
+			</if>
+			<if test="moduleid != null">
+				moduleid,
+			</if>
+			<if test="addtime != null">
+				addtime,
+			</if>
+			<if test="userid != null">
+				adduserid,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="id!='' and id!=null">
+				#{id},
+			</if>
+			<if test="groupid!=null">
+				#{groupid},
+			</if>
+			<if test="moduleid!=null">
+				#{moduleid},
+			</if>
+			<if test="addtime!=null and addtime!=''">
+				#{addtime},
+			</if>
+			<if test="userid!=null">
+				#{userid},
+			</if>
+		</trim>
+	</insert>
+	<insert id="SXDLAddDevGroupPic">
+		INSERT INTO t_dev_item_pic
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="itempicid != null">
+				item_pic_id,
+			</if>
+			<if test="id != null">
+				dev_id,
+			</if>
+			<if test="moduleid != null">
+				moduleid,
+			</if>
+			<if test="addtime != null">
+				addtime,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="itempicid != null">
+				#{itempicid},
+			</if>
+			<if test="id!=null">
+				#{id},
+			</if>
+			<if test="moduleid!=null">
+				#{moduleid},
+			</if>
+			<if test="addtime!=null and addtime!=''">
+				#{addtime},
+			</if>
+		</trim>
+	</insert>
+
+	<!-- 更换设备 SXDLChangeDev -->
+	<select id="SXDLChangeDevMac" resultType="com.hot.manage.entity.sxdl.SXDLDevList">
+		select id as devid ,
+		mac as mac
+		from t_device_sxdl
+		where mac = #{mac}
+	</select>
+	<update id="SXDLChangeDev">
+		UPDATE t_device_sxdl t
+		SET t.mac=#{mac}
+		WHERE t.id =
+		#{devid}
+	</update>
+
+	<!-- 更换责任人 changeDevOwn -->
+	<update id="changeDevOwn" parameterType="java.util.List">
+		UPDATE t_device_sxdl SET
+		own_id=#{SXDLChangeUser.ownid} WHERE id in
+		<foreach collection="SXDLChangeUser.devid" index="index" item="item"
+			open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</update>
+	<!-- LKTAddSignDevList -->
+	<insert id="LKTAddSignDevList">
+		CALL
+		Get_AddSignDevList(#{moduleid,jdbcType=INTEGER},#{devid,jdbcType=VARCHAR},#{patrolid,jdbcType=INTEGER});
+	</insert>
+
+	<select id="AlarmingTrendForSXDL" resultType="com.hot.manage.entity.sxdl.SXDLAlarmingTrendVO">
+		SELECT
+		test1.TheDate AS DATE,YEAR(NOW()) - YEAR(test1.newdate) AS yearAgo,
+		CASE
+		WHEN test2.maxalarmcount IS NULL
+		THEN 0
+		ELSE test2.maxalarmcount
+		END AS maxalarmcount
+		FROM
+		<if test="queryType==1">
+			<!-- (SELECT -->
+			<!-- ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate, -->
+			<!-- @d -->
+			<!-- := @d - 1 DAY -->
+			<!-- FROM -->
+			<!-- t_power, -->
+			<!-- (SELECT -->
+			<!-- @d := 0) temp -->
+			<!-- WHERE ADDDATE(CURDATE(), -->
+			<!-- INTERVAL @d DAY) >= DATE_ADD(CURDATE(), INTERVAL -->
+			<!-- - -->
+			<!-- 1 MONTH) -->
+			<!-- ORDER BY -->
+			<!-- DAY) test1 -->
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate,ADDDATE(CURDATE(), INTERVAL @d DAY) AS newdate,
+			@d
+			:= @d - 1 DAY
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp
+			WHERE ADDDATE(CURDATE(),
+			INTERVAL @d
+			DAY) >= DATE_ADD(CURDATE(), INTERVAL
+			-
+			1 MONTH)
+			) test1
+		</if>
+		<if test="queryType==2">
+			<!-- (SELECT -->
+			<!-- DATE_FORMAT(TheDate, '%Y-%m') AS TheDate -->
+			<!-- FROM -->
+			<!-- (SELECT -->
+			<!-- ADDDATE( -->
+			<!-- DATE_FORMAT( -->
+			<!-- CURDATE(), -->
+			<!-- CONCAT(YEAR(CURDATE()) + 1, -->
+			<!-- '-%m-%d') -->
+			<!-- ), -->
+			<!-- INTERVAL @d MONTH -->
+			<!-- ) AS TheDate, -->
+			<!-- @d := @d - 1 MONTH -->
+			<!-- FROM -->
+			<!-- t_power, -->
+			<!-- (SELECT -->
+			<!-- @d := 0) temp) test -->
+			<!-- WHERE YEAR(TheDate) &lt;= -->
+			<!-- YEAR(CURDATE()) AND YEAR(TheDate) >= -->
+			<!-- YEAR(CURDATE())-2) test1 -->
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate,TheDate AS newdate
+			FROM
+			(SELECT
+			ADDDATE(
+			DATE_FORMAT(
+			CURDATE(),
+			CONCAT(YEAR(CURDATE()) + 1,
+			'-%m-%d')
+			),
+			INTERVAL @d MONTH
+			) AS TheDate,
+			@d := @d - 1 MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			WHERE YEAR(TheDate) &lt;=
+			YEAR(CURDATE())
+			AND YEAR(TheDate) >= YEAR(CURDATE()) - 2) test1
+		</if>
+		<if test="queryType==3">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate,TheDate AS newdate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 6) test1
+		</if>
+		LEFT JOIN
+		(SELECT
+		DATE_FORMAT(t1.`addtime`, '%Y-%m-%d') AS DATE,
+		SUM(
+		CASE
+		WHEN
+		(SELECT
+		tt1.`type`
+		FROM
+		t_dev_alarm_state tt1
+		WHERE tt1.`id` =
+		t1.`alarmstateid`
+		AND tt1.`state_name` NOT LIKE '%电量%') = 1
+<!-- 		AND -->
+<!-- 		t2.`lastValue` > t2.`topalarmvalue` -->
+		THEN 1
+		ELSE 0
+		END
+		) AS maxalarmcount
+		FROM
+		t_dev_alarm t1
+		INNER JOIN t_device_sxdl
+		t2
+		ON t1.`deviceid` = t2.`id`
+		AND
+		t1.`moduleid` = 14
+		AND
+		t2.`isdelete` = 0
+		INNER JOIN
+		t_device_group_relation t3
+		ON t3.`deviceid`
+		= t2.`id`
+		AND
+		t3.`isdelete` =
+		0
+		AND t3.`moduleid` = t1.`moduleid`
+		INNER
+		JOIN
+		t_device_group t4
+		ON t4.`id`
+		= t3.`groupid`
+		AND t4.`isdelete` = 0
+		AND
+		t4.`moduleid` = t1.`moduleid`
+		<if test="groupid != null">
+			AND t4.`id`=#{groupid}
+		</if>
+		INNER JOIN t_user_dgroup_relation t5
+		ON
+		t5.`devicegroupid` = t4.`id`
+		AND
+		t5.`isdelete` = 0
+		INNER JOIN t_user
+		t6
+		ON t6.`id` = t5.`userid`
+		AND
+		t6.`isdelete` = 0
+		AND t6.`id` = #{userid}
+		GROUP BY
+		MONTH(t1.`addtime`))
+		test2
+		<if test="queryType==1">
+			ON test1.TheDate = test2.DATE
+		</if>
+		<if test="queryType==2">
+			ON test1.TheDate = DATE_FORMAT(test2.DATE, '%Y-%m')
+		</if>
+		<if test="queryType==3">
+			ON test1.TheDate = DATE_FORMAT(test2.DATE, '%Y-%m')
+		</if>
+	</select>
+
+</mapper>

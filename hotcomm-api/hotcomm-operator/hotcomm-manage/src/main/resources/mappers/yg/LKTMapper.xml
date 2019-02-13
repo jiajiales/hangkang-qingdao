@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.yg.LKTMapper">
+
+	<select id="LkTMyproject" resultType="com.hot.manage.entity.yg.LKTMyproject">
+		CALL
+		Get_Myproject(#{moduleid,jdbcType=INTEGER},#{userid,jdbcType=INTEGER});
+	</select>
+
+	<select id="LKTSelectdevicenum" resultType="com.hot.manage.entity.yg.LKTSelectdevicenum">
+		CALL
+		Get_Selectdevicenum(#{moduleid,jdbcType=INTEGER},#{userid,jdbcType=INTEGER});
+	</select>
+
+	<select id="LKTSelectGroupWork" resultType="com.hot.manage.entity.yg.LKTSelectGroupWork">
+		SELECT
+		w.id as woid
+		,g.id as devicegroupid,w.code as code ,w.addtime as addtime ,
+		w.title	as title ,w.assignid as assignid ,w.complete_time as complete_time ,
+		w.adduserid as adduserid ,u.telephone as telephone ,w.state as state
+		,w.audit as audit, w.fatherid as fatherid , u.contacts as contacts , u1.contacts as adduser
+		FROM t_hk_wo w 
+		left join t_hk_wodevrelation h on h.woid = w.id
+		left JOIN t_device_yg y ON y.id = h.devid
+		LEFT JOIN t_device_group_relation r ON r.deviceid = y.id AND r.moduleid = #{moduleid}
+		LEFT JOIN t_device_group g ON g.id = r.groupid
+		LEFT JOIN t_user u ON u.id = w.assignid
+		LEFT JOIN t_user u1 on u1.id = w.adduserid
+		WHERE w.isdelete = 0  and w.type = 1 and w.moduleid = 2
+		<if test="groupid!='' and groupid!=null">
+		and r.groupid = #{groupid}
+		</if>
+		<if test="starttime!='' and starttime!=null">
+		and	w.addtime &gt;= #{starttime} 
+		</if>
+		<if test="endtime!='' and endtime!=null">
+		and	w.addtime &lt;= #{endtime} 
+		</if>
+		<if test="workname!='' and workname!=null">
+		and w.title	LIKE CONCAT('%',#{workname},'%')
+		</if>
+		GROUP BY w.id
+		ORDER BY w.id asc
+	</select>
+	<select id="LKTSelectGroupWorkFather" resultType="com.hot.manage.entity.yg.LKTSelectGroupWorkFather">
+		SELECT
+		w.id as woid
+		,w.code as code ,w.addtime as addtime ,
+		w.title	as title ,w.assignid as assignid ,w.complete_time as complete_time ,
+		w.adduserid as adduserid ,u.telephone as telephone ,w.state as state
+		,w.audit as audit, u.contacts as contacts , u1.contacts as adduser
+		FROM t_hk_wo w 
+		left join t_hk_wodevrelation h on h.woid = w.id
+		left JOIN t_device_yg y ON y.id = h.devid
+		LEFT JOIN t_user u ON u.id = w.assignid
+		LEFT JOIN t_user u1 on u1.id = w.adduserid
+		WHERE w.isdelete = 0  and type = 0  and w.moduleid = 2
+		<if test="starttime!='' and starttime!=null">
+		and	w.addtime &gt;= #{starttime} 
+		</if>
+		<if test="endtime!='' and endtime!=null">
+		and	w.addtime &lt;= #{endtime} 
+		</if>
+		<if test="workname!='' and workname!=null">
+		and w.title	LIKE CONCAT('%',#{workname},'%')
+		</if>
+		GROUP BY w.id
+		ORDER BY w.id asc
+	</select>
+	
+	<select id="LKTEstablishygAlarmAndEvent" resultType="com.hot.manage.entity.yg.LKTEstablishygAlarmAndEvent">
+		CALL
+		Get_EstablishygAlarmAndEvent();
+	</select>
+	<select id="LKTSelectAlarmAndEvent" resultType="com.hot.manage.entity.yg.LKTEstablishygAlarmAndEvent">
+		CALL
+		Get_SelectAlarmAndEvent(#{type,jdbcType=INTEGER},#{id,jdbcType=VARCHAR});
+	</select>
+	<select id="LKTEstablishygDevice" resultType="com.hot.manage.entity.yg.LKTEstablishygDevice">
+		CALL
+		Get_EstablishygDevice(#{moduleid,jdbcType=INTEGER},#{userid,jdbcType=INTEGER});
+	</select>
+	<select id="LKTSelctDevOnidAlarm" resultType="com.hot.manage.entity.yg.LKTSelctDevOnid">
+			SELECT y.id as id , '报警' as sourcetype , y.addtime as addtime ,
+			a.state_name as state_name , a.level as level,
+			y.deviceid as deviceid,d.`code` as code,d.devnum as devnum
+			FROM t_yg_alarm y
+			LEFT JOIN t_dev_alarm_state a on y.alarmStateId = a.id
+			LEFT JOIN t_device_yg d on d.id=y.deviceid and d.isenable=1
+			WHERE y.deviceid IN
+	        <foreach collection="id" index="index" item="item" open="(" separator="," close=")">
+	            #{item}
+	        </foreach>
+			and y.handlestate = 0 and y.isdispatch = 1
+			ORDER BY y.id asc
+	</select>
+	<select id="LKTSelctDevOnidEvent" resultType="com.hot.manage.entity.yg.LKTSelctDevOnid">
+			SELECT e.id as id, '事件上报' as sourcetype , e.addtime as addtime,
+			a.state_name as state_name, e.level as level,
+			d.devid as deviceid,g.`code` as code,g.devnum as devnum
+			FROM t_hk_event e
+			LEFT JOIN t_hk_evdevrelation d on d.devid IN
+			<foreach collection="id" index="index" item="item" open="("
+				separator="," close=")">
+				#{item}
+			</foreach>
+			LEFT JOIN t_event_state a on e.describe = a.id
+			LEFT JOIN t_device_yg g on g.id=d.devid and g.isenable=1
+			WHERE e.id = d.eventid and e.state = 0 and e.moduleid = 2
+			ORDER BY e.id asc
+	</select>
+	<select id="LKTSelectHandle" resultType="com.hot.manage.entity.yg.LKTSelectHandle">
+		SELECT id , contacts
+		FROM t_user
+		WHERE id = #{userid} or fatherid = #{userid}
+	</select>
+	<select id="LKTNewWork" resultType="com.hot.manage.entity.yg.LKTCode">
+		CALL
+		Get_NewWork(#{title,jdbcType=VARCHAR},#{descrition,jdbcType=VARCHAR},#{complete_time,jdbcType=INTEGER}
+					,#{assignid,jdbcType=INTEGER},#{adduserid,jdbcType=INTEGER},#{alarm_id,jdbcType=VARCHAR}
+					,#{event_id,jdbcType=VARCHAR},#{dev_id,jdbcType=VARCHAR});
+	</select>
+	<select id="LKTSelectWork" resultType="com.hot.manage.entity.yg.LKTSelectWork">
+		CALL
+		Get_SelectWork(#{workid,jdbcType=INTEGER});
+	</select>
+	<select id="LKTSelectAllevent" resultType="com.hot.manage.entity.yg.LKTSelectAllevent">
+		CALL
+		Get_SelectAllevent(#{workid,jdbcType=INTEGER});
+	</select>
+	<select id="LKTDeviceAll" resultType="com.hot.manage.entity.yg.LKTDeviceAll">
+		SELECT y.*
+		FROM  t_hk_wodevrelation d
+		LEFT JOIN t_hk_wo w on w.fatherid = #{workid}
+		LEFT JOIN t_device_yg y on y.id = d.devid
+		WHERE d.woid = w.id or d.woid = #{workid} and d.moduleid = 2
+	</select>
+	<select id="LKTInstructionsAll" resultType="com.hot.manage.entity.yg.LKTInstructionsAll">
+		CALL
+		Get_InstructionsAll(#{workid,jdbcType=INTEGER});
+	</select>
+	<select id="LKTTureWork" resultType="com.hot.manage.entity.yg.LKTTureWork">
+		CALL
+		Get_TureWork(#{workid,jdbcType=INTEGER});
+	</select>
+	<select id="LKTDeleteWork" resultType="com.hot.manage.entity.yg.LKTCode">
+		CALL
+		Get_DeleteWork(#{workid,jdbcType=INTEGER});
+	</select>
+	<select id="LKTWorkExamine" resultType="com.hot.manage.entity.yg.LKTCode">
+		CALL
+		Get_WorkExamine(#{workid,jdbcType=INTEGER},#{audit,jdbcType=INTEGER});
+	</select>
+	<select id="LKTPatrols" resultType="com.hot.manage.entity.yg.LKTPatrols">
+		SELECT r.id as id, u.userNum as userNum , u.contacts as contacts,  u.addtime as useraddtime ,
+		 COUNT(distinct s.itemid) as groupidnum, COUNT(s.devnum) as deviceidnum ,
+		 IFNULL(l.addtime,'无签到记录') as addtime , IF(r.isenable is null,'未冻结','已冻结') as isenable
+		FROM t_hk_userpatRelation r
+		LEFT JOIN t_user u on u.id = r.userid
+		LEFT JOIN t_hk_patdevRelation p on p.userpatid = r.id
+		LEFT JOIN t_hk_sign s on s.id = p.signid
+		LEFT JOIN t_hk_signlog l on l.userid = r.userid and l.addtime = (select addtime from t_hk_signlog WHERE userid = u.id and signstate = 1 order by addtime desc limit 1)
+		WHERE u.isdelete = 0 and u.isenable = 1
+		      	<if test="startTime!='' and startTime!=null">
+				and l.addtime &gt;= #{startTime}
+				</if>
+				<if test="endTime!='' and endTime!=null">
+				and l.addtime &lt;= #{endTime}
+				</if>
+				<if test="userNumorcontacts!='' and userNumorcontacts!=null">
+				and (u.contacts LIKE CONCAT('%',#{userNumorcontacts},'%') or u.userNum LIKE CONCAT('%',#{userNumorcontacts},'%'))
+				</if>
+		GROUP BY r.userid
+		ORDER BY r.userid asc
+	</select>
+	<select id="LKTPatrolsFrozen" resultType="com.hot.manage.entity.yg.LKTCode">
+		CALL
+		Get_PatrolsFrozen(#{userid,jdbcType=INTEGER},#{isenable,jdbcType=INTEGER});
+	</select>
+	<select id="LKTPatrolsDelete" resultType="com.hot.manage.entity.yg.LKTCode">
+		CALL
+		Get_PatrolsDelete(#{patrolsid,jdbcType=INTEGER});
+	</select>
+	<select id="LKTPatrolsInsert" resultType="com.hot.manage.entity.yg.LKTCode">
+		CALL
+		Get_PatrolsInsert(#{adduserid,jdbcType=INTEGER});
+	</select>
+	<select id="LKTPatrolsperson" resultType="com.hot.manage.entity.yg.LKTPatrolsperson">
+		SELECT t.id as id, t.contacts as contacts
+		FROM t_user t
+		LEFT JOIN t_hk_userpatrelation p on t.id = p.userid
+		WHERE p.userid is null  and t.isdelete = 0 and t.isenable = 1  and  (t.id = #{userid} or t.fatherid = #{userid})
+		ORDER BY t.id
+	</select>
+	<select id="LKTPatrolsuser" resultType="com.hot.manage.entity.yg.LKTPatrolsperson">
+		SELECT p.id as id, t.contacts as contacts
+		FROM t_user t
+		LEFT JOIN t_hk_userpatrelation p on t.id = p.userid
+		WHERE t.isdelete = 0 and t.isenable = 1  and  (t.id = #{userid} or t.fatherid = #{userid}) and t.id = p.userid and p.isenable is null
+		ORDER BY t.id
+	</select>
+	<select id="LKTSignList" resultType="com.hot.manage.entity.yg.LKTSignList">
+	SELECT s.id as id , s.devnum as devnum , g.groupname as groupname,
+	s.address as address ,
+	s.lon as lon , s.lat as lat , IFNULL(GROUP_CONCAT(u.id),'无签到人员') as patrolsidlist ,
+	IFNULL(GROUP_CONCAT(t.contacts),'无签到人员') as contacts ,
+	IFNULL(l.addtime,'无签到记录') as addtime
+	FROM t_hk_sign s
+	LEFT JOIN t_device_group g on g.id = s.itemid
+	LEFT JOIN t_hk_patdevrelation p on p.signid = s.id
+	LEFT JOIN t_hk_userpatrelation u on u.id = p.userpatid and u.isenable is NULL
+	LEFT JOIN t_user t on t.id = u.userid
+	LEFT JOIN t_hk_signlog l on l.signid = s.id
+	and l.addtime = (select addtime from t_hk_signlog WHERE signstate = 1 and
+	signid = s.id and type = 0 order by addtime desc limit 1)
+	WHERE 1=1 and s.isdelete = 0
+	<if test="startTime!='' and startTime!=null">
+		and l.addtime &gt;= #{startTime}
+	</if>
+	<if test="endTime!='' and endTime!=null">
+		and l.addtime &lt;= #{endTime}
+	</if>
+	<if test="devnumoraddress!='' and devnumoraddress!=null">
+		and (s.devnum LIKE CONCAT('%',#{devnumoraddress},'%') or s.address LIKE CONCAT('%',#{devnumoraddress},'%'))
+	</if>
+	GROUP BY s.id
+	ORDER BY s.id asc
+	</select>
+	<select id="LKTSignHistory" resultType="com.hot.manage.entity.yg.LKTSignHistory">
+	SELECT l.id as id , s.devnum as devnum , g.groupname as groupname ,
+	u.contacts as contacts , l.addtime as addtime , IF(l.signstate = 1,'签到成功','签到失败') as signstate
+	FROM t_hk_signlog l
+	LEFT JOIN t_hk_sign s on s.id = l.signid
+	LEFT JOIN t_device_group g on g.id = s.itemid
+	LEFT JOIN t_user u on u.id = l.userid
+	WHERE 1=1 and s.isdelete = 0 and l.type = 0
+	<if test="id!='' and id!=null">
+		and l.signid = #{id}
+	</if>
+	<if test="startTime!='' and startTime!=null">
+		and l.addtime &gt;= #{startTime}
+	</if>
+	<if test="endTime!='' and endTime!=null">
+		and l.addtime &lt;= #{endTime}
+	</if>
+	<if test="signstate!='' and signstate!=null">
+		and l.signstate = #{signstate}
+	</if>
+	<if test="devnum!='' and devnum!=null">
+		and s.devnum LIKE CONCAT('%',#{devnum},'%')
+	</if>
+	ORDER BY l.id
+	</select>
+	<select id="LKTSignListDelete" resultType="com.hot.manage.entity.yg.LKTCode">
+		CALL
+		Get_SignListDelete(#{id,jdbcType=INTEGER});
+	</select>
+	<select id="LKTPatrolChange" resultType="com.hot.manage.entity.yg.LKTCode">
+		CALL
+		Get_PatrolChange(#{patrolsided,jdbcType=INTEGER},#{patrolsid,jdbcType=INTEGER});
+	</select>
+	<select id="LKTSignGroupList" resultType="com.hot.manage.entity.yg.LKTSignGroupList">
+		SELECT id , groupname
+		FROM t_device_group
+		WHERE isdelete = 0 and isenable = 1
+	</select>
+	<insert id="LKTSignDevice"  keyProperty="id" useGeneratedKeys="true">
+		INSERT INTO t_hk_sign(devnum,itemid,address,lon,lat)
+		VALUES(#{devnum},#{itemid},#{address},#{lon},#{lat})
+	</insert>
+	<select id="LKTSignDeviceUser" resultType="com.hot.manage.entity.yg.LKTCode">
+		CALL
+		Get_SignDeviceUser(#{id,jdbcType=INTEGER},#{patrolsid,jdbcType=VARCHAR});
+	</select>
+	<update id="LKTSignListUpdate">
+	UPDATE t_hk_sign 
+	set id = #{id}
+	<if test="devnum!='' and devnum!=null">
+	,devnum = #{devnum}  
+	</if>
+	<if test="itemid!='' and itemid!=null">
+	,itemid = #{itemid} 
+	</if>
+	<if test="address!='' and address!=null"> 
+	,address = #{address}  
+	</if>
+	<if test="lon!='' and lon!=null">
+	,lon = #{lon}  
+	</if>
+	<if test="lat!='' and lat!=null">
+	,lat = #{lat} 
+	</if>
+	WHERE id = #{id}
+	</update>
+	<select id="LKTSignListUpdateUser" resultType="com.hot.manage.entity.yg.LKTCode">
+		CALL
+		Get_SignListUpdateUser(#{id,jdbcType=INTEGER},#{patrolsid,jdbcType=VARCHAR});
+	</select>
+	<select id="LKTSignDeviceList" resultType="com.hot.manage.entity.yg.LKTSignList">
+	SELECT s.id as id , y.devnum as devnum , tg.groupname as groupname , y.code as address , y.lng as lon , y.lat as lat ,
+	IFNULL(GROUP_CONCAT(u.id),'无签到人员') as patrolsidlist ,IFNULL(GROUP_CONCAT(tu.contacts),'无签到人员') as contacts,
+	 IFNULL(l.addtime,'无签到记录') as addtime
+	FROM t_hk_signdevice s
+	LEFT JOIN t_device_yg y on y.id = s.deviceid
+	LEFT JOIN t_device_group_relation g on g.deviceid = y.id and g.moduleid = #{moduleid}
+	LEFT JOIN t_device_group tg on tg.id = g.groupid
+	LEFT JOIN t_hk_patdevrelationdevice p on p.signdeviceid = s.id
+	LEFT JOIN t_hk_userpatrelation u on u.id = p.userpatid and u.isenable is NULL
+	LEFT JOIN t_user tu on tu.id = u.userid
+	LEFT JOIN t_hk_signlog l on l.signid = s.id and l.addtime = (select addtime from t_hk_signlog WHERE signstate = 1 and	signid = s.id  and type = 1 order by addtime desc limit 1)
+	WHERE s.isdelete = 0 and s.moduleid = #{moduleid}
+	<if test="startTime!='' and startTime!=null">
+		and l.addtime &gt;= #{startTime}
+	</if>
+	<if test="endTime!='' and endTime!=null">
+		and l.addtime &lt;= #{endTime}
+	</if>
+	<if test="devnumoraddress!='' and devnumoraddress!=null">
+		and (y.mac LIKE CONCAT('%',#{devnumoraddress},'%') or y.code LIKE CONCAT('%',#{devnumoraddress},'%'))
+	</if>
+	GROUP BY s.id
+	ORDER BY s.id asc
+	</select>
+	<select id="LKTSignDeviceDelete" resultType="com.hot.manage.entity.yg.LKTCode">
+		CALL
+		Get_SignDeviceDelete(#{id,jdbcType=INTEGER});
+	</select>
+	<select id="LKTSignDeviceHistory" resultType="com.hot.manage.entity.yg.LKTSignHistory">
+		SELECT l.id as id , y.mac as devnum , y.code as groupname ,
+		u.contacts as contacts , l.addtime as addtime , IF(l.signstate = 1,'签到成功','签到失败') as signstate
+		FROM t_hk_signlog l
+		LEFT JOIN t_hk_signdevice s on s.id = l.signid
+		LEFT JOIN t_device_yg y on y.id = s.deviceid
+		LEFT JOIN t_user u on u.id = l.userid
+		WHERE 1=1 and s.isdelete = 0 and l.type = 1
+		<if test="id!='' and id!=null">
+			and l.signid = #{id}
+		</if>
+		<if test="startTime!='' and startTime!=null">
+			and l.addtime &gt;= #{startTime}
+		</if>
+		<if test="endTime!='' and endTime!=null">
+			and l.addtime &lt;= #{endTime}
+		</if>
+		<if test="signstate!='' and signstate!=null">
+			and l.signstate = #{signstate}
+		</if>
+		<if test="devnum!='' and devnum!=null">
+			and y.mac LIKE CONCAT('%',#{devnum},'%')
+		</if>
+		ORDER BY l.id
+	</select>
+	<select id="LKTSignDeviceListApp" resultType="com.hot.manage.entity.yg.LKTSignDeviceListApp">
+		SELECT s.id as id , y.devnum as devnum , '烟感' as deviceidtype , 
+		tu.contacts as contacts , y.lat as lat , y.lng as lng , y.code as code
+		FROM t_hk_signdevice s
+		LEFT JOIN t_hk_patdevrelationdevice p on p.signdeviceid = s.id
+		LEFT JOIN t_hk_userpatrelation u on u.id = p.userpatid and u.isenable is NULL
+		LEFT JOIN t_device_yg y on s.deviceid = y.id
+		LEFT JOIN t_device_group_relation g on  g.moduleid = #{moduleid} and g.deviceid = y.id
+		LEFT JOIN t_device_group gu on gu.id = g.groupid
+		LEFT JOIN t_user tu on tu.id = gu.managerid
+		WHERE u.userid = #{userid} and s.moduleid = #{moduleid}
+		<if test="macorcode!='' and macorcode!=null">
+			and (y.devnum LIKE CONCAT('%',#{macorcode},'%') 
+			or y.code LIKE CONCAT('%',#{macorcode},'%'))
+		</if>
+	</select>
+	<select id="LKTSelectUserApp" resultType="com.hot.manage.entity.yg.LKTSelectUserApp">
+		SELECT t.userNum , t.contacts
+		FROM t_user t
+		WHERE t.id = #{userid}
+	</select>
+	<select id="LKTSignDeviceApp" resultType="com.hot.manage.entity.yg.LKTCode">
+		CALL
+		Get_SignDeviceApp(#{userid,jdbcType=INTEGER},#{id,jdbcType=INTEGER},#{state,jdbcType=INTEGER},#{type,jdbcType=INTEGER});
+	</select>
+	<select id="LKTSignListApp" resultType="com.hot.manage.entity.yg.LKTSignListApp">
+		SELECT s.id , s.devnum , s.address , s.lon , s.lat , tu.userNum , tu.contacts
+		FROM t_hk_sign s
+		LEFT JOIN t_hk_patdevrelation p on p.signid = s.id
+		LEFT JOIN t_hk_userpatrelation u on u.id = p.userpatid
+		LEFT JOIN t_user tu on tu.id = u.userid
+		WHERE s.isdelete = 0 and u.isenable is NULL and u.userid = #{userid}
+	</select>
+	<select id="LKTWorkUntreated" resultType="com.hot.manage.entity.yg.LKTWorkUntreated">
+		SELECT w.id as woid , y.devnum as devnum ,	 w.addtime as addtime , w.complete_time as complete_time , y.code as code ,
+		 u.contacts as contacts , u.telephone as telephone , w.state as state , y.lng as lng , y.lat as lat
+		FROM t_hk_wo w
+		LEFT JOIN t_hk_wodevrelation d on d.woid = w.id
+		LEFT JOIN t_device_yg y on y.id = d.devid
+		LEFT JOIN t_user u on u.id = w.adduserid
+		WHERE w.moduleid = 2 and (w.state = 0 or w.state = 1)
+		<if test="dvenumorcode!='' and dvenumorcode!=null">
+			and (y.devnum LIKE CONCAT('%',#{dvenumorcode},'%') 
+			or y.code LIKE CONCAT('%',#{dvenumorcode},'%'))
+		</if>
+		<if test="readtype==1">
+			 and DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(w.addtime)
+		</if>
+	</select>
+	<select id="LKTWorkDetailsApp" resultType="com.hot.manage.entity.yg.LKTWorkDetailsApp">
+		SELECT w.id as woid , w.title as title , w.descrition as descrition , y.code as code , y.lng as lng , y.lat as lat ,
+			w.complete_time as complete_time , w.addtime as addtime, u.contacts as contacts , u.telephone as telephone,
+				w.state as state , y.devnum as devnum , y.id as devid , w.adduserid as pdid
+		FROM t_hk_wo w 
+		LEFT JOIN t_hk_wodevrelation d on d.woid = w.id
+		LEFT JOIN t_device_yg y on y.id = d.devid
+		LEFT JOIN t_user u on u.id = w.adduserid
+		WHERE w.id = #{woid}
+	</select>
+	<select id="LKTWorkDetailsAppdate" resultType="com.hot.manage.entity.yg.LKTWorkHandleApp">
+		SELECT w.id as woid , w.title as title , w.descrition as descrition , y.code as code , y.lng as lng , y.lat as lat ,
+			w.complete_time as complete_time , w.addtime as addtime, u.contacts as contacts , u.telephone as telephone,
+				w.state as state , y.devnum as devnum , y.id as devid , w.handleType
+		FROM t_hk_wo w 
+		LEFT JOIN t_hk_wodevrelation d on d.woid = w.id
+		LEFT JOIN t_device_yg y on y.id = d.devid
+		LEFT JOIN t_user u on u.id = w.adduserid
+		WHERE w.id = #{woid} and w.state = 2
+	</select>
+	<select id="LKTWorkDetailsAppea" resultType="com.hot.manage.entity.yg.LKTWorkDetailsAppea">
+		CALL
+		Get_WorkDetailsApp(#{woid,jdbcType=INTEGER},#{devid,jdbcType=INTEGER});
+	</select>
+	<select id="LKTWorkDetailsAppimg" resultType="com.hot.manage.entity.yg.LKTWorkDetailsApp">
+		SELECT ifnull(GROUP_CONCAT(w.url separator ','),0) as img
+		FROM t_hk_evresrelation w
+		WHERE w.resourcestype = #{Resourcestype} and w.type = #{type} and w.eventid = #{id} and w.moduleid = 2
+		<!--  资源类型，1：图片；2：音频；3：视频||类型，1事件，2报警||事件或报警记录id  -->
+	</select>
+	<select id="LKTWorkRepairApp" resultType="com.hot.manage.entity.yg.LKTCode">
+		CALL
+		Get_WorkRepairApp(#{woid,jdbcType=INTEGER},#{problemdesc,jdbcType=VARCHAR},#{remark,jdbcType=VARCHAR});
+	</select>
+	<insert id="LKTWorkRepairAppInsert">
+		INSERT INTO t_hk_woresrelation(woid,resourcetype,url)
+		VALUES(#{woid},#{resourcetype},#{url})
+	</insert>
+	<update id="LKTWorkRepairAppUpevent">
+		UPDATE t_hk_event e set e.state = 2 WHERE e.id = #{eventid}
+	</update>
+	<update id="LKTWorkRepairAppUpalarm">
+		UPDATE t_yg_alarm a set a.handler = #{userid} , a.handlestate = 2 WHERE a.id = #{alarmid}
+	</update>
+	<select id="LKTWorkRepairAppRecord" resultType="com.hot.manage.entity.yg.LKTCode">
+		CALL
+		Get_WorkRepairAppRecord(#{woid,jdbcType=INTEGER},#{devid,jdbcType=INTEGER});
+	</select>
+	<select id="LKTWorkGbApp" resultType="com.hot.manage.entity.yg.LKTCode">
+		CALL
+		Get_WorkGbApp(#{woid,jdbcType=INTEGER},#{problemdesc,jdbcType=VARCHAR});
+	</select>
+	<select id="LKTWorkHandleApp" resultType="com.hot.manage.entity.yg.LKTWorkHandleApp">
+		SELECT ifnull(w.problemdesc,'无数据') as problemdesc , ifnull(GROUP_CONCAT(e.url  separator ','),'无资源数据') as pictureurl
+		FROM t_hk_wo w
+		LEFT JOIN t_hk_woresrelation e on  e.woid = #{woid}
+		WHERE w.id = #{woid}
+	</select>
+	<update id="LKTWorkReplaceAppDev">
+		UPDATE t_device_yg y SET y.devnum = #{devnum} , y.addtime = NOW() , y.adduserid = #{userid}, y.state = 0
+		WHERE y.id = #{devid};
+	</update>
+	<update id="LKTWorkReplaceAppWo">
+		UPDATE t_hk_wo w SET w.state = 2 , w.endtime = NOW() , w.handleType = 3 , w.problemdesc = '更换设备' , w.remark = #{remark}
+		WHERE w.id = #{woid};
+	</update>
+	<select id="LKTWorkTobetreatedApp" resultType="com.hot.manage.entity.yg.LKTWorkTobetreatedApp">
+		SELECT w.id as woid , y.devnum as devnum ,	 w.addtime as addtime , w.complete_time as complete_time , y.code as code ,
+		 u.contacts as contacts , u.telephone as telephone , w.state as state , y.lng as lng , y.lat as lat ,
+		 if(w.handleType = 1,'已维修','已更换') as handleType , TIMESTAMPDIFF(SECOND,w.addtime,w.endtime) as ordertime
+		FROM t_hk_wo w
+		LEFT JOIN t_hk_wodevrelation d on d.woid = w.id
+		LEFT JOIN t_device_yg y on y.id = d.devid
+		LEFT JOIN t_user u on u.id = w.adduserid
+		WHERE w.state = 2 and w.moduleid = 2
+		<if test="dvenumorcode!='' and dvenumorcode!=null">
+			and (y.devnum LIKE CONCAT('%',#{dvenumorcode},'%') 
+			or y.code LIKE CONCAT('%',#{dvenumorcode},'%'))
+		</if>
+		<if test="readtype==1">
+			 and DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(w.addtime)
+		</if>
+	</select>
+</mapper>

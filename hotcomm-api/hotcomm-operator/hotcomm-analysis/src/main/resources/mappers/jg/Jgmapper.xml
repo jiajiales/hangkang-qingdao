@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.analysis.db.jg.JgMapper">
+
+<!-- 	翻盖频率统计 -->
+	<select id="selectFlipNum"  resultType="com.hot.analysis.bean.jg.FlipNum">
+		select T.*,b.`code` as devName,b.lat as lat,b.lng as lng 
+		from (
+		select  a.moduleid as moduleID, #{querytype} as queryType,a.deviceid as devID,COUNT(a.id) as Count from t_dev_alarm a
+                INNER JOIN t_device_group_relation c ON a.moduleid = c.moduleid
+			    AND a.deviceid = c.deviceid
+                left join t_dev_alarm_state s on  a.alarmstateid=s.id  
+		        where c.groupid in (select devicegroupid from (select a.devicegroupid from t_user_dgroup_relation a
+	            left join t_device_group b on a.devicegroupid = b.id
+	            where a.userid =  #{userid} and b.moduleid = #{moduleid}) as 
+                groupAlarmRatetable )    and
+ <if test="querytype ==1"> a.addtime  >= #{startTime} and a.addtime &lt;=  #{endTime}  AND s.type=1 </if>
+ <if test="querytype ==2"> a.handleTime  >= #{startTime} and a.handleTime &lt;=  #{endTime}  AND  a.handlestate=1 and s.type=2 </if>
+ <if test="querytype ==3">  a.addtime  >= #{startTime} and a.addtime &lt;=  #{endTime} and s.type=2 </if>
+		) T
+		LEFT JOIN t_device_jg b on T.devID = b.id;	
+
+	</select>
+	
+<!-- 井盖分类统计 -->
+	<select id="selectJgType" resultType="com.hot.analysis.bean.jg.JGType">
+   		CALL Get_DeviceType(#{startTime,jdbcType=DATE},#{endTime,jdbcType=DATE},#{moduleid,jdbcType=INTEGER},#{userid,jdbcType=INTEGER});
+   	</select>
+   	
+<!-- 报警时段统计 -->
+    <select id="selectJGTimeAlarmNum"  resultType="com.hot.analysis.bean.jg.JGTimeAlarmNum">
+    select a.moduleid,a.alarmstateid AS alarmtype,HOUR(a.addtime) AS hourpart,COUNT(a.id) as count from t_dev_alarm a
+INNER JOIN t_device_group_relation c ON a.moduleid = c.moduleid
+			AND a.deviceid = c.deviceid
+	where a.addtime <![CDATA[>=]]> #{startTime} and a.addtime <![CDATA[<=]]> #{endTime}
+	and c.groupid in (select devicegroupid from (select a.devicegroupid from t_user_dgroup_relation a
+	left join t_device_group b on a.devicegroupid = b.id
+	where a.userid = #{userid} and b.moduleid =#{moduleid})  groupAlarmtable) and a.moduleid =#{moduleid}
+
+	<if test="alarmtype!=0"> and a.alarmstateid =#{alarmtype} </if>
+	GROUP BY HOUR(a.addtime)  <if test="alarmtype==0">, a.alarmstateid</if>
+	ORDER BY HOUR(a.addtime)  ASC;
+	
+	
+    
+<!--         CALL Get_JGAlarmHourPart(#{startTime,jdbcType=DATE},#{endTime,jdbcType=DATE},#{moduleid,jdbcType=INTEGER},#{alarmtype,jdbcType=INTEGER},#{userid,jdbcType=INTEGER}); -->
+   
+   
+    </select>
+
+<!-- 维修原因统计 -->
+<select id="selectReasonNum"  resultType="com.hot.analysis.bean.jg.ReasonNum">
+	select h.module_id as moduleid ,H.state_name as Hname, ifnull(T.Num,0) as Num,h.id as RepairType 
+	FROM 
+	(select a.moduleid,a.handleresult as repairType ,COUNT(a.id) as Num , h.state_name  
+				from t_dev_alarm a
+           			left JOIN  t_device_group_relation c ON a.moduleid = c.moduleid  AND a.deviceid = c.deviceid
+           			RIGHT JOIN  t_dev_handle_state h on h.id=a.handleresult  and h.module_id=#{moduleid}
+          				 where a.handleTime <![CDATA[>=]]> #{startTime}   and a.handleTime<![CDATA[<=]]> #{endTime}  and c.groupid  in (select devicegroupid 
+           		from
+           (select a.devicegroupid from t_user_dgroup_relation a  left join t_device_group b on a.devicegroupid = b.id  where a.userid = #{userid} and b.moduleid = #{moduleid}) as grouptable) 
+	         <if test="pepairType != 0"> 	and	a.handleresult =#{pepairType}    </if>
+            and a.handlestate = 2  GROUP BY a.handleresult )     AS   T
+           RIGHT JOIN  t_dev_handle_state h on h.id=T.repairType  WHERE   h.module_id=#{moduleid} and h.isdelete=0 ;
+</select>
+
+<!-- 井盖分类查询 -->
+
+<select id="GroupListDev"  parameterType="java.util.List" resultType="com.hot.analysis.bean.common.GroupListDev">
+
+SELECT j.id as id , j.x as x , j.y as y , j.state as state , c.site as site , c.picpath as picpath
+		FROM t_item_pic c
+		LEFT JOIN t_dev_item_pic p on p.item_pic_id = c.id and p.isdelete = 0
+		LEFT JOIN t_device_group_relation g on g.moduleid = #{moduleid} and g.isdelete = 0 and g.isenable = 1 and g.deviceid = p.dev_id
+		LEFT JOIN 
+			
+			t_device_jg  j on j.id = p.dev_id
+		WHERE c.itemid = #{groupid}  and g.groupid = c.itemid and c.isdelete = 0
+		
+		<if test="site!=null and site!=''">
+			and c.site = #{site}
+		</if>
+		
+		
+		<if test=" purpose!='' and  purpose!=null  ">
+			and j.purpose in  
+		  <foreach collection="purpose" item="item" index="index" open="(" separator="," close=")">  
+		  #{item}  
+		  </foreach>  
+		</if>
+		
+		
+		<if test="loadbear!=null and loadbear!=''  ">
+			and j.loadbear in  
+        <foreach collection="loadbear" item="item" index="index"  
+            open="(" separator="," close=")">  
+            #{item}  
+        </foreach>  
+		</if>
+
+		
+		</select>
+</mapper>

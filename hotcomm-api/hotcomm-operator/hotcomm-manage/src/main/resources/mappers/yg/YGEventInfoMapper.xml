@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.yg.YGEventInfoMapper">
+	<select id="selectYGEventInfo" resultType="com.hot.manage.entity.yg.vo.YGEventInfo">
+		CALL Get_YGEventInfo(#{eventid});
+	</select>
+	<select id="selectEventDevice" resultType="com.hot.manage.entity.yg.vo.YGEventDeviceRele">
+		CALL Get_YGEventDeviceRele(#{eventid});
+	</select>
+	<select id="selectEventInstruct" resultType="com.hot.manage.entity.yg.vo.YGEventInstructRele">
+		CALL Get_YGEventInstructRele(#{eventid});
+	</select>
+	<select id="selectEventHandling" resultType="com.hot.manage.entity.yg.vo.YGEventHandling">
+		CALL Get_YGEventHandling(#{eventid});
+	</select>
+	<select id="selectEventFinish" resultType="com.hot.manage.entity.yg.vo.YGEventFinish">
+		CALL Get_YGEventFinish(#{eventid});
+	</select>
+</mapper>

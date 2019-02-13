@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.data.db.DeviceGroupMapper">
+
+	<resultMap type="DeviceGroupVO" id="DeviceGroupMap">
+		<result column="device_group_id" property="groupId" />
+		<result column="group_name" property="groupName" />
+		<result column="group_status" property="groupStatus" />
+		<result column="remark" property="remark" />
+		<result column="device_max" property="maxNums" />
+	</resultMap>
+
+	<resultMap type="DeviceGroupPageVO" id="DeviceGroupPageMap">
+		<result column="device_group_id" property="devGroupId" />
+		<result column="group_name" property="devGroupName" />
+		<result column="group_status" property="groupStatus" />
+		<result column="device_nums" property="devNum" />
+		<result column="device_max" property="devMax" />
+		<result column="member_ids" property="memberIds" />
+		<result column="member_names" property="memberNames" />
+		<result column="remark" property="remark" />
+	</resultMap>
+
+	<resultMap type="DeviceGroupListVO" id="DeviceGroupListMap">
+		<result column="device_group_id" property="devGroupId" />
+		<result column="group_name" property="devGroupName" />
+	</resultMap>
+
+	<!-- 根据组ID获取设备组信息 -->
+	<select id="getGroupById" resultMap="DeviceGroupMap">
+		SELECT v1.device_group_id, v1.group_name, v1.group_status, v1.remark, v1.device_max
+		FROM hk_device_group v1 
+		<where>
+			v1.device_group_id = #{groupId} AND v1.is_delete = 1;
+		</where>
+	</select>
+
+	<!-- 分页查询设备组信息 -->
+	<select id="queryPage" resultMap="DeviceGroupPageMap">
+		SELECT 
+			v1.device_group_id, 
+			v1.group_name, 
+			IFNULL(GROUP_CONCAT(v3.member_id SEPARATOR ','), '') member_ids,
+			IFNULL(GROUP_CONCAT(v3.member_name SEPARATOR ','), '') member_names,
+			(SELECT COUNT(0) FROM hk_device v2 WHERE v1.device_group_id = v2.device_group_id AND v2.is_delete = 1) device_nums, 
+			v1.device_max,
+			v1.remark,
+			v1.group_status
+		FROM hk_device_group v1
+		LEFT JOIN hk_device_group_member v2 ON v1.device_group_id = v2.device_group_id
+		LEFT JOIN sys_member v3 ON v3.member_id = v2.member_id
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+<!-- 			<if test="params.memberType != null and params.memberId != null"> -->
+<!-- 				<if test="params.memberType == 2 "> -->
+<!-- 					AND v2.member_id = #{params.memberId} -->
+<!-- 				</if> -->
+<!-- 				<if test="params.memberType == 1"> -->
+<!-- 					AND v2.member_id IN (SELECT v4.customer_id FROM hk_customer_member v4 WHERE v4.member_id = #{params.memberId}) -->
+<!-- 				</if> -->
+<!-- 			</if> -->
+			<if test="params.selectMemberId != null">
+				AND v2.member_id = #{params.selectMemberId}
+			</if>
+			<if test="params.deviceGroupId != null">
+				AND v1.device_group_id = #{params.deviceGroupId}
+			</if>
+			<if test="params.devGroupStatus != null">
+				AND v1.group_status = #{params.devGroupStatus}
+			</if>
+			AND v1.is_delete = 1
+		</trim>
+		GROUP BY v1.device_group_id
+	</select>
+
+	<!-- 获取设备组列表 -->
+	<select id="getGroupList" resultMap="DeviceGroupListMap">
+		SELECT v1.device_group_id, v1.group_name
+		FROM hk_device_group v1
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="memberType != null and memberId != null">
+				<if test="memberType == 2 ">
+					AND v1.device_group_id IN (SELECT v2.device_group_id FROM hk_device_group_member v2 WHERE v2.member_id = #{memberId})
+				</if>
+				<if test="memberType == 1">
+					AND v1.device_group_id 
+						IN (SELECT v3.device_group_id FROM hk_device_group_member v3 WHERE v3.member_id 
+						IN (SELECT v4.customer_id FROM hk_customer_member v4 WHERE v4.member_id = #{memberId}))
+				</if>
+			</if>
+			<if test="selectMemberId != null">
+				AND v1.device_group_id IN (SELECT v2.device_group_id FROM hk_device_group_member v2 WHERE v2.member_id = #{selectMemberId})
+			</if>
+			AND v1.is_delete = 1
+		</trim>
+	</select>
+
+	<select id="getRemainDevNums"  resultType="java.lang.Integer" >
+		SELECT v1.device_max - (SELECT COUNT(0) FROM hk_device v2 WHERE v2.device_group_id = #{groupId} AND v2.is_delete = 1) diff  
+		FROM hk_device_group v1  WHERE v1.is_delete = 1 AND v1.device_group_id = #{groupId} 
+	</select>
+
+	<select id="getDevNums"  resultType="java.lang.Integer" >
+		SELECT  (SELECT COUNT(0) FROM hk_device v2 WHERE v2.device_group_id = #{groupId} AND v2.is_delete = 1) devnums  
+		FROM hk_device_group v1 WHERE v1.is_delete = 1 AND v1.device_group_id = #{groupId} 
+	</select>
+
+	<!-- 查询设备组名称是否存在 -->
+	<select id="checkDeviceGroupNameExist" parameterType="java.lang.String" resultType="java.lang.Integer">
+		SELECT 1 FROM hk_device_group WHERE group_name = #{GroupName} AND is_delete = 1;
+	</select>
+
+</mapper>

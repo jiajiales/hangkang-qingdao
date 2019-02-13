@@ -1,0 +1,22 @@
+<form class="app-form" id="member-form">
+    <input type="hidden" name="id" />
+    <div class="field">
+        <input class="easyui-textbox" id="memberName" labelWidth="50" name="memberName" style="width:95%" data-options="label:'账号：',validType:['memberName','length[5,30]'],required:true" />
+    </div>
+    <div class="field">
+        <input class="easyui-textbox" id="realName" labelWidth="50" name="realName" style="width:95%" data-options="label:'姓名：',validType:['realName','length[2,30]'],required:true" />
+    </div>
+    <div class="field">
+        <input class="easyui-textbox" id="telephone" labelWidth="50" name="telephone" style="width:95%" data-options="label:'手机：',validType:'phoneNum'" />
+    </div>
+    <div class="field">
+        <input class="easyui-textbox" id="email" labelWidth="50" name="email" style="width:95%" data-options="label:'邮箱：',validType:['email','length[5,50]']" />
+    </div>
+    <div class="field" id="rolesParent">
+        <input class="easyui-textbox" id="roles" labelWidth="50" style="width:95%" name="roles" data-options="label:'角色：'" />
+    </div>
+    <div class="field" id="statusParent">
+        <label class="textbox-label textbox-label-before" style="width: 40px">状态：</label>
+        <input class="easyui-switchbutton" id="status" name="status" data-options="onText:'有效',offText:'无效',checked:true" value="1" />
+    </div>
+</form>

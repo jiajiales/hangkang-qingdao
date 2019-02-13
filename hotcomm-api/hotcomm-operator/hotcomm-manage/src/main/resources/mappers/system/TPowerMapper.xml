@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.system.TPowerMapper">
+	<select id="selectAllById" resultType="com.hot.manage.entity.system.TPower">
+		SELECT p.* FROM t_power p
+		LEFT JOIN t_power_group_relation pg ON pg.powerid=p.id 
+		LEFT JOIN t_user_pgrou_relationp u ON u.groupid=pg.groupid AND u.isenable=1
+		WHERE u.userid=#{userid}
+		AND p.isenable=1 
+	</select>
+	<select id="selectpowerByfatherid" resultType="com.hot.manage.entity.system.TPower">
+		SELECT p.* FROM t_power p
+		LEFT JOIN t_power_group_relation pg ON pg.powerid=p.id 
+		LEFT JOIN t_user_pgrou_relationp u ON u.groupid=pg.groupid AND u.isenable=1
+		WHERE u.userid=#{userid}
+		AND p.fatherid =#{fatherid}
+		AND p.isenable=1
+	</select>
+	  <insert id="insertTPower" useGeneratedKeys="true" keyProperty="id">
+	    insert into t_power
+	    <trim prefix="(" suffix=")" suffixOverrides=",">
+	      <if test="id != null">
+	        id,
+	      </if>
+	      <if test="description != null">
+	        description,
+	      </if>
+	      <if test="moduleid != null">
+	        moduleid,
+	      </if>
+	      <if test="isenable != null">
+	        isenable,
+	      </if>
+	      <if test="isdelete != null">
+	        isdelete,
+	      </if>
+	      <if test="addtime != null">
+	        addtime,
+	      </if>
+	      <if test="adduserid != null">
+	        adduserid,
+	      </if>
+	      <if test="type != null">
+	        type,
+	      </if>
+	      <if test="url != null">
+	        url,
+	      </if>
+	      <if test="ico != null">
+	        ico,
+	      </if>
+	      <if test="fatherid != null">
+	        fatherid,
+	      </if>
+	      <if test="order != null">
+	        `order`,
+	      </if>
+	      <if test="annotation != null">
+	        annotation,
+	      </if>
+	    </trim>
+	    <trim prefix="values (" suffix=")" suffixOverrides=",">
+	      <if test="id != null">
+	        #{id,jdbcType=INTEGER},
+	      </if>
+	      <if test="description != null">
+	        #{description,jdbcType=VARCHAR},
+	      </if>
+	      <if test="moduleid != null">
+	        #{moduleid,jdbcType=INTEGER},
+	      </if>
+	      <if test="isenable != null">
+	        #{isenable,jdbcType=BIT},
+	      </if>
+	      <if test="isdelete != null">
+	        #{isdelete,jdbcType=BIT},
+	      </if>
+	      <if test="addtime != null">
+	        #{addtime,jdbcType=TIMESTAMP},
+	      </if>
+	      <if test="adduserid != null">
+	        #{adduserid,jdbcType=INTEGER},
+	      </if>
+	      <if test="type != null">
+	        #{type,jdbcType=INTEGER},
+	      </if>
+	      <if test="url != null">
+	        #{url,jdbcType=VARCHAR},
+	      </if>
+	      <if test="ico != null">
+	        #{ico,jdbcType=VARCHAR},
+	      </if>
+	      <if test="fatherid != null">
+	        #{fatherid,jdbcType=INTEGER},
+	      </if>
+	      <if test="order != null">
+	        #{order,jdbcType=INTEGER},
+	      </if>
+	      <if test="annotation != null">
+	        #{annotation,jdbcType=VARCHAR},
+	      </if>
+	    </trim>
+	  </insert>
+	  <select id="selectById" resultType="com.hot.manage.entity.system.TPower">
+	  	SELECT * FROM t_power WHERE id=#{id}
+	  </select>
+	<update id="updateByKeySelective">
+		update t_power
+		<set>
+			<if test="description != null">
+				description = #{description,jdbcType=VARCHAR},
+			</if>
+			<if test="moduleid != null">
+				moduleid = #{moduleid,jdbcType=INTEGER},
+			</if>
+			<if test="isenable != null">
+				isenable = #{isenable,jdbcType=BIT},
+			</if>
+			<if test="isdelete != null">
+				isdelete = #{isdelete,jdbcType=BIT},
+			</if>
+			<if test="addtime != null">
+				addtime = #{addtime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="adduserid != null">
+				adduserid = #{adduserid,jdbcType=INTEGER},
+			</if>
+			<if test="type != null">
+				type = #{type,jdbcType=INTEGER},
+			</if>
+			<if test="url != null">
+				url = #{url,jdbcType=VARCHAR},
+			</if>
+			<if test="ico != null">
+				ico = #{ico,jdbcType=VARCHAR},
+			</if>
+			<if test="fatherid != null">
+				fatherid = #{fatherid,jdbcType=INTEGER},
+			</if>
+			<if test="order != null">
+				`order` = #{order,jdbcType=INTEGER},
+			</if>
+			<if test="annotation != null">
+				annotation = #{annotation,jdbcType=VARCHAR},
+			</if>
+		</set>
+		where id = #{id,jdbcType=INTEGER}
+	</update>
+	<select id="selectOneById" resultType="com.hot.manage.entity.system.TPower">
+		SELECT p.* FROM t_power p
+		LEFT JOIN t_power_group_relation pg ON pg.powerid=p.id 
+		LEFT JOIN t_user_pgrou_relationp u ON u.groupid=pg.groupid AND u.isenable=1
+		WHERE u.userid=1
+		AND p.isenable=1
+		AND description='app登陆权限'
+	</select>
+	<select id="selectByFatherid" resultType="com.hot.manage.entity.system.TPower">
+		SELECT * FROM t_power WHERE fatherid=#{fatherid} ORDER BY `order`,id
+	</select>
+</mapper>

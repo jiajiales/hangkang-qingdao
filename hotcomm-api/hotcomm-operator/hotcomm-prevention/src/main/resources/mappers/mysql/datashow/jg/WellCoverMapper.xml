@@ -1,0 +1,540 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.mysql.datashow.jg.WellCoverMapper">
+
+	<!-- 翻盖频率统计 -->
+	<select id="selectFlipNum"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.jg.FlipNum">
+
+		SELECT s.TheDate AS date,IFNULL(a.count,0) AS count FROM (
+		SELECT
+		DATE_FORMAT(TheDate, '%m/%d') AS TheDate
+		FROM
+		( SELECT
+		ADDDATE(#{endTime}, INTERVAL @d DAY ) AS TheDate,
+		@d := @d - 1
+		DAY
+		FROM
+		t_power,
+		(SELECT
+		@d := 0) temp
+		) test
+		WHERE TheDate >= #{startTime} ) s
+		LEFT JOIN (
+
+
+		SELECT
+		COUNT(a.id) AS count,
+		DATE_FORMAT(a.addtime, '%m/%d')
+		AS date
+		FROM
+		t_dev_alarm a
+		INNER JOIN t_device_all dev ON dev.id =
+		a.deviceid
+		AND dev.isdelete = 0
+		AND dev.isenable = 1
+		LEFT JOIN
+		t_device_group_relation drg ON drg.deviceid = dev.id
+		LEFT JOIN
+		t_device_group dg ON dg.id = drg.groupid
+		LEFT JOIN
+		t_user_dgroup_relation urg ON urg.devicegroupid = drg.groupid
+		WHERE
+		a.moduleid =#{moduleid}
+		<if test="querytype==1">
+			AND a.alarmstateid=13
+		</if>
+
+		<if test="querytype==2">
+			AND a.handlestate=2
+		</if>
+
+		<if test="querytype==3">
+			AND a.handleresult=13
+		</if>
+		AND urg.userid =#{userid}
+
+		GROUP BY
+		DATE_FORMAT(a.addtime, '%m/%d')
+		ORDER
+		BY
+		a.addtime DESC
+		) a ON a.date=s.TheDate
+		order BY s.TheDate DESC
+	</select>
+
+	<!-- 井盖分类统计 -->
+	<select id="selectJgType"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.jg.WellCoverType">
+		<!-- select dev.moduleid as moduleID, -->
+		<!-- <if test="queryType==1"> -->
+		<!-- case when dev.jg_purpose = 1 then '电信井盖' -->
+		<!-- when -->
+		<!-- dev.jg_purpose = 2 then '自来水井盖' -->
+		<!-- when dev.jg_purpose = 3 then '电力井盖' -->
+		<!-- when dev.jg_purpose = 4 then '消费井盖' -->
+		<!-- when dev.jg_purpose = 5 then -->
+		<!-- '环卫井盖' -->
+		<!-- ELSE '未分配类型' -->
+		<!-- </if> -->
+		<!-- <if test="queryType==2"> -->
+		<!-- case when dev.jg_loadbear = 1 then '普通型' -->
+		<!-- when -->
+		<!-- dev.jg_loadbear = 2 then '重型' -->
+		<!-- when dev.jg_loadbear = 3 then '超重型' -->
+		<!-- ELSE -->
+		<!-- '未分配类型' -->
+		<!-- </if> -->
+		<!-- end as type,count(dev.id) as Count from -->
+		<!-- t_device_all dev -->
+		<!-- LEFT JOIN -->
+		<!-- t_device_group_relation re ON re.deviceid=dev.id -->
+		<!-- LEFT JOIN -->
+		<!-- t_device_group g ON g.id=re.groupid -->
+		<!-- LEFT JOIN t_user_dgroup_relation ul -->
+		<!-- ON ul.devicegroupid=g.id -->
+		<!-- WHERE dev.moduleid=3 AND ul.userid=#{userid} -->
+		<!-- GROUP BY -->
+		<!-- <if test="queryType==1"> -->
+		<!-- dev.jg_purpose -->
+		<!-- </if> -->
+		<!-- <if test="queryType==2"> -->
+		<!-- dev.jg_loadbear -->
+		<!-- </if> -->
+		<if test="queryType==1">
+			SELECT
+			3 AS moduleID,
+			test.state AS TYPE,
+			SUM(
+			CASE
+			WHEN
+			test1.jg_purpose = 1
+			AND test.state = '电信井盖'
+			THEN 1
+			WHEN
+			test1.jg_purpose = 2
+			AND test.state = '自来水井盖'
+			THEN 1
+			WHEN
+			test1.jg_purpose = 3
+			AND test.state = '电力井盖'
+			THEN 1
+			WHEN
+			test1.jg_purpose = 4
+			AND test.state = '消防井盖'
+			THEN 1
+			WHEN
+			test1.jg_purpose = 5
+			AND test.state = '环卫井盖'
+			THEN 1
+			WHEN test.state =
+			'未分配类型'
+			AND test1.jg_purpose IS NULL
+			THEN 1
+			ELSE 0
+			END
+			) COUNT
+			FROM
+			(SELECT
+			dev.*
+			FROM
+			t_device_all dev
+			LEFT JOIN t_device_group_relation re
+			ON
+			re.deviceid = dev.id
+			LEFT JOIN t_device_group g
+			ON g.id = re.groupid
+			LEFT JOIN t_user_dgroup_relation ul
+			ON ul.devicegroupid = g.id
+			WHERE
+			dev.moduleid = 3 AND dev.isdelete!=1 AND dev.isenable =1 
+			AND ul.userid = #{userid}) test1
+			RIGHT JOIN
+			(SELECT
+			CASE
+			WHEN fuck.id = 1
+			THEN '电信井盖'
+			WHEN fuck.id = 2
+			THEN '自来水井盖'
+			WHEN
+			fuck.id = 3
+			THEN '电力井盖'
+			WHEN fuck.id = 4
+			THEN '消防井盖'
+			WHEN fuck.id = 5
+			THEN '环卫井盖'
+			WHEN fuck.id = 6
+			THEN '未分配类型'
+			END state
+			FROM
+			(SELECT
+			*
+			FROM
+			t_module) fuck
+			LIMIT 6) test
+			ON 1 = 1
+			GROUP BY test.state
+		</if>
+		<if test="queryType==2">
+			SELECT
+			3 AS moduleID,
+			test.state AS TYPE,
+			SUM(
+			CASE
+			WHEN test1.jg_loadbear = 1
+			AND test.state = '普通型'
+			THEN 1
+			WHEN test1.jg_loadbear = 2
+			AND test.state = '重型'
+			THEN 1
+			WHEN test1.jg_loadbear = 3
+			AND test.state = '超重型'
+			THEN 1
+			WHEN test.state = '未分配类型'
+			AND test1.jg_purpose IS NULL
+			THEN 1
+			ELSE 0
+			END
+			) COUNT
+			FROM
+			(SELECT
+			dev.*
+			FROM
+			t_device_all dev
+			LEFT JOIN t_device_group_relation re
+			ON re.deviceid = dev.id
+			LEFT JOIN t_device_group g
+			ON g.id = re.groupid
+			LEFT JOIN t_user_dgroup_relation ul
+			ON ul.devicegroupid = g.id
+			WHERE dev.moduleid = 3
+			AND ul.userid = #{userid}) test1
+			RIGHT JOIN
+			(SELECT
+			CASE
+			WHEN fuck.id = 1
+			THEN '普通型'
+			WHEN fuck.id = 2
+			THEN '重型'
+			WHEN fuck.id = 3
+			THEN '超重型'
+			WHEN fuck.id = 4
+			THEN '未分配类型'
+			END state
+			FROM
+			(SELECT
+			*
+			FROM
+			t_module) fuck
+			LIMIT 4) test
+			ON 1 = 1
+			GROUP BY test.state
+		</if>
+	</select>
+	<!-- 报警时段统计 -->
+	<select id="selectJGTimeAlarmNum"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.jg.JGTimeAlarmNum">
+		SELECT
+		a.moduleid,
+		a.alarmstateid AS alarmtype,
+		DATE_FORMAT(a.addtime,
+		'%H:00') AS hourpart,
+		COUNT(a.id) AS count
+		FROM
+		t_dev_alarm a
+		INNER JOIN
+		t_device_group_relation c ON a.moduleid = c.moduleid
+		AND a.deviceid =
+		c.deviceid
+		WHERE
+		a.addtime <![CDATA[>=]]>
+		#{startTime} and a.addtime <![CDATA[<=]]>
+		DATE_SUB(#{endTime},INTERVAL -1 DAY) 
+		AND
+		c.groupid IN (
+		SELECT
+		devicegroupid
+		FROM
+		(
+		SELECT
+		a.devicegroupid
+		FROM
+		t_user_dgroup_relation a
+		LEFT JOIN t_device_group b
+		ON a.devicegroupid = b.id
+		WHERE
+		a.userid = #{userid}
+		AND b.moduleid
+		=#{moduleid}
+		) groupAlarmtable
+		)
+		AND a.moduleid =#{moduleid}
+		AND
+		a.alarmstateid=13
+		GROUP BY
+		HOUR (a.addtime)
+		ORDER BY
+		HOUR (a.addtime) ASC;
+
+
+	</select>
+	<!-- 维修原因统计 -->
+	<select id="selectReasonNum"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.jg.ReasonNum">
+		SELECT test2.state_name AS  Hname,
+		SUM(CASE WHEN test1.Hname=test2.state_name THEN test1.Num ELSE 0 END) AS Num,3 AS moduleid,test2.type AS RepairType from (
+		select h.module_id as moduleid ,h.state_name as Hname, ifnull(T.Num,0)
+		as Num,h.id as RepairType
+		FROM
+		(select a.moduleid,a.handleresult as
+		repairType ,COUNT(a.id) as Num ,
+		h.state_name
+		from t_dev_alarm a
+		left
+		JOIN t_device_group_relation c ON a.moduleid = c.moduleid AND
+		a.deviceid = c.deviceid
+		RIGHT JOIN t_dev_handle_state h on
+		h.id=a.handleresult and
+		h.module_id=#{moduleid}
+		where a.handleTime <![CDATA[>=]]>
+		#{startTime} and a.handleTime<![CDATA[<=]]>
+		#{endTime} and c.groupid in (select devicegroupid
+		from
+		(select
+		a.devicegroupid from t_user_dgroup_relation a left join
+		t_device_group
+		b on a.devicegroupid = b.id where a.userid = #{userid}
+		and b.moduleid =
+		#{moduleid}) as grouptable)
+		<if test="pepairType != 0"> and a.handleresult =#{pepairType}    </if>
+		and a.handlestate = 2 GROUP BY a.handleresult ) AS T
+		RIGHT JOIN
+		t_dev_handle_state h on h.id=T.repairType WHERE
+		h.module_id=#{moduleid} and h.isdelete=0  ) test1 RIGHT JOIN (SELECT tdas.state_name,tdas.type from t_dev_handle_state tdas where tdas.module_id=3) test2 on 1=1
+GROUP BY test2.state_name
+	</select>
+	<!-- 井盖分类查询 -->
+	<select id="GroupListDev" parameterType="java.util.List"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.jg.WellCoverSpreadVO">
+		SELECT
+		dev.id AS id,
+		dev.x AS x,
+		dev.y AS y,
+		dev.devnum AS devnum,
+		dev.state AS state,
+		dev.lat AS lat,
+		dev.lng as lng ,
+		dev.code as code,
+		dev.devnum as devnum,
+		u.contacts,u.telephone
+
+		FROM t_device_all dev
+		LEFT
+		JOIN t_device_group_relation drg ON
+		drg.deviceid=dev.id
+		LEFT JOIN
+		t_device_group dg ON dg.id=drg.groupid
+		LEFT JOIN t_user_dgroup_relation
+		urg ON urg.devicegroupid=drg.groupid
+		LEFT JOIN t_user u ON
+		u.id=dev.own_id
+		WHERE dev.moduleid=#{moduleid}
+		AND dev.isdelete=0 AND
+		dev.isenable=1 AND
+		urg.userid=1
+
+		<if test="areaid!=null and areaid!=''">
+			AND dg.areaid=#{areaid}
+		</if>
+		<if test="groupid!=null and groupid!=''">
+			AND drg.groupid= #{groupid}
+		</if>
+
+		<if test="code != null and code != ''">
+			AND ( UPPER(dev.`code`) LIKE UPPER(CONCAT('%',#{code},'%')) 
+			OR
+			UPPER(dev.devnum) LIKE UPPER(CONCAT('%',#{code},'%')) )
+		</if>
+
+		<if test=" purpose!='' and  purpose!=null  ">
+			and dev.jg_purpose in
+			<foreach collection="purpose" item="item" index="index" open="("
+				separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+		<if test="loadbear!=null and loadbear!=''  ">
+			and dev.jg_loadbear in
+			<foreach collection="loadbear" item="item" index="index"
+				open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+	</select>
+	<select id="wellCoverSpread"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.jg.WellCoverSpreadVO">
+
+		SELECT
+		dev.moduleid,dev.id,dev.lat,dev.lng,dev.`code`,dev.state,u.contacts,u.telephone
+		FROM t_device_all dev
+		LEFT JOIN t_device_group_relation drg ON
+		drg.deviceid=dev.id
+		LEFT JOIN
+		t_device_group dg ON dg.id=drg.groupid
+		LEFT JOIN t_user_dgroup_relation
+		urg ON urg.devicegroupid=drg.groupid
+		LEFT JOIN t_user u ON u.id=dev.own_id
+		WHERE dev.moduleid=#{moduleid}
+		AND dev.isdelete=0 AND
+		dev.isenable=1 AND
+		urg.userid=#{userid} AND
+		drg.groupid=#{groupid}
+		<if test="code != null and code != ''">
+			AND (
+			dev.`code` LIKE CONCAT('%', #{code}, '%')
+			OR
+			dev.devnum LIKE CONCAT('%', #{code}, '%')
+			)
+		</if>
+
+	</select>
+
+
+	<select id="selectArea"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.jg.AreaVO">
+		SELECT T.* ,IFNULL(IFNULL(D.astate ,F.fstate),0) AS
+		state,N.alarmcount,N.failurecount,N.normalcount,N.othercount
+		FROM
+		(SELECT
+		a.id AS areaid ,a.areaname,a.lat,a.lng FROM t_area a LEFT
+		JOIN
+		t_device_group dg ON a.id=dg.areaid
+		LEFT JOIN
+		t_device_group_relation
+		dgr ON dgr.groupid=dg.id
+		LEFT JOIN t_device_all
+		dev ON
+		dgr.deviceid=dev.id
+		LEFT JOIN t_user_dgroup_relation udr ON
+		udr.devicegroupid=dg.id
+		WHERE dev.moduleid=#{moduleid} and
+		udr.userid=#{userid}
+		AND dev.isdelete=0 AND dev.isenable=1
+		GROUP BY a.id
+		) T LEFT JOIN
+		(
+		SELECT dev.state AS astate, area.id AS areaid
+		FROM
+		t_device_all dev
+		LEFT JOIN t_device_group_relation dgr ON
+		dgr.deviceid=dev.id
+		LEFT JOIN t_device_group dg ON dg.id=dgr.groupid
+		LEFT JOIN t_area area ON area.id=dg.areaid
+		LEFT JOIN
+		t_user_dgroup_relation ugr ON ugr.devicegroupid=dgr.groupid
+		WHERE
+		dev.moduleid=#{moduleid} AND dev.state=1 AND
+		ugr.userid=#{userid}  AND dev.isdelete!=1 AND dev.isenable=1
+		GROUP
+		BY dg.areaid ) D ON D.areaid=T.areaid
+		LEFT JOIN (SELECT dev.state as
+		fstate , area.id AS areaid
+		FROM t_device_all dev
+		LEFT JOIN
+		t_device_group_relation dgr ON dgr.deviceid=dev.id
+		LEFT JOIN
+		t_device_group dg ON dg.id=dgr.groupid
+		LEFT JOIN t_area area ON
+		area.id=dg.areaid
+		LEFT JOIN t_user_dgroup_relation ugr ON
+		ugr.devicegroupid=dgr.groupid
+		WHERE dev.moduleid=#{moduleid} AND
+		dev.state=2 AND
+		ugr.userid=#{userid}  AND dev.isdelete!=1 AND dev.isenable=1
+		GROUP BY dg.areaid ) F ON
+		F.areaid=T.areaid
+		LEFT JOIN (
+		SELECT
+		SUM( CASE WHEN dev.state=0 THEN 1
+		ELSE 0 END ) AS normalcount,
+		SUM( CASE WHEN dev.state=1 THEN 1 ELSE 0
+		END ) AS alarmcount,
+		SUM( CASE WHEN dev.state=2 THEN 1 ELSE 0 END ) AS
+		failurecount,
+		SUM( CASE WHEN dev.state=3 THEN 1 ELSE 0 END ) AS
+		othercount,
+		dg.areaid AS areaid
+		FROM
+		t_device_all dev
+		LEFT JOIN
+		t_device_group_relation dgr ON
+		dgr.deviceid=dev.id
+		LEFT JOIN
+		t_device_group dg ON dg.id=dgr.groupid
+		LEFT JOIN t_area area ON
+		area.id=dg.areaid
+		LEFT JOIN
+		t_user_dgroup_relation ugr ON
+		ugr.devicegroupid=dgr.groupid
+		WHERE
+		dev.moduleid=#{moduleid} AND
+		ugr.userid=#{userid} AND dev.isdelete!=1 AND dev.isenable=1
+		GROUP
+		BY dg.areaid
+		) N ON N.areaid=T.areaid
+	</select>
+
+	<select id="selectGroup"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.jg.GroupInfoVO">
+		SELECT g.*,IFNULL(IFNULL(a.astate ,f.fstate),0) AS state
+		FROM (
+		SELECT dg.id AS groupid, dg.groupname,dg.x,dg.y FROM
+		t_device_group dg
+		LEFT JOIN t_device_group_relation dgr ON
+		dgr.groupid=dg.id
+		LEFT JOIN t_device_all dev ON dev.id=dgr.deviceid
+		LEFT JOIN t_user_dgroup_relation ugr ON ugr.devicegroupid=dg.id
+		WHERE
+		dg.areaid=#{areaid}
+		AND dev.moduleid=#{moduleid} AND dev.isdelete=0 AND
+		dev.isenable=1
+		AND ugr.userid=#{userid}
+		GROUP BY dg.id) g
+		LEFT JOIN (
+		SELECT dev.state AS astate ,dgr.groupid AS groupid FROM t_device_all
+		dev
+		LEFT JOIN t_device_group_relation dgr ON dgr.deviceid=dev.id
+		LEFT
+		JOIN t_device_group dg ON dg.id= dgr.groupid
+		LEFT JOIN
+		t_user_dgroup_relation ugr ON ugr.devicegroupid=dgr.groupid
+		WHERE
+		dev.moduleid=#{moduleid} AND dev.state=1 AND ugr.userid=#{userid} AND
+		dg.areaid=#{areaid}
+		GROUP BY dgr.groupid AND dev.isdelete=0 AND
+		dev.isenable=1
+
+		) a ON a.groupid=g.groupid
+
+		LEFT JOIN (
+		SELECT dev.state AS
+		fstate ,dgr.groupid AS groupid FROM t_device_all dev
+		LEFT JOIN
+		t_device_group_relation dgr ON dgr.deviceid=dev.id
+		LEFT JOIN
+		t_device_group dg ON dg.id= dgr.groupid
+		LEFT JOIN
+		t_user_dgroup_relation ugr ON ugr.devicegroupid=dgr.groupid
+		WHERE
+		dev.moduleid=#{moduleid} AND dev.state=1 AND ugr.userid=#{userid} AND
+		dg.areaid=#{areaid}
+		GROUP BY dgr.groupid AND dev.isdelete=0 AND
+		dev.isenable=1
+		)f ON f.groupid=g.groupid
+
+
+	</select>
+
+
+
+</mapper>

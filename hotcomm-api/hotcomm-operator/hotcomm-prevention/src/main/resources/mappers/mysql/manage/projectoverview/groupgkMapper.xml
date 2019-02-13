@@ -1,0 +1,1544 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.mysql.manage.projectoverview.GroupgkMapper">
+	<select id="groupgkcount" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.Groupgkcount">
+		select
+		<!--项目数-->
+		(select count(g.id)from( t_user_dgroup_relation as ug left join t_device_group as g on ug.devicegroupid=g.id ) where g.moduleid=#{moduleid} and ug.userid=#{userid} and g.isdelete!=1 and ug.isdelete!=1)  as groupcount  , 
+		<!--设备数-->
+		(select count(dg.id) from t_device_group_relation as dg RIGHT JOIN t_device_all yg on yg.moduleid = #{moduleid} and yg.id = dg.deviceid and yg.isdelete = 0 and yg.isenable = 1 RIGHT join t_user_dgroup_relation as ug on dg.groupid=ug.devicegroupid  where dg.moduleid=#{moduleid} and ug.userid=#{userid} and dg.isdelete!=1) as devcount ,
+		<!--未处理报警数-->
+		<!-- (select count(alarm.id) from t_dev_alarm as alarm left join (select dg.deviceid as deviceid from t_device_group_relation as dg left join t_user_dgroup_relation as ug on dg.groupid=ug.devicegroupid where ug.userid=#{userid} and moduleid=#{moduleid} and dg.isdelete!=1)as devid on alarm.deviceid=devid.deviceid where moduleid=#{moduleid} and handlestate=0) as alarmcount, -->
+		(SELECT COUNT(alarm.id) FROM t_dev_alarm AS alarm WHERE moduleid =#{moduleid} AND deviceid in (	SELECT dg.deviceid AS deviceid FROM	t_device_group_relation AS dg LEFT JOIN t_user_dgroup_relation AS ug ON dg.groupid = ug.devicegroupid AND ug.isdelete!=1 WHERE ug.userid =#{userid} AND moduleid =#{moduleid} AND dg.isdelete = 0 ) AND handlestate = 0 )  as alarmcount, 
+		<!--未处理事件-->
+		(select count(ev.id) from t_hk_event as ev left join t_hk_evdevrelation evdev on ev.id=evdev.eventid inner join (select dg.deviceid from t_user_dgroup_relation as ug left join t_device_group_relation as dg on ug.devicegroupid=dg.groupid where moduleid=#{moduleid} and dg.isdelete!=1 and ug.userid=#{userid})as devnew on evdev.devid =devnew.deviceid where ev.moduleid=#{moduleid} and ev.state=0)as eventcount,
+		<!--未处理工单-->
+		(select count(wo.id) from t_hk_wo as wo left join t_hk_wodevrelation wodev on wo.id=wodev.woid RIGHT JOIN t_device_all yg on yg.moduleid = #{moduleid} and yg.id = wodev.devid and yg.isdelete = 0 and yg.isenable = 1
+		 RIGHT join (select dg.deviceid from t_user_dgroup_relation as ug left join t_device_group_relation as dg on ug.devicegroupid=dg.groupid where moduleid=#{moduleid} and dg.isdelete!=1 and ug.userid=#{userid}) as devnew on devnew.deviceid=wodev.devid  where wodev.moduleid=#{moduleid} and wo.state=0) as wocount ,
+		 <!--涉及人员-->
+		 (select count(distinct own_id) from t_device_all where moduleid = #{moduleid} and isdelete=0)as personcount  
+	</select>
+
+
+	<!--每月报警数-->
+	<select id="select_alarm_count_month" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.alarmcount_month">
+		select date_format(alarm.addtime, '%m')as month,count(alarm.id)as alarm_totalcount from t_dev_alarm as alarm left join  (select dg.deviceid as deviceid from t_device_group_relation as dg left join t_user_dgroup_relation as ug on dg.groupid=ug.devicegroupid where ug.userid=#{userid} and moduleid=#{moduleid} and dg.isdelete!=1) as devid on alarm.deviceid=devid.deviceid where alarm.moduleid=#{moduleid} and date_format(alarm.addtime, '%Y')=#{yyyy} group by date_format(alarm.addtime, '%Y-%m')
+		
+	</select>
+
+	<!--斤7天警数-->
+	<select id="select_alarm_count_day" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.alarmcount_day">
+	select date_format(alarm.addtime, '%m-%d') as day,count(alarm.id)as alarmcount_total,count(handlestate=0 OR NULL)as alarmcount_state0,count(handlestate=1 OR NULL)as alarmcount_state1 from
+	t_dev_alarm as alarm inner join (select dg.deviceid as deviceid from t_device_group_relation as dg left join t_user_dgroup_relation as ug on dg.groupid=ug.devicegroupid where ug.userid=#{userid} and moduleid=#{moduleid} and dg.isdelete!=1)as devid on alarm.deviceid=devid.deviceid
+	where alarm.moduleid=#{moduleid} and DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(alarm.addtime) group by day(alarm.addtime);
+	</select>
+	
+	<!--组报设备状态统计-->
+	<select id="select_alarm_count_class" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.alarmcount_class">
+		select alarmnew.state_name,alarmnew.id as alarmclass,count(alarmnew.alarmstateid)as alarmcount from (select alarmstate.state_name,alarmstate.id,alarm.alarmstateid,alarm.deviceid from t_dev_alarm_state as alarmstate left join t_dev_alarm as alarm on alarmstate.id=alarm.alarmstateid and (alarm.moduleid=#{moduleid} and date_format(alarm.addtime, '%Y')=#{yyyy}) where alarmstate.module_id=#{moduleid} ) as alarmnew left join (select dg.deviceid as deviceid from t_device_group_relation as dg left join t_user_dgroup_relation as ug on dg.groupid=ug.devicegroupid where ug.userid=#{userid} and moduleid=#{moduleid} and dg.isdelete!=1)as devid on devid.deviceid=alarmnew.deviceid group by alarmnew.id
+	</select>
+	
+	<!-- 可燃气 -->
+	<select id="selectKRQAlarmForDay" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.AlarmTendency">
+		SELECT
+		temp1.TheDate, COUNT(dgr.groupid) as Alarmtime
+		FROM
+		(
+		SELECT
+		ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate ,@d :=@d - 1 DAY
+		FROM
+		t_power,
+		(SELECT @d := 0) temp
+		WHERE
+		ADDDATE(CURDATE(), INTERVAL @d DAY)
+		>= date_add(CURDATE(), INTERVAL - 1 MONTH)
+		ORDER BY
+		DAY
+		) temp1
+		LEFT JOIN
+		t_dev_alarm tda ON DATE_FORMAT(tda.addtime,
+		'%Y-%m-%d') = temp1.TheDate
+		AND tda.moduleid = 12
+		LEFT JOIN
+		t_device_group_relation dgr ON
+		dgr.isdelete!=1 AND dgr.moduleid=12 AND
+		dgr.deviceid=tda.deviceid
+		<if test="groupid !=null and groupid !=''">AND dgr.groupid=#{groupid}</if>
+		GROUP BY
+		temp1.TheDate
+		ORDER BY
+		temp1.TheDate desc
+	</select>
+	<select id="selectKRQAlarmForMonth" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.AlarmTendency">
+		SELECT
+		temp1.TheDate, COUNT(dgr.groupid) as Alarmtime
+		FROM
+		(
+		SELECT
+		DATE_FORMAT(ADDDATE(CURDATE(), INTERVAL @d MONTH),'%Y-%m') AS TheDate
+		,@d :=@d - 1 as DateTime
+		FROM
+		t_power,
+		(SELECT @d := 0) temp
+		WHERE
+		ADDDATE(CURDATE(), INTERVAL @d MONTH) >= date_sub(CURDATE(), INTERVAL
+		5 MONTH)
+		ORDER BY
+		TheDate
+		) temp1
+		LEFT JOIN t_dev_alarm tda ON
+		DATE_FORMAT(tda.addtime, '%Y-%m') =
+		temp1.TheDate AND tda.moduleid = 12
+		LEFT JOIN t_device_group_relation
+		dgr ON dgr.isdelete!=1 AND
+		dgr.moduleid=12 AND
+		dgr.deviceid=tda.deviceid
+		<if test="groupid !=null and groupid !=''">AND dgr.groupid=#{groupid}</if>
+		GROUP BY
+		temp1.TheDate
+		ORDER BY
+		temp1.TheDate desc
+	</select>
+	<select id="selectKRQAlarmForThreeYear" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.AlarmTendency">
+		SELECT
+		DATE_FORMAT(temp1.TheDate, '%Y-%m') as TheDate,
+		COUNT(dgr.groupid) as
+		Alarmtime,(YEAR(NOW())-YEAR(temp1.TheDate)) as
+		differ
+		FROM
+		(
+		SELECT
+		DATE_FORMAT(ADDDATE(CONCAT(YEAR(NOW()),'-1-1'),
+		INTERVAL @d MONTH),'%Y-%m-%d') AS TheDate ,@d :=@d - 1 as DateTime
+		FROM
+		t_power,
+		(SELECT @d := 11) temp
+		WHERE
+		ADDDATE(CONCAT(YEAR(NOW()),'-1-1'), INTERVAL @d MONTH) BETWEEN
+		date_sub(CONCAT(YEAR(NOW()),'-1-1'),
+		INTERVAL 24 MONTH) AND
+		DATE_ADD(CONCAT(YEAR(NOW()),'-1-1'),INTERVAL 12
+		MONTH)
+		ORDER BY
+		TheDate
+		)
+		temp1
+		LEFT JOIN t_dev_alarm tda ON DATE_FORMAT(tda.addtime, '%Y-%m') =
+		DATE_FORMAT(temp1.TheDate, '%Y-%m') AND tda.moduleid = 12
+		LEFT JOIN
+		t_device_group_relation dgr ON dgr.isdelete!=1 AND dgr.moduleid=12 AND
+		dgr.deviceid=tda.deviceid
+		<if test="groupid !=null and groupid !=''">AND dgr.groupid=#{groupid}</if>
+		GROUP BY
+		temp1.TheDate
+		ORDER BY
+		temp1.TheDate desc
+	</select>
+
+	<select id="selectKRQAlarmForState"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.AlarmStateStatistics">
+		SELECT
+		s.state_name AS stateName,
+		COUNT(dg.groupid) AS Num
+		FROM
+		t_dev_handle_state s
+		LEFT JOIN t_dev_alarm a ON a.moduleid =
+		s.module_id AND s.id =
+		a.alarmstateid
+		<if test="TheType==1">
+			AND (a.addtime between DATE_FORMAT(DATE_SUB(NOW(),INTERVAL
+			1 MONTH),'%Y-%m-%d') AND NOW())
+		</if>
+		<if test="TheType==2">
+			AND (a.addtime between DATE_FORMAT(DATE_SUB(NOW(),INTERVAL
+			6 MONTH),'%Y-%m-%d') AND NOW())
+		</if>
+		<if test="TheType==3">
+			AND (a.addtime between DATE_FORMAT(DATE_SUB(NOW(),INTERVAL
+			24 MONTH),'%Y-%m-%d') AND NOW())
+		</if>
+		LEFT JOIN t_device_group_relation dg ON dg.moduleid = s.module_id AND
+		dg.deviceid = a.deviceid AND dg.isenable = 1
+		<if test="groupid !=null and groupid !=''">AND dg.groupid=#{groupid}</if>
+		LEFT JOIN t_user_dgroup_relation ug ON ug.userid =1 AND
+		ug.devicegroupid = dg.groupid AND ug.isenable = 1
+		WHERE
+		s.module_id = 12
+		AND s.isdelete = 0
+		GROUP BY
+		s.id
+	</select>
+	<select id="selectKRQAlarmForWeeken"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.AlarmHandleStatistics">
+		select
+		temp2.TheDate,SUM(CASE WHEN temp2.handlestate = 0 AND
+		temp2.groupid is not NULL THEN 1 ELSE
+		0 END) as unhandlecount,
+		SUM(CASE
+		WHEN temp2.handlestate=1 AND temp2.groupid is not NULL THEN 1 ELSE 0
+		END)as handlingcount,
+		SUM(CASE WHEN temp2.handlestate=2 AND
+		temp2.groupid is not NULL THEN 1 ELSE 0
+		END)as handlecount,
+		SUM(CASE
+		WHEN temp2.handlestate is not NULL AND temp2.groupid is not NULL THEN
+		1 ELSE 0 END) as num
+		FROM (
+		SELECT
+		temp1.TheDate,
+		tda.handlestate,tda.moduleid,dgr.groupid
+		FROM
+		(
+		SELECT
+		ADDDATE(CURDATE(),
+		INTERVAL @d DAY) AS TheDate ,@d :=@d - 1 DAY
+		FROM
+		t_power,
+		(SELECT @d :=
+		0) temp
+		WHERE
+		ADDDATE(CURDATE(), INTERVAL @d DAY) >= date_add(CURDATE(),
+		INTERVAL - 6 DAY)
+		ORDER BY
+		DAY
+		) temp1
+		LEFT JOIN t_dev_alarm tda ON
+		DATE_FORMAT(tda.addtime, '%Y-%m-%d') =
+		temp1.TheDate AND tda.moduleid =
+		12
+		LEFT JOIN t_device_group_relation dgr ON dgr.isdelete!=1 AND
+		dgr.moduleid=12 AND dgr.deviceid=tda.deviceid
+		<if test="groupid !=null and groupid !=''">AND dgr.groupid=#{groupid}</if>
+		ORDER BY
+		TheDate
+		) temp2
+		GROUP BY temp2.TheDate
+		ORDER BY temp2.TheDate
+		desc
+	</select>
+	
+	<!-- 垃圾桶 -->
+	<select id="selectAlarmForDay" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.AlarmTendency">
+		SELECT
+			temp1.TheDate, COUNT(dgr.groupid) as Alarmtime
+		FROM
+			(
+				SELECT
+					ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate ,@d :=@d - 1 DAY
+				FROM
+					t_power,
+					(SELECT @d := 0) temp
+				WHERE
+					ADDDATE(CURDATE(), INTERVAL @d DAY) >= date_add(CURDATE(), INTERVAL - 1 MONTH)
+				ORDER BY
+					DAY
+			) temp1
+		LEFT JOIN t_dev_alarm tda ON DATE_FORMAT(tda.addtime, '%Y-%m-%d') = temp1.TheDate AND tda.moduleid = 9
+		LEFT JOIN t_device_group_relation dgr ON dgr.isdelete!=1 AND dgr.moduleid=9 AND dgr.deviceid=tda.deviceid <if test="groupid !=null and groupid !=''">AND dgr.groupid=#{groupid}</if>
+		GROUP BY
+			temp1.TheDate
+		ORDER BY
+			temp1.TheDate desc
+	</select>
+	<select id="selectAlarmForMonth" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.AlarmTendency">
+		SELECT
+			temp1.TheDate, COUNT(dgr.groupid) as Alarmtime
+		FROM
+			(
+				SELECT
+					DATE_FORMAT(ADDDATE(CURDATE(), INTERVAL @d MONTH),'%Y-%m') AS TheDate ,@d :=@d - 1 as DateTime
+				FROM
+					t_power,
+					(SELECT @d := 0) temp
+				WHERE
+					ADDDATE(CURDATE(), INTERVAL @d MONTH) >= date_sub(CURDATE(), INTERVAL  5 MONTH)
+				ORDER BY
+					TheDate
+			) temp1
+		LEFT JOIN t_dev_alarm tda ON DATE_FORMAT(tda.addtime, '%Y-%m') = temp1.TheDate AND tda.moduleid = 9
+		LEFT JOIN t_device_group_relation dgr ON dgr.isdelete!=1 AND dgr.moduleid=9 AND dgr.deviceid=tda.deviceid <if test="groupid !=null and groupid !=''">AND dgr.groupid=#{groupid}</if> 
+		GROUP BY
+			temp1.TheDate
+		ORDER BY
+			temp1.TheDate desc
+	</select>
+	<select id="selectAlarmForThreeYear" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.AlarmTendency">
+		SELECT
+			DATE_FORMAT(temp1.TheDate, '%Y-%m') as TheDate, COUNT(dgr.groupid) as Alarmtime,(YEAR(NOW())-YEAR(temp1.TheDate)) as differ
+		FROM
+			(
+				SELECT
+					DATE_FORMAT(ADDDATE(CONCAT(YEAR(NOW()),'-1-1'), INTERVAL @d MONTH),'%Y-%m-%d') AS TheDate ,@d :=@d - 1 as DateTime
+				FROM
+					t_power,
+					(SELECT @d := 11) temp
+				WHERE
+					ADDDATE(CONCAT(YEAR(NOW()),'-1-1'), INTERVAL @d MONTH) BETWEEN date_sub(CONCAT(YEAR(NOW()),'-1-1'), INTERVAL  24 MONTH) AND DATE_ADD(CONCAT(YEAR(NOW()),'-1-1'),INTERVAL 12 MONTH)
+				ORDER BY
+					TheDate
+			) temp1
+		LEFT JOIN t_dev_alarm tda ON DATE_FORMAT(tda.addtime, '%Y-%m') = DATE_FORMAT(temp1.TheDate, '%Y-%m') AND tda.moduleid = 9
+		LEFT JOIN t_device_group_relation dgr ON dgr.isdelete!=1 AND dgr.moduleid=9 AND dgr.deviceid=tda.deviceid <if test="groupid !=null and groupid !=''">AND dgr.groupid=#{groupid}</if>
+		GROUP BY
+			temp1.TheDate
+		ORDER BY
+			temp1.TheDate desc
+	</select>
+	
+	<select id="selectAlarmForState" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.AlarmStateStatistics">
+		SELECT
+			s.state_name AS stateName,
+			COUNT(dg.groupid) AS Num
+		FROM
+			t_dev_handle_state s
+		LEFT JOIN t_dev_alarm a ON a.moduleid = s.module_id AND s.id = a.alarmstateid 
+		<if test="TheType==1">
+			AND (a.addtime between DATE_FORMAT(DATE_SUB(NOW(),INTERVAL 1 MONTH),'%Y-%m-%d') AND NOW())	
+		</if>
+		<if test="TheType==2">
+			AND (a.addtime between DATE_FORMAT(DATE_SUB(NOW(),INTERVAL 6 MONTH),'%Y-%m-%d') AND NOW())	
+		</if>
+		<if test="TheType==3">
+			AND (a.addtime between DATE_FORMAT(DATE_SUB(NOW(),INTERVAL 24 MONTH),'%Y-%m-%d') AND NOW())	
+		</if>
+		LEFT JOIN t_device_group_relation dg ON dg.moduleid = s.module_id AND dg.deviceid = a.deviceid AND dg.isenable = 1 <if test="groupid !=null and groupid !=''">AND dg.groupid=#{groupid}</if>
+		LEFT JOIN t_user_dgroup_relation ug ON ug.userid =1 AND ug.devicegroupid = dg.groupid AND ug.isenable = 1
+		WHERE
+			s.module_id = 9 AND s.isdelete = 0
+		GROUP BY 
+			s.id
+	</select>
+	<select id="selectAlarmForWeeken" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.AlarmHandleStatistics">
+		select 
+			temp2.TheDate,SUM(CASE WHEN temp2.handlestate = 0 AND temp2.groupid is not NULL THEN 1 ELSE 0 END) as unhandlecount,
+			SUM(CASE WHEN temp2.handlestate=1 AND temp2.groupid is not NULL THEN 1 ELSE 0 END)as handlingcount,
+			SUM(CASE WHEN temp2.handlestate=2 AND temp2.groupid is not NULL THEN 1 ELSE 0 END)as handlecount,
+			SUM(CASE WHEN temp2.handlestate is not NULL AND temp2.groupid is not NULL THEN 1 ELSE 0 END) as  num
+		FROM (
+			SELECT
+				temp1.TheDate, tda.handlestate,tda.moduleid,dgr.groupid
+			FROM
+				(
+					SELECT
+						ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate ,@d :=@d - 1 DAY
+					FROM
+						t_power,
+						(SELECT @d := 0) temp
+					WHERE
+						ADDDATE(CURDATE(), INTERVAL @d DAY) >= date_add(CURDATE(), INTERVAL - 6 DAY)
+					ORDER BY
+						DAY
+				) temp1
+			LEFT JOIN t_dev_alarm tda ON DATE_FORMAT(tda.addtime, '%Y-%m-%d') = temp1.TheDate AND tda.moduleid = 9
+			LEFT JOIN t_device_group_relation dgr ON dgr.isdelete!=1 AND dgr.moduleid=9 AND dgr.deviceid=tda.deviceid <if test="groupid !=null and groupid !=''">AND dgr.groupid=#{groupid}</if>
+			ORDER BY	
+				TheDate
+		) temp2
+		GROUP BY temp2.TheDate
+		ORDER BY temp2.TheDate	desc
+	</select>
+	
+	<!-- 三相电流 -->
+	<select id="AlarmingTrendForSXDL" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.SXDLAlarmingTrendVO">
+		SELECT
+		test1.TheDate AS DATE,YEAR(NOW()) - YEAR(test1.newdate) AS yearAgo,
+		CASE
+		WHEN test2.maxalarmcount IS NULL
+		THEN 0
+		ELSE test2.maxalarmcount
+		END AS maxalarmcount
+		FROM
+		<if test="queryType==1">
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate,ADDDATE(CURDATE(), INTERVAL @d DAY) AS newdate,
+			@d
+			:= @d - 1 DAY
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp
+			WHERE ADDDATE(CURDATE(),
+			INTERVAL @d
+			DAY) >= DATE_ADD(CURDATE(), INTERVAL
+			-
+			1 MONTH)
+			) test1
+		</if>
+		<if test="queryType==2">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate,TheDate AS newdate
+			FROM
+			(SELECT
+			ADDDATE(
+			DATE_FORMAT(
+			CURDATE(),
+			CONCAT(YEAR(CURDATE()) + 1,
+			'-%m-%d')
+			),
+			INTERVAL @d MONTH
+			) AS TheDate,
+			@d := @d - 1 MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			WHERE YEAR(TheDate) &lt;=
+			YEAR(CURDATE())
+			AND YEAR(TheDate) >= YEAR(CURDATE()) - 2) test1
+		</if>
+		<if test="queryType==3">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate,TheDate AS newdate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 6) test1
+		</if>
+		LEFT JOIN
+		(SELECT
+		DATE_FORMAT(t1.`addtime`, '%Y-%m-%d') AS DATE,
+		SUM(
+		CASE
+		WHEN
+		(SELECT
+		tt1.`type`
+		FROM
+		t_dev_alarm_state tt1
+		WHERE tt1.`id` =
+		t1.`alarmstateid`
+		AND tt1.`state_name` NOT LIKE '%电量%') = 1
+<!-- 		AND -->
+<!-- 		t2.`lastValue` > t2.`topalarmvalue` -->
+		THEN 1
+		ELSE 0
+		END
+		) AS maxalarmcount
+		FROM
+		t_dev_alarm t1
+		INNER JOIN t_device_all
+		t2
+		ON t1.`deviceid` = t2.`id`
+		AND
+		t1.`moduleid` = 14
+		AND
+		t2.`isdelete` = 0
+		
+		and 
+		t2.moduleid=14
+		INNER JOIN
+		t_device_group_relation t3
+		ON t3.`deviceid`
+		= t2.`id`
+		AND
+		t3.`isdelete` =
+		0
+		AND t3.`moduleid` = t1.`moduleid`
+		INNER
+		JOIN
+		t_device_group t4
+		ON t4.`id`
+		= t3.`groupid`
+		AND t4.`isdelete` = 0
+		AND
+		t4.`moduleid` = t1.`moduleid`
+		<if test="groupid != null">
+			AND t4.`id`=#{groupid}
+		</if>
+		INNER JOIN t_user_dgroup_relation t5
+		ON
+		t5.`devicegroupid` = t4.`id`
+		AND
+		t5.`isdelete` = 0
+		INNER JOIN t_user
+		t6
+		ON t6.`id` = t5.`userid`
+		AND
+		t6.`isdelete` = 0
+		AND t6.`id` = #{userid}
+		GROUP BY
+		<if test="queryType==1">
+			DAY(t1.`addtime`)
+		</if>
+		<if test="queryType==2">
+			MONTH(t1.`addtime`)
+		</if>
+		<if test="queryType==3">
+			MONTH(t1.`addtime`)
+		</if>)
+		test2
+		<if test="queryType==1">
+			ON test1.TheDate = test2.DATE
+		</if>
+		<if test="queryType==2">
+			ON test1.TheDate = DATE_FORMAT(test2.DATE, '%Y-%m')
+		</if>
+		<if test="queryType==3">
+			ON test1.TheDate = DATE_FORMAT(test2.DATE, '%Y-%m')
+		</if>
+		ORDER BY DATE DESC
+	</select>
+	
+	<!-- 三相电压 -->
+	<select id="AlarmingTrendForSXDY" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.SXDYAlarmingTrendVO">
+		SELECT
+		test1.TheDate AS DATE,YEAR(NOW()) - YEAR(test1.newdate) AS yearAgo,
+		CASE
+		WHEN test2.maxalarmcount IS NULL
+		THEN 0
+		ELSE test2.maxalarmcount
+		END AS maxalarmcount,
+		CASE
+		WHEN
+		test2.minalarmcount IS NULL
+		THEN 0
+		ELSE test2.minalarmcount
+		END AS
+		minalarmcount
+		FROM
+		<if test="queryType==1">
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate,ADDDATE(CURDATE(), INTERVAL @d DAY) AS newdate,
+			@d
+			:= @d - 1 DAY
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp
+			WHERE ADDDATE(CURDATE(),
+			INTERVAL @d
+			DAY) >= DATE_ADD(CURDATE(), INTERVAL
+			-
+			1 MONTH)
+			) test1
+		</if>
+		<if test="queryType==2">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate,TheDate AS newdate
+			FROM
+			(SELECT
+			ADDDATE(
+			DATE_FORMAT(
+			CURDATE(),
+			CONCAT(YEAR(CURDATE()) + 1,
+			'-%m-%d')
+			),
+			INTERVAL @d MONTH
+			) AS TheDate,
+			@d := @d - 1 MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			WHERE YEAR(TheDate) &lt;=
+			YEAR(CURDATE())
+			AND YEAR(TheDate) >= YEAR(CURDATE()) - 2) test1
+		</if>
+		<if test="queryType==3">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate,TheDate AS newdate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 6) test1
+		</if>
+		LEFT JOIN
+		(
+		
+		SELECT
+		DATE_FORMAT(t1.`addtime`, '%Y-%m-%d') AS DATE,
+		SUM(
+		CASE
+		WHEN
+		(SELECT
+		tt1.`type`
+		FROM
+		t_dev_alarm_state tt1
+		WHERE tt1.`id` =
+		t1.`alarmstateid`
+		AND tt1.`state_name` = '超高报警') = 1
+<!-- 		AND	t2.`lastValue` > t2.`topalarmvalue` -->
+		THEN 1
+		ELSE 0
+		END
+		) AS maxalarmcount,
+		SUM(
+		CASE
+		WHEN
+		(SELECT
+		tt1.`type`
+		FROM
+		t_dev_alarm_state tt1
+		WHERE tt1.`id` =
+		t1.`alarmstateid`
+		AND tt1.`state_name` = '超低报警') = 1
+<!-- 		AND	t2.`lastValue` &lt; t2.`lessalarmvalue` -->
+		THEN 1
+		ELSE 0
+		END
+		) AS
+		minalarmcount
+		FROM
+		t_dev_alarm t1
+		INNER JOIN t_device_all
+		t2
+		ON
+		t1.`deviceid` = t2.`id`
+		AND
+		t1.`moduleid` = 15
+		AND
+		t2.`isdelete` = 0
+		and 
+		t2.moduleid=15
+		INNER
+		JOIN
+		t_device_group_relation t3
+		ON t3.`deviceid`
+		= t2.`id`
+		AND
+		t3.`isdelete` =
+		0
+		AND t3.`moduleid` = t1.`moduleid`
+		INNER
+		JOIN
+		t_device_group t4
+		ON t4.`id`
+		= t3.`groupid`
+		AND t4.`isdelete` = 0
+		AND
+		t4.`moduleid` = t1.`moduleid`
+		<if test="groupid != null">
+			AND t4.`id`=#{groupid}
+		</if>
+		INNER JOIN t_user_dgroup_relation t5
+		ON
+		t5.`devicegroupid` = t4.`id`
+		AND
+		t5.`isdelete` = 0
+		INNER JOIN t_user
+		t6
+		ON t6.`id` = t5.`userid`
+		AND
+		t6.`isdelete` = 0
+		AND t6.`id` = #{userid}
+		GROUP BY
+		<if test="queryType==1">
+			DAY(t1.`addtime`)
+		</if>
+		<if test="queryType==2">
+			MONTH(t1.`addtime`)
+		</if>
+		<if test="queryType==3">
+			MONTH(t1.`addtime`)
+		</if>
+		)
+		test2
+		<if test="queryType==1">
+			ON test1.TheDate = test2.DATE
+		</if>
+		<if test="queryType==2">
+			ON test1.TheDate = DATE_FORMAT(test2.DATE, '%Y-%m')
+		</if>
+		<if test="queryType==3">
+			ON test1.TheDate = DATE_FORMAT(test2.DATE, '%Y-%m')
+		</if>
+		ORDER BY DATE DESC
+	</select>
+	
+	<!-- 水压 -->	
+	<select id="selectSYAlarmForDay" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.SYAlarmTendency">
+		SELECT
+			temp1.TheDate,
+			SUM(CASE WHEN tas.state_name='超高报警' AND dgr.groupid IS NOT NULL THEN 1 else 0 END) as ToHightAlarm,
+			SUM(case WHEN tas.state_name='超低报警' AND dgr.groupid IS NOT NULL THEN 1 ELSE 0 END) as ToLowAlarm
+		FROM
+			(
+				SELECT
+					ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate ,@d :=@d - 1 DAY
+				FROM
+					t_power,
+					(SELECT @d := 0) temp
+				WHERE
+					ADDDATE(CURDATE(), INTERVAL @d DAY) >= date_add(CURDATE(), INTERVAL - 1 MONTH)
+				ORDER BY
+					DAY
+			) temp1
+		LEFT JOIN t_dev_alarm tda ON DATE_FORMAT(tda.addtime, '%Y-%m-%d') = temp1.TheDate AND tda.moduleid = 16
+		LEFT JOIN t_dev_alarm_state tas ON tas.id= tda.alarmstateid and tda.moduleid=tas.module_id and tas.isdelete=0  
+		LEFT JOIN t_device_group_relation dgr ON dgr.isdelete!=1 AND dgr.moduleid=16 AND dgr.deviceid=tda.deviceid <if test="groupid !=null and groupid !=''">AND dgr.groupid=#{groupid}</if>
+		GROUP BY 
+			temp1.TheDate
+		ORDER BY
+			temp1.TheDate desc
+	</select>
+	<select id="selectSYAlarmForMonth" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.SYAlarmTendency">
+		SELECT
+			temp1.TheDate,
+			SUM(CASE WHEN tas.state_name='超高报警' AND dgr.groupid IS NOT NULL THEN 1 else 0 END) as ToHightAlarm,
+			SUM(case WHEN tas.state_name='超低报警' AND dgr.groupid IS NOT NULL THEN 1 ELSE 0 END) as ToLowAlarm
+		FROM
+			(
+				SELECT
+					DATE_FORMAT(ADDDATE(CURDATE(), INTERVAL @d MONTH),'%Y-%m') AS TheDate ,@d :=@d - 1 as DateTime
+				FROM
+					t_power,
+					(SELECT @d := 0) temp
+				WHERE
+					ADDDATE(CURDATE(), INTERVAL @d MONTH) >= date_sub(CURDATE(), INTERVAL  5 MONTH)
+				ORDER BY
+					TheDate
+			) temp1
+		LEFT JOIN t_dev_alarm tda ON DATE_FORMAT(tda.addtime, '%Y-%m') = temp1.TheDate AND tda.moduleid = 16
+		LEFT JOIN t_dev_alarm_state tas ON tas.id= tda.alarmstateid and tda.moduleid=tas.module_id and tas.isdelete=0
+		LEFT JOIN t_device_group_relation dgr ON dgr.isdelete!=1 AND dgr.moduleid=16 AND dgr.deviceid=tda.deviceid <if test="groupid !=null and groupid !=''">AND dgr.groupid=#{groupid}</if> 
+		GROUP BY
+			temp1.TheDate
+		ORDER BY
+			temp1.TheDate desc
+	</select>
+	<select id="selectSYAlarmForThreeYear" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.SYAlarmTendency">
+		SELECT
+			DATE_FORMAT(temp1.TheDate, '%Y-%m') as TheDate,
+			SUM(CASE WHEN tas.state_name='超高报警' AND dgr.groupid IS NOT NULL THEN 1 else 0 END) as ToHightAlarm,
+			SUM(case WHEN tas.state_name='超低报警' AND dgr.groupid IS NOT NULL THEN 1 ELSE 0 END) as ToLowAlarm,
+			(YEAR(NOW())-YEAR(temp1.TheDate)) as differ
+		FROM
+			(
+				SELECT
+					DATE_FORMAT(ADDDATE(CONCAT(YEAR(NOW()),'-1-1'), INTERVAL @d MONTH),'%Y-%m-%d') AS TheDate ,@d :=@d - 1 as DateTime
+				FROM
+					t_power,
+					(SELECT @d := 11) temp
+				WHERE
+					ADDDATE(CONCAT(YEAR(NOW()),'-1-1'), INTERVAL @d MONTH) BETWEEN date_sub(CONCAT(YEAR(NOW()),'-1-1'), INTERVAL  24 MONTH) AND DATE_ADD(CONCAT(YEAR(NOW()),'-1-1'),INTERVAL 12 MONTH)
+				ORDER BY
+					TheDate
+			) temp1
+		LEFT JOIN t_dev_alarm tda ON DATE_FORMAT(tda.addtime, '%Y-%m') = DATE_FORMAT(temp1.TheDate, '%Y-%m') AND tda.moduleid = 16
+		LEFT JOIN t_dev_alarm_state tas ON tas.id= tda.alarmstateid and tda.moduleid=tas.module_id and tas.isdelete=0
+		LEFT JOIN t_device_group_relation dgr ON dgr.isdelete!=1 AND dgr.moduleid=16 AND dgr.deviceid=tda.deviceid <if test="groupid !=null and groupid !=''">AND dgr.groupid=#{groupid}</if>
+		GROUP BY
+			temp1.TheDate
+		ORDER BY
+			temp1.TheDate desc
+	</select>
+	
+	<select id="selectSYAlarmForState" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.AlarmStateStatistics">
+		SELECT
+			s.state_name AS stateName,
+			COUNT(dg.groupid) AS Num
+		FROM
+			t_dev_handle_state s
+		LEFT JOIN t_dev_alarm a ON a.moduleid = s.module_id AND s.id = a.alarmstateid
+		<if test="TheType==1">
+			AND (a.addtime between DATE_FORMAT(DATE_SUB(NOW(),INTERVAL 1 MONTH),'%Y-%m-%d') AND NOW())	
+		</if>
+		<if test="TheType==2">
+			AND (a.addtime between DATE_FORMAT(DATE_SUB(NOW(),INTERVAL 6 MONTH),'%Y-%m-%d') AND NOW())	
+		</if>
+		<if test="TheType==3">
+			AND (a.addtime between DATE_FORMAT(DATE_SUB(NOW(),INTERVAL 24 MONTH),'%Y-%m-%d') AND NOW())	
+		</if>
+		LEFT JOIN t_device_group_relation dg ON dg.moduleid = s.module_id AND dg.deviceid = a.deviceid AND dg.isenable = 1 <if test="groupid !=null and groupid !=''">AND dg.groupid=#{groupid}</if>
+		LEFT JOIN t_user_dgroup_relation ug ON ug.userid =1 AND ug.devicegroupid = dg.groupid AND ug.isenable = 1
+		WHERE
+			s.module_id = 16 AND s.isdelete = 0
+		GROUP BY 
+			s.id
+	</select>
+	<select id="selectSYAlarmForWeeken" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.AlarmHandleStatistics">
+		select 
+			temp2.TheDate,SUM(CASE WHEN temp2.handlestate = 0 AND temp2.groupid is not NULL THEN 1 ELSE 0 END) as unhandlecount,
+			SUM(CASE WHEN temp2.handlestate=1 AND temp2.groupid is not NULL THEN 1 ELSE 0 END)as handlingcount,
+			SUM(CASE WHEN temp2.handlestate=2 AND temp2.groupid is not NULL THEN 1 ELSE 0 END)as handlecount,
+			SUM(CASE WHEN temp2.handlestate is not NULL AND temp2.groupid is not NULL THEN 1 ELSE 0 END) as  num
+		FROM (
+			SELECT
+				temp1.TheDate, tda.handlestate,tda.moduleid,dgr.groupid
+			FROM
+				(
+					SELECT
+						ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate ,@d :=@d - 1 DAY
+					FROM
+						t_power,
+						(SELECT @d := 0) temp
+					WHERE
+						ADDDATE(CURDATE(), INTERVAL @d DAY) >= date_add(CURDATE(), INTERVAL - 6 DAY)
+					ORDER BY
+						DAY
+				) temp1
+			LEFT JOIN t_dev_alarm tda ON DATE_FORMAT(tda.addtime, '%Y-%m-%d') = temp1.TheDate AND tda.moduleid = 16
+			LEFT JOIN t_device_group_relation dgr ON dgr.isdelete!=1 AND dgr.moduleid=16 AND dgr.deviceid=tda.deviceid <if test="groupid !=null and groupid !=''">AND dgr.groupid=#{groupid}</if>
+			ORDER BY	
+				TheDate
+		) temp2
+		GROUP BY temp2.TheDate
+		ORDER BY temp2.TheDate	 desc
+	</select>
+	
+	<!-- 剩余电流 -->
+	<select id="AlarmingTrendForSYDL" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.SYDLAlarmingTrendVO">
+		SELECT
+		test1.TheDate AS DATE,YEAR(NOW()) - YEAR(test1.newdate) AS
+		yearAgo,
+		CASE
+		WHEN test2.maxalarmcount IS NULL
+		THEN 0
+		ELSE
+		test2.maxalarmcount
+		END AS maxalarmcount
+		FROM
+		<if test="queryType==1">
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d DAY) AS
+			TheDate,ADDDATE(CURDATE(), INTERVAL @d DAY) AS newdate,
+			@d
+			:= @d - 1
+			DAY
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp
+			WHERE ADDDATE(CURDATE(),
+			INTERVAL
+			@d
+			DAY) >= DATE_ADD(CURDATE(), INTERVAL
+			-
+			1 MONTH)
+			) test1
+		</if>
+		<if test="queryType==2">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate,TheDate AS
+			newdate
+			FROM
+			(SELECT
+			ADDDATE(
+			DATE_FORMAT(
+			CURDATE(),
+			CONCAT(YEAR(CURDATE()) + 1,
+			'-%m-%d')
+			),
+			INTERVAL @d MONTH
+			) AS TheDate,
+			@d := @d - 1 MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			WHERE
+			YEAR(TheDate) &lt;=
+			YEAR(CURDATE())
+			AND YEAR(TheDate) >=
+			YEAR(CURDATE()) - 2) test1
+		</if>
+		<if test="queryType==3">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate,TheDate AS
+			newdate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 6)
+			test1
+		</if>
+		LEFT JOIN
+		(
+
+		SELECT
+		DATE_FORMAT(t1.`addtime`, '%Y-%m-%d') AS DATE,
+		SUM(
+		CASE
+		WHEN t7.`state_name` = '超低报警'
+		THEN 1
+		ELSE 0
+		END
+		) AS maxalarmcount
+		FROM
+		t_dev_alarm t1
+		INNER JOIN t_device_all t2
+		ON
+		t1.`deviceid` = t2.`id`
+		AND
+		t1.`moduleid` = 17
+		AND t2.`isdelete` = 0
+		
+		and 
+		t2.moduleid=17
+		INNER JOIN
+		t_device_group_relation t3
+		ON t3.`deviceid` = t2.`id`
+		AND
+		t3.`isdelete` =
+		0
+		AND t3.`moduleid` = t1.`moduleid`
+		INNER JOIN
+		t_device_group t4
+		ON
+		t4.`id` = t3.`groupid`
+		AND t4.`isdelete` = 0
+		AND
+		t4.`moduleid` =
+		t1.`moduleid`
+		<if test="groupid != null">
+			AND t4.`id`=#{groupid}
+		</if>
+		INNER JOIN t_user_dgroup_relation t5
+		ON t5.`devicegroupid` = t4.`id`
+		AND t5.`isdelete` = 0
+		INNER JOIN t_user t6
+		ON t6.`id` = t5.`userid`
+		AND
+		t6.`isdelete` = 0
+		AND t6.`id` = #{userid}
+		INNER JOIN t_dev_alarm_state
+		t7
+		ON t7.`state_name` != '低电压报警'
+		AND t7.`id` = t1.`alarmstateid`
+		AND
+		t7.`type` = 1
+		AND t7.`module_id` = t1.`moduleid`
+		GROUP BY
+		<if test="queryType==1">
+			DAY(t1.`addtime`)
+		</if>
+		<if test="queryType==2">
+			MONTH(t1.`addtime`)
+		</if>
+		<if test="queryType==3">
+			MONTH(t1.`addtime`)
+		</if>
+
+		
+
+
+		)
+		test2
+		<if test="queryType==1">
+			ON test1.TheDate = test2.DATE
+		</if>
+		<if test="queryType==2">
+			ON test1.TheDate = DATE_FORMAT(test2.DATE, '%Y-%m')
+		</if>
+		<if test="queryType==3">
+			ON test1.TheDate = DATE_FORMAT(test2.DATE, '%Y-%m')
+		</if>
+		ORDER BY DATE DESC
+	</select>
+	
+	<!-- 烟感 -->
+	<select id="selectForState" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.YGAlarmPartic">
+		select b.id as
+		alarmid,b.deviceid,h.devnum,h.`code`,e.contacts,b.addtime,h.lat,h.lng,b.`handler`,c.`order`,b.handlestate,c.state_name
+		from t_yg_alarm b
+		LEFT JOIN t_device_all h ON h.id=b.deviceid
+		LEFT JOIN
+		t_alarm_state c on c.id=b.alarmStateId
+		LEFT JOIN
+		t_device_group_relation g ON g.deviceid = b.deviceid and g.moduleid=2
+		LEFT JOIN t_device_group p ON p.id = g.groupid
+		LEFT JOIN t_user e ON
+		e.id=p.managerid
+		<where>
+			<if test="handlestate!=1">
+				<choose>
+					<when test="handlestate=2">
+						b.handlestate=0
+					</when>
+					<when test="handlestate=3">
+						b.handlestate=1
+					</when>
+					<when test="handlestate=4">
+						b.handlestate=2
+					</when>
+				</choose>
+			</if>
+			<choose>
+				<when test="stateid!=-1">
+					and c.id = #{stateid}
+				</when>
+			</choose>
+		</where>
+	</select>
+	<select id="selectForTime" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.YGAlarmPartic">
+		select b.id as
+		alarmid,b.deviceid,h.devnum,h.`code`,e.contacts,b.addtime,h.lat,h.lng,b.`handler`,c.`order`,b.handlestate,c.state_name
+		from t_yg_alarm b
+		LEFT JOIN t_device_all h ON h.id=b.deviceid
+		LEFT JOIN
+		t_alarm_state c on c.id=b.alarmStateId
+		LEFT JOIN
+		t_device_group_relation g ON g.deviceid = b.deviceid and g.moduleid=2
+		LEFT JOIN t_device_group p ON p.id = g.groupid
+		LEFT JOIN t_user e ON
+		e.id=p.managerid
+		<where>
+			<if test="startTime!=null and endTime!=null">
+
+				b.addtime &gt;= #{startTime} AND b.addtime &lt;=
+				#{endTime}
+			</if>
+			<if test="message!=null">
+				and
+				CONCAT_WS(&apos;/&apos;,h.devnum,h.`code`,e.contacts,b.`handler`,c.state_name)
+				LIKE CONCAT(&apos;%&apos;,#{message},&apos;%&apos;) COLLATE
+				utf8_unicode_ci
+			</if>
+		</where>
+		ORDER BY b.handlestate ASC
+	</select>
+	<!-- <select id="selectHistoricalDate" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.YGHistoricalDate">
+		CALL
+		Get_YGHistoricalData(#{deviceid},#{theyear});
+	</select>
+	<select id="selectHistoricalStateDate" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.YGHistoricalStateDate">
+		CALL
+		Get_YGHistoricalStateDate(#{deviceid},#{theyear});
+	</select> -->
+
+	<insert id="insertOneEvent" useGeneratedKeys="true" keyProperty="id">
+		<if test="instructions!=null">
+			INSERT INTO t_hk_event
+			(`code`,`describe`,`level`,
+			<if test="instructions!=null">instructions,</if>
+			adduserid,addtime,moduleid)
+			VALUES(#{code},#{describe},#{level},
+			<if test="instructions!=null">#{instructions},</if>
+			#{adduserid},#{addtime},2)
+		</if>
+	</insert>
+	<insert id="insertEventDevRel">
+		INSERT INTO t_hk_evdevrelation (eventid,devid)
+		VALUES(#{eventid},#{devid})
+	</insert>
+	<update id="closeYGalarmById">
+		update t_yg_alarm set handlestate=2 where
+		id=#{alarmid};
+	</update>
+
+	<select id="smokeAlarmingTrend" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.YGAlarmingTrend">
+		SELECT
+		test1.TheDate AS DATE,YEAR(NOW()) - YEAR(test1.newdate) AS
+		yearAgo,
+		CASE
+		WHEN test2.alarmcount IS NULL
+		THEN 0
+		ELSE test2.alarmcount
+		END AS alarmcount
+		FROM
+		<if test="queryType==1">
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d DAY) AS
+			TheDate,ADDDATE(CURDATE(), INTERVAL @d DAY) AS newdate,
+			@d
+			:= @d - 1
+			DAY
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp
+			WHERE ADDDATE(CURDATE(),
+			INTERVAL
+			@d
+			DAY) >= DATE_ADD(CURDATE(), INTERVAL
+			-
+			1 MONTH)
+			) test1
+		</if>
+		<if test="queryType==2">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate,TheDate AS
+			newdate
+			FROM
+			(SELECT
+			ADDDATE(
+			DATE_FORMAT(
+			CURDATE(),
+			CONCAT(YEAR(CURDATE()) + 1,
+			'-%m-%d')
+			),
+			INTERVAL @d MONTH
+			) AS TheDate,
+			@d := @d - 1 MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			WHERE
+			YEAR(TheDate) &lt;=
+			YEAR(CURDATE())
+			AND YEAR(TheDate) >=
+			YEAR(CURDATE()) - 2) test1
+		</if>
+		<if test="queryType==3">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate,TheDate AS
+			newdate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 6)
+			test1
+		</if>
+		LEFT JOIN
+		(SELECT
+		DATE_FORMAT(t1.`addtime`, '%Y-%m-%d') AS DATE,
+		COUNT(t1.`id`) AS alarmcount
+		FROM
+		t_dev_alarm t1
+		INNER JOIN
+		t_device_all
+		t2
+		ON t2.`moduleid` = #{moduleid} AND t1.`deviceid` = t2.`id`
+		AND t1.`moduleid` = #{moduleid}
+		AND
+		t2.`isdelete` = 0
+		AND t2.`isenable` = 1 
+		INNER JOIN t_device_group_relation t3
+		ON t3.`deviceid`
+		= t2.`id`
+		AND
+		t3.`isdelete` = 0
+		AND t3.`isenable` = 1 
+		AND t3.`moduleid` = t1.`moduleid`
+		INNER
+		JOIN
+		t_device_group t4
+		ON t4.`id` = t3.`groupid`
+		AND t4.`isdelete` = 0
+		AND t4.`isenable` = 1 
+		AND
+		t4.`moduleid` = t1.`moduleid`
+		<if test="groupid !=null">
+			AND t4.`id`=#{groupid}
+		</if>
+		INNER JOIN t_user_dgroup_relation t5
+		ON
+		t5.`devicegroupid` = t4.`id`
+		AND
+		t5.`isdelete` = 0
+		AND t5.`isenable` = 1 
+		INNER JOIN t_user
+		t6
+		ON t6.`id` = t5.`userid`
+		AND
+		t6.`isdelete` = 0
+		AND t6.`isenable` = 1 
+		AND t6.`id` = #{userid}
+		INNER JOIN t_dev_alarm_state
+		t7
+		ON t7.`state_name` != '低电压报警'
+		AND t7.`id` = t1.`alarmstateid`
+		AND t7.`type` = 1
+		AND t7.`module_id`=t1.`moduleid`
+		GROUP BY
+		<if test="queryType==1">
+			DAY(t1.`addtime`)
+		</if>
+		<if test="queryType==2">
+			MONTH(t1.`addtime`)
+		</if>
+		<if test="queryType==3">
+			MONTH(t1.`addtime`)
+		</if>
+		)
+		test2
+		<if test="queryType==1">
+			ON test1.TheDate = test2.DATE
+		</if>
+		<if test="queryType==2">
+			ON test1.TheDate = DATE_FORMAT(test2.DATE, '%Y-%m')
+		</if>
+		<if test="queryType==3">
+			ON test1.TheDate = DATE_FORMAT(test2.DATE, '%Y-%m')
+		</if>
+		ORDER BY DATE DESC
+	</select>
+	
+	<!-- 液位计 -->
+	<update id="LKTYWJChangeYwjOwner">
+		UPDATE t_device_all SET own_id=#{ownid} WHERE id IN
+		(${devid})
+	</update>
+
+	<select id="AlarmingTrendForWhichHasBoundaryValue" resultType="com.hotcomm.prevention.bean.mysql.manage.projectoverview.AlarmingTrendVO">
+		SELECT
+		test1.TheDate AS DATE,YEAR(NOW()) - YEAR(test1.newdate) AS
+		yearAgo,
+		CASE
+		WHEN test2.maxalarmcount IS NULL
+		THEN 0
+		ELSE
+		test2.maxalarmcount
+		END AS maxalarmcount,
+		CASE
+		WHEN
+		test2.minalarmcount IS
+		NULL
+		THEN 0
+		ELSE test2.minalarmcount
+		END AS
+		minalarmcount
+		FROM
+		<if test="queryType==1">
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d DAY) AS
+			TheDate,ADDDATE(CURDATE(), INTERVAL @d DAY) AS newdate,
+			@d
+			:= @d - 1
+			DAY
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp
+			WHERE ADDDATE(CURDATE(),
+			INTERVAL
+			@d
+			DAY) >= DATE_ADD(CURDATE(), INTERVAL
+			-
+			1 MONTH)
+			) test1
+		</if>
+		<if test="queryType==2">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate,TheDate AS
+			newdate
+			FROM
+			(SELECT
+			ADDDATE(
+			DATE_FORMAT(
+			CURDATE(),
+			CONCAT(YEAR(CURDATE()) + 1,
+			'-%m-%d')
+			),
+			INTERVAL @d MONTH
+			) AS TheDate,
+			@d := @d - 1 MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			WHERE
+			YEAR(TheDate) &lt;=
+			YEAR(CURDATE())
+			AND YEAR(TheDate) >=
+			YEAR(CURDATE()) - 2) test1
+		</if>
+		<if test="queryType==3">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate,TheDate AS
+			newdate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 6)
+			test1
+		</if>
+		LEFT JOIN
+		(
+		SELECT
+		DATE_FORMAT(t1.`addtime`, '%Y-%m-%d') AS DATE,
+		SUM(
+        CASE
+          WHEN 
+          t7.`state_name` = '水位超高报警'
+          THEN 1 
+          ELSE 0 
+        END
+      ) AS maxalarmcount,
+      SUM(
+        CASE
+          WHEN 
+          t7.`state_name` = '水位超低报警'
+          THEN 1 
+          ELSE 0 
+        END
+      ) AS minalarmcount 
+		FROM
+		t_dev_alarm t1
+		INNER JOIN t_device_all t2
+		ON t1.`deviceid` = t2.`id`
+		AND
+		t1.`moduleid` = 13
+		AND t2.`isdelete` = 0
+		
+		and 
+		t2.moduleid=13
+		INNER JOIN
+		t_device_group_relation t3
+		ON t3.`deviceid` = t2.`id`
+		AND t3.`isdelete`
+		= 0
+		AND t3.`moduleid` = t1.`moduleid`
+		INNER JOIN t_device_group t4
+		ON
+		t4.`id` = t3.`groupid`
+		AND t4.`isdelete` = 0
+		AND t4.`moduleid` =
+		t1.`moduleid`
+		<if test="groupid != null">
+			AND t4.`id`=#{groupid}
+		</if>
+		INNER JOIN t_user_dgroup_relation t5
+		ON t5.`devicegroupid` = t4.`id`
+		AND t5.`isdelete` = 0
+		INNER JOIN t_user t6
+		ON t6.`id` = t5.`userid`
+		AND
+		t6.`isdelete` = 0
+		AND t6.`id` = #{userid}
+		INNER JOIN t_dev_alarm_state
+		t7
+		ON t7.`state_name` NOT LIKE '%电量%'
+		AND t7.`id` = t1.`alarmstateid`
+		AND t7.`type` = 1
+		AND t7.`module_id` = t1.`moduleid`
+		GROUP BY
+		<if test="queryType==1">
+			DAY(t1.`addtime`)
+		</if>
+		<if test="queryType==2">
+			MONTH(t1.`addtime`)
+		</if>
+		<if test="queryType==3">
+			MONTH(t1.`addtime`)
+		</if>
+		)
+		test2
+		<if test="queryType==1">
+			ON test1.TheDate = test2.DATE
+		</if>
+		<if test="queryType==2">
+			ON test1.TheDate = DATE_FORMAT(test2.DATE, '%Y-%m')
+		</if>
+		<if test="queryType==3">
+			ON test1.TheDate = DATE_FORMAT(test2.DATE, '%Y-%m')
+		</if>
+		ORDER BY DATE DESC
+	</select>
+	
+	<!-- 公共模快,報警處理類型,報警處理率 -->
+	<select id="selectAlarmNums" resultType="com.hotcomm.prevention.bean.mysql.manage.group.AlarmNums">
+		SELECT s.state_name as stateName ,DATE_FORMAT(N.addtime, '%Y-%m-%d'),
+		COUNT(N.handleresult) as Num
+		FROM t_dev_handle_state s
+		LEFT JOIN ( SELECT * FROM (
+		<if test="queryType==1">
+			SELECT
+			ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate,
+			@d
+			:= @d - 1 DAY
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp
+			WHERE ADDDATE(CURDATE(),
+			INTERVAL @d DAY)
+			>= DATE_ADD(CURDATE(), INTERVAL
+			-
+			1 MONTH)
+			)AS M
+		</if>
+		<if test="queryType==2">
+			SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 6) AS M
+		</if>
+		<if test="queryType==3">
+			SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 12) AS M
+		</if>
+		<if test="queryType==4">
+			SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 36
+			) AS M
+		</if>
+		LEFT JOIN(
+		SELECT DATE_FORMAT(A.addtime, '%Y-%m-%d') as addtime
+		,A.moduleid,handleresult FROM t_dev_alarm A
+		LEFT JOIN t_device_group_relation dg on dg.moduleid = A.moduleid and
+		dg.deviceid =A.deviceid and dg.isenable = 1 and dg.isdelete!=1
+		LEFT JOIN t_user_dgroup_relation ug on ug.userid =#{userid}
+		WHERE A.moduleid=#{moduleID} AND ug.devicegroupid=dg.groupid
+		GROUP BY A.addtime) AS Y
+		<if test="queryType==1">
+			ON Y.addtime=M.TheDate
+		</if>
+		<if test="queryType==2">
+			ON M.TheDate = DATE_FORMAT( Y.addtime, '%Y-%m')
+		</if>
+		<if test="queryType==3">
+			ON M.TheDate = DATE_FORMAT( Y.addtime, '%Y-%m')
+		</if>
+		<if test="queryType==4">
+			ON M.TheDate = DATE_FORMAT( Y.addtime, '%Y-%m')
+		</if>
+
+		) AS N ON s.id = N.handleresult WHERE s.module_id = #{moduleID} AND
+		s.isdelete = 0
+		GROUP BY s.id
+
+	</select>
+
+
+	<select id="selectAlarmHandleNums" resultType="com.hotcomm.prevention.bean.mysql.manage.group.AlarmHandleNums">
+
+		SELECT M.*,ifnull(handlingcount,0) as
+		handlingcount,ifnull(unhandlecount,0) as unhandlecount,
+		ifnull(handlecount,0) as handlecount,ifnull(num,0) as num FROM
+		<if test="queryType==1">
+			( SELECT
+			ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate,
+			@d
+			:= @d - 1 DAY
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp
+			WHERE ADDDATE(CURDATE(),
+			INTERVAL @d
+			DAY) >= DATE_ADD(CURDATE(), INTERVAL
+			-
+			1 MONTH)
+			) AS M
+		</if>
+		<if test="queryType==2">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 6) AS M
+		</if>
+		<if test="queryType==3">
+			( SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 12) AS M
+		</if>
+
+		<if test="queryType==4">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 36) AS M
+		</if>
+		LEFT JOIN ( SELECT DATE_FORMAT(A.addtime, '%Y-%m-%d') as alarmtime ,
+		SUM( CASE WHEN A.handlestate=0 THEN 1 ELSE 0 END) AS unhandlecount,
+		SUM( CASE WHEN A.handlestate=1 THEN 1 ELSE 0 END) AS handlingcount,
+		SUM( CASE WHEN A.handlestate=2 THEN 1 ELSE 0 END) AS handlecount,
+		COUNT(A.id) as num FROM t_dev_alarm as A
+		LEFT JOIN t_device_group_relation dg on dg.moduleid =#{moduleID}
+		and dg.deviceid = A.deviceid and dg.isenable = 1 and dg.isdelete!=1
+		LEFT JOIN t_user_dgroup_relation ug on ug.userid =#{userid}
+		and ug.isenable = 1
+
+		WHERE A.moduleid=#{moduleID} and ug.devicegroupid = dg.groupid
+<if test="queryType==1">
+		GROUP BY DATE_FORMAT(A.addtime, '%Y-%m-%d')
+</if>
+<if test="queryType!=1">
+		GROUP BY DATE_FORMAT(A.addtime, '%Y-%m')
+</if>
+
+		) AS Y
+		<if test="queryType==1">
+			ON M.TheDate = Y.alarmtime
+
+		</if>
+		<if test="queryType==2">
+			ON M.TheDate = DATE_FORMAT( Y.alarmtime, '%Y-%m')
+		</if>
+		<if test="queryType==3">
+			ON M.TheDate = DATE_FORMAT( Y.alarmtime, '%Y-%m')
+		</if>
+
+		<if test="queryType==4">
+			ON M.TheDate = DATE_FORMAT( Y.alarmtime, '%Y-%m')
+		</if>
+
+       ORDER BY TheDate  desc
+	</select>
+	
+
+</mapper>

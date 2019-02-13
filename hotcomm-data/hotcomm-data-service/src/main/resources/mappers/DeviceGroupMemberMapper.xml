@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.data.db.DeviceGroupMemberMapper">
+
+	<select id="getMemberGroupNum" resultType="java.lang.Integer">
+		SELECT COUNT(*) FROM hk_device_group_member v1 
+		<where>
+			v1.device_group_id = #{groupId} AND v1.member_id = #{memberId}
+		</where>
+	</select>
+
+	<delete id="delMemberGroupByGroupId">
+		DELETE FROM hk_device_group_member
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="groupId != null">
+				AND device_group_id = #{groupId}
+			</if>
+			<if test="loginMemberId != null">
+				AND member_id IN (select v1.customer_id from hk_customer_member v1 where v1.member_id = #{loginMemberId})
+			</if>
+			<if test="memberId != null">
+				AND member_id = #{memberId}
+			</if>
+		</trim>
+	</delete>
+
+	<!-- 根据客户ID获取组ID -->
+	<select id="getGourpIdsByMemberId" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+		SELECT v1.device_group_id FROM hk_device_group_member v1 WHERE v1.member_id = #{memberId};
+	</select>
+
+</mapper>

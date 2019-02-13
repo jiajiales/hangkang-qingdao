@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.mysql.common.TUserTokenMapper">
+	 <!--查最后第二条token记录  -->
+     <select id="queryToken" resultType="java.lang.String">
+		SELECT token FROM t_user_token
+		WHERE userid=#{userid}
+		ORDER BY
+		t_user_token.id DESC
+		LIMIT 1,1;
+     </select>
+     <select id="queryLastToken" resultType="java.lang.String">
+     	SELECT token FROM t_user_token WHERE userid=#{userid}
+		ORDER BY id DESC
+		LIMIT 1
+     </select>
+</mapper>

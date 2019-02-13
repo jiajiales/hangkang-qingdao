@@ -1,0 +1,521 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.common.patrol.THkSignMapper">
+	<select id="selectPageinfo" resultType="com.hot.manage.entity.common.patrol.ShakeSignVo">
+		SELECT s.id,s.devnum,g.id as groupid,g.groupname,s.lng,s.lat,s.address
+		as code,GROUP_CONCAT(u.id) as userid,GROUP_CONCAT(u.contacts ) as
+		signname,s.lastsigntime
+		FROM t_hk_sign s
+		LEFT JOIN t_device_group g ON
+		g.id=s.itemid AND g.isenable=1
+		LEFT JOIN t_hk_patdevrelation p ON
+		s.id=p.signid
+		LEFT JOIN t_hk_userpatrelation d ON d.id=p.userpatid AND
+		d.isenable=1
+		LEFT
+		JOIN t_user u ON u.id=d.userid AND u.isenable=1
+		LEFT
+		JOIN
+		t_user_dgroup_relation r ON r.devicegroupid=s.itemid AND
+		r.isenable=1
+		WHERE r.userid=#{userid}
+		AND s.isdelete=0
+		<if test="starttime!=null and starttime!=''">
+			AND s.addtime &gt;=#{starttime}
+		</if>
+		<if test="endtime!=null and endtime!=''">
+			AND s.addtime &lt;=#{endtime}
+		</if>
+		<if test="context!=null and context!=''">
+			AND (s.devnum LIKE CONCAT('%',#{context},'%') OR
+			g.groupname LIKE CONCAT('%',#{context},'%'))
+		</if>
+		GROUP BY s.id
+	</select>
+	<select id="selectSignPlacePageInfo"
+		resultType="com.hot.manage.entity.common.patrol.signPlacePageInfoVO">
+		SELECT * FROM (
+		SELECT
+		t1.`id`,
+		t1.`devnum`,
+		<!-- t2.`groupname`, -->
+		<!-- t2.`id` AS groupid, -->
+		GROUP_CONCAT(DISTINCT t2.`id`) AS groupid,
+		GROUP_CONCAT(DISTINCT
+		t2.`groupname`) AS groupname,
+		t1.`address`,
+		t1.`lng`,
+		t1.`lat`,
+		GROUP_CONCAT(DISTINCT t7.`contacts`) AS
+		patName,
+		GROUP_CONCAT(DISTINCT t7.`id`) AS patID,
+		t1.`lastsigntime`,
+		t1.`QRcodePicUrl`
+		FROM
+		t_hk_sign t1
+		INNER JOIN
+		t_device_group t2
+		ON
+		<!-- t1.`itemid` = t2.`id` -->
+		FIND_IN_SET( t2.`id` , t1.`itemid`)
+		AND t2.`isdelete` = 0
+		AND
+		t2.`isenable` = 1
+		INNER
+		JOIN
+		t_user_dgroup_relation t3
+		ON
+		t3.`devicegroupid` = t2.`id`
+		AND
+		t3.`isdelete` = 0
+		AND t3.`isenable` = 1
+		INNER JOIN t_user t4
+		ON t4.`id` =
+		#{userid}
+		AND t4.`id` = t3.`userid`
+		AND
+		t4.`isdelete` = 0
+		AND
+		t4.`isenable` = 1
+		LEFT JOIN t_hk_patdevrelation t5
+		ON t5.`signid` =
+		t1.`id`
+		LEFT JOIN t_hk_userpatrelation t6
+		ON
+		t5.`userpatid` = t6.`id`
+		LEFT JOIN t_user t7
+		ON t7.`id` = t6.`userid`
+		WHERE t1.`isdelete` = 0
+		GROUP BY t1.`id`
+		) test
+		WHERE 1=1
+		<if test="context!=null and context!=''">
+			AND (patID LIKE CONCAT('%',#{context},'%') OR
+			patName LIKE
+			CONCAT('%',#{context},'%'))
+		</if>
+		<if test="starttime!=null and starttime!=''">
+			AND DATE(lastsigntime) &gt;=#{starttime}
+		</if>
+		<if test="endtime!=null and endtime!=''">
+			AND DATE(lastsigntime) &lt;=#{endtime}
+		</if>
+	</select>
+
+	<select id="checkSignPlaceDevnum"
+		resultType="com.hot.manage.entity.common.patrol.checkSignDevnum">
+		SELECT t1.`id` AS id,t1.`devnum` FROM t_hk_sign t1
+		WHERE
+		t1.`devnum`=#{devnum}
+	</select>
+
+	<!-- <insert id="addSignAddress" useGeneratedKeys="true" -->
+	<!-- keyProperty="newSignPlaceParam.insertId" parameterType="com.hot.manage.entity.common.patrol.newSignPlaceParam"> -->
+	<!-- INSERT INTO t_hk_sign ( -->
+	<!-- <if test="address !=null and address !=''"> -->
+	<!-- address, -->
+	<!-- </if> -->
+	<!-- <if test="lng !=null"> -->
+	<!-- lng, -->
+	<!-- </if> -->
+	<!-- <if test="lng !=null"> -->
+	<!-- lat, -->
+	<!-- </if> -->
+	<!-- <if test="devnum !=null and devnum !=''"> -->
+	<!-- devnum, -->
+	<!-- </if> -->
+	<!-- <if test="itemid !=null"> -->
+	<!-- itemid, -->
+	<!-- </if> -->
+	<!-- <if test="ADDTIME !=null and ADDTIME !=''"> -->
+	<!-- ADDTIME, -->
+	<!-- </if> -->
+	<!-- <if test="QRcodePicUrl !=null and QRcodePicUrl !=''"> -->
+	<!-- QRcodePicUrl -->
+	<!-- </if> -->
+	<!-- ) -->
+	<!-- VALUES -->
+	<!-- ( -->
+	<!-- <if test="address !=null and address !=''"> -->
+	<!-- #{address}, -->
+	<!-- </if> -->
+	<!-- <if test="lng !=null"> -->
+	<!-- #{lng}, -->
+	<!-- </if> -->
+	<!-- <if test="lng !=null"> -->
+	<!-- #{lat}, -->
+	<!-- </if> -->
+	<!-- <if test="devnum !=null and devnum !=''"> -->
+	<!-- #{devnum}, -->
+	<!-- </if> -->
+	<!-- <if test="itemid !=null"> -->
+	<!-- #{itemid}, -->
+	<!-- </if> -->
+	<!-- <if test="ADDTIME !=null and ADDTIME !=''"> -->
+	<!-- #{ADDTIME}, -->
+	<!-- </if> -->
+	<!-- <if test="QRcodePicUrl !=null and QRcodePicUrl !=''"> -->
+	<!-- #{QRcodePicUrl} -->
+	<!-- </if> -->
+	<!-- ) -->
+	<!-- </insert> -->
+
+	<insert id="addSignAddress" useGeneratedKeys="true" keyProperty="insertId">
+		<!-- INSERT INTO t_hk_sign ( -->
+		<!-- address, -->
+		<!-- lng, -->
+		<!-- lat, -->
+		<!-- devnum, -->
+		<!-- itemid, -->
+		<!-- ADDTIME -->
+		<!-- ) -->
+		<!-- VALUES -->
+		<!-- ( -->
+		<!-- #{address}, -->
+		<!-- #{lng}, -->
+		<!-- #{lat}, -->
+		<!-- #{devnum}, -->
+		<!-- #{itemid}, -->
+		<!-- #{ADDTIME} -->
+		<!-- ) -->
+
+		INSERT INTO t_hk_sign (
+		<if test="address !=null and address !=''">
+			address,
+		</if>
+		<if test="lng !=null">
+			lng,
+		</if>
+		<if test="lng !=null">
+			lat,
+		</if>
+		<if test="devnum !=null and devnum !=''">
+			devnum,
+		</if>
+		<if test="itemid !=null">
+			itemid,
+		</if>
+		<if test="ADDTIME !=null and ADDTIME !=''">
+			ADDTIME
+		</if>
+		<if test="QRcodePicUrl !=null and QRcodePicUrl !=''">
+			,
+			QRcodePicUrl
+		</if>
+		)
+		VALUES
+		(
+		<if test="address !=null and address !=''">
+			#{address},
+		</if>
+		<if test="lng !=null">
+			#{lng},
+		</if>
+		<if test="lng !=null">
+			#{lat},
+		</if>
+		<if test="devnum !=null and devnum !=''">
+			#{devnum},
+		</if>
+		<if test="itemid !=null">
+			#{itemid}
+		</if>
+		<if test="ADDTIME !=null and ADDTIME !=''">
+			,#{ADDTIME}
+		</if>
+		<if test="QRcodePicUrl !=null and QRcodePicUrl !=''">
+			,#{QRcodePicUrl}
+		</if>
+		)
+	</insert>
+
+	<insert id="patUserRelationSign">
+		INSERT INTO t_hk_patdevrelation (userpatid, signid)
+		VALUES
+		(#{patUser}, #{signId})
+	</insert>
+
+	<delete id="cutRelation">
+		DELETE
+		FROM
+		t_hk_patdevrelation
+		WHERE signid =#{signId}
+	</delete>
+
+	<delete id="clearSignLog">
+		DELETE
+		FROM
+		t_hk_signlog
+		WHERE signid =#{signId}
+	</delete>
+
+	<update id="deleteSignPlace">
+		UPDATE t_hk_sign SET isdelete=1
+		WHERE id=#{signId}
+	</update>
+
+	<update id="updateSignPlace">
+		UPDATE t_hk_sign SET
+		<if test="address !=null and address !=''">
+			address=#{address}
+		</if>
+		<if test="lng !=null">
+			,
+			lng=#{lng}
+		</if>
+		<if test="lng !=null">
+			,
+			lat=#{lat}
+		</if>
+		<if test="devnum !=null and devnum !=''">
+			,
+			devnum=#{devnum}
+		</if>
+		<if test="itemid !=null">
+			,
+			itemid=#{itemid}
+		</if>
+		<if test="QRcodePicUrl !=null">
+			,
+			QRcodePicUrl=#{QRcodePicUrl}
+		</if>
+		WHERE id=#{insertId}
+	</update>
+
+	<select id="selectSignPlaceOnid" resultType="com.hot.manage.entity.common.patrol.SignPlaceOnid">
+		SELECT
+		t1.*,
+		GROUP_CONCAT(DISTINCT t4.`id`) AS patID,
+		GROUP_CONCAT(DISTINCT t4.`contacts`) AS patName,
+		GROUP_CONCAT(DISTINCT t5.`id`) AS groupid,
+		GROUP_CONCAT(DISTINCT
+		t5.`groupname`) AS groupname
+		FROM
+		t_hk_sign t1
+		LEFT
+		JOIN
+		t_hk_patdevrelation t2
+		ON t1.`id` = t2.`signid`
+		LEFT JOIN
+		t_hk_userpatrelation t3
+		ON t3.`id` = t2.`userpatid`
+		LEFT JOIN
+		t_user t4
+		ON t4.`id` = t3.`userid`
+		LEFT JOIN t_device_group t5
+		ON
+		FIND_IN_SET(
+		t5.`id` , t1.`itemid`)
+		WHERE t1.`id` = #{signId}
+		GROUP BY
+		t1.`id`
+	</select>
+
+	<select id="selectSignLogPageInfo"
+		resultType="com.hot.manage.entity.common.patrol.SignLogPageInfoVO">
+		SELECT
+		t1.`id`,
+		t2.`devnum`,
+		t2.`id` AS signID,
+		t1.`picaddr`,
+		<!-- t6.`groupname`, -->
+		GROUP_CONCAT(DISTINCT t6.`groupname`) AS groupname,
+		t2.`address`,
+		GROUP_CONCAT(DISTINCT t5.`contacts`) AS patName,
+		t1.`addtime`,
+		CASE
+		t1.`signstate`
+		WHEN 1
+		THEN 1
+		ELSE 0
+		END AS signstate,
+		CASE
+		t1.`signstate`
+		WHEN 0
+		THEN '未获取到定位'
+		WHEN 1
+		THEN ''
+		WHEN 2
+		THEN
+		'与签到点距离超出100米'
+		WHEN 3
+		THEN
+		'未获取到定位'
+		END AS stateDetail,
+		CASE
+		t1.`signstate`
+		WHEN 1
+		THEN '签到成功'
+		ELSE '签到失败'
+		END AS stateName
+		FROM
+		t_hk_signlog t1
+		INNER JOIN t_hk_sign t2
+		ON t1.`signid` =
+		t2.`id`
+		AND
+		t2.`isdelete` = 0
+		<if test="signID !=null">
+		AND	t2.`id`=#{signID}
+		</if>
+		LEFT JOIN
+		t_hk_patdevrelation t3
+		ON
+		t3.`signid` =
+		t2.`id`
+		LEFT JOIN
+		t_hk_userpatrelation t4
+		ON t4.`id` =
+		t3.`userpatid`
+		LEFT
+		JOIN t_user t5
+		<!-- ON t5.`id` = t4.`userid` -->
+		ON t5.`id` = t1.`userid`
+		LEFT JOIN
+		t_device_group t6
+		<!-- ON t6.`id` =t2.`itemid` -->
+		ON FIND_IN_SET( t6.`id` , t2.`itemid`)
+		WHERE 1=1
+		<if test="context!=null and context!=''">
+			AND (t6.`groupname` LIKE CONCAT('%',#{context},'%') OR
+			t5.`contacts` LIKE
+			CONCAT('%',#{context},'%'))
+		</if>
+		<if test="starttime!=null and starttime!=''">
+			AND DATE(t1.`addtime`) &gt;=#{starttime}
+		</if>
+		<if test="endtime!=null and endtime!=''">
+			AND DATE(t1.`addtime`) &lt;=#{endtime}
+		</if>
+		<if test="state !=null">
+			<if test="state ==1">
+				AND t1.`signstate`=1
+			</if>
+			<if test="state ==0">
+				AND t1.`signstate`IN (0,2)
+			</if>
+		</if>
+		GROUP BY t1.`id`
+		ORDER BY t1.`addtime` DESC
+	</select>
+
+
+	<select id="selectSignLogInfo"
+		resultType="com.hot.manage.entity.common.patrol.SignLogPageInfoVO">
+		<!-- SELECT -->
+		<!-- t1.`id`, -->
+		<!-- t2.`devnum`, -->
+		<!-- t6.`groupname`, -->
+		<!-- t2.`address`, -->
+		<!-- GROUP_CONCAT(t5.`contacts`) AS patName, -->
+		<!-- t1.`addtime`, -->
+		<!-- t1.`signstate`, -->
+		<!-- CASE -->
+		<!-- t1.`signstate` -->
+		<!-- WHEN 0 -->
+		<!-- THEN '未获取到定位' -->
+		<!-- WHEN 1 -->
+		<!-- THEN '' -->
+		<!-- WHEN 2 -->
+		<!-- THEN -->
+		<!-- '与签到点距离超出50米' -->
+		<!-- END AS stateDetail, -->
+		<!-- CASE -->
+		<!-- t1.`signstate` -->
+		<!-- WHEN 1 -->
+		<!-- THEN '签到成功' -->
+		<!-- ELSE '签到失败' -->
+		<!-- END AS stateName -->
+		<!-- FROM -->
+		<!-- t_hk_signlog t1 -->
+		<!-- INNER JOIN t_hk_sign t2 -->
+		<!-- ON t1.`signid` = -->
+		<!-- t2.`id` -->
+		<!-- AND t2.`isdelete` = 0 -->
+		<!-- LEFT JOIN -->
+		<!-- t_hk_patdevrelation t3 -->
+		<!-- ON -->
+		<!-- t3.`signid` = t2.`id` -->
+		<!-- LEFT JOIN -->
+		<!-- t_hk_userpatrelation t4 -->
+		<!-- ON t4.`id` = -->
+		<!-- t3.`userpatid` -->
+		<!-- LEFT JOIN t_user t5 -->
+		<!-- ON t5.`id` = t4.`userid` -->
+		<!-- LEFT JOIN -->
+		<!-- t_device_group t6 -->
+		<!-- ON t6.`id` = -->
+		<!-- t2.`itemid` -->
+		<!-- WHERE 1=1 -->
+		<!-- <if test="context!=null and context!=''"> -->
+		<!-- AND (t6.`groupname` LIKE CONCAT('%',#{context},'%') OR -->
+		<!-- t5.`contacts` LIKE -->
+		<!-- CONCAT('%',#{context},'%')) -->
+		<!-- </if> -->
+		<!-- <if test="starttime!=null and starttime!=''"> -->
+		<!-- AND DATE(t1.`addtime`) &gt;=#{starttime} -->
+		<!-- </if> -->
+		<!-- <if test="endtime!=null and endtime!=''"> -->
+		<!-- AND DATE(t1.`addtime`) &lt;=#{endtime} -->
+		<!-- </if> -->
+		<!-- <if test="state !=null"> -->
+		<!-- <if test="state ==0"> -->
+		<!-- AND t1.`signstate`=0 -->
+		<!-- </if> -->
+		<!-- <if test="state ==1"> -->
+		<!-- AND t1.`signstate`IN (1,2) -->
+		<!-- </if> -->
+		<!-- </if> -->
+		<!-- GROUP BY t1.`id` -->
+		<!-- ORDER BY t1.`addtime` DESC -->
+		SELECT
+		t1.`id`,
+		t2.`devnum`,
+		t1.`picaddr`,
+		t2.`signID`,
+		GROUP_CONCAT(DISTINCT t6.`groupname`) AS groupname,
+		t2.`address`,
+		GROUP_CONCAT(DISTINCT t5.`contacts`) AS patName,
+		t1.`addtime`,
+		CASE
+		t1.`signstate`
+		WHEN 1
+		THEN 1
+		ELSE 0
+		END AS signstate,
+		CASE
+		t1.`signstate`
+		WHEN 0
+		THEN '未获取到定位'
+		WHEN 1
+		THEN ''
+		WHEN 2
+		THEN '与签到点距离超出100米'
+		WHEN 3
+		THEN '未获取到定位'
+		END AS stateDetail,
+		CASE
+		t1.`signstate`
+		WHEN 1
+		THEN '签到成功'
+		ELSE '签到失败'
+		END AS stateName
+		FROM
+		t_hk_signlog t1
+		INNER JOIN t_hk_sign t2
+		ON t1.`signid` = t2.`id`
+		AND t2.`isdelete` = 0
+		LEFT JOIN t_hk_patdevrelation t3
+		ON t3.`signid` = t2.`id`
+		LEFT JOIN t_hk_userpatrelation t4
+		ON t4.`id` = t3.`userpatid`
+		LEFT JOIN t_user t5
+		ON t5.`id` = t1.`userid`
+		LEFT JOIN t_device_group t6
+		ON FIND_IN_SET(t6.`id`, t2.`itemid`)
+		WHERE 1 = 1
+		GROUP BY t1.`id`
+		ORDER BY t1.`addtime` DESC
+	</select>
+
+</mapper>

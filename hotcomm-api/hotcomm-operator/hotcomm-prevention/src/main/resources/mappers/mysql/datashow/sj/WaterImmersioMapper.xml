@@ -1,0 +1,1293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.hotcomm.prevention.db.mysql.datashow.sj.WaterImmersionMapper">
+
+	<!-- 报警类型统计 -->
+	<select id="selectDevState"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.sj.vo.DevStateVO">
+		SELECT dg.moduleid as moduleID , YEAR(s.addtime) as yaer ,
+		MONTH(s.addtime)
+		as mth , COUNT(MONTH(s.addtime)) as add_devcount ,
+		SUM(CASE WHEN als.type = 1 THEN 1 ELSE 0 END) AS AlarmCount,
+		SUM(CASE
+		WHEN als.type = 2 THEN 1 ELSE 0 END) AS FalseCount
+		FROM t_device_all s
+		LEFT JOIN t_device_group_relation dg on dg.moduleid = #{moduleID} and
+		dg.deviceid = s.id and dg.isenable = 1
+		RIGHT JOIN
+		t_user_dgroup_relation ug on ug.userid = #{userID} and
+		ug.devicegroupid = dg.groupid and ug.isenable = 1
+		LEFT JOIN t_dev_alarm
+		al on al.moduleid = dg.moduleid and al.deviceid =
+		s.id and
+		YEAR(al.addtime) = YEAR(s.addtime)
+		LEFT JOIN t_dev_alarm_state als on
+		als.isdelete = 0 and als.module_id =
+		dg.moduleid and als.id =
+		al.alarmstateid
+		WHERE YEAR(s.addtime) = #{Time} and s.isdelete = 0 and
+		s.isenable = 1 AND
+		s.moduleid=#{moduleID}
+		GROUP BY MONTH(s.addtime)
+	</select>
+
+	<select id="AlarmHandleForType"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.sj.AlarmTypeList">
+		SELECT s.state_name as statename , COUNT(a.alarmstateid) as
+		num
+		FROM t_dev_alarm_state s
+		LEFT JOIN t_dev_alarm a on a.moduleid =
+		s.module_id and s.id =
+		a.alarmstateid and YEAR(a.addtime) = #{Time}
+		LEFT JOIN t_device_group_relation dg on dg.moduleid = s.module_id and
+		dg.deviceid = a.deviceid and dg.isenable = 1
+		LEFT JOIN
+		t_user_dgroup_relation ug on ug.userid = #{userID} and
+		ug.devicegroupid = dg.groupid and ug.isenable = 1
+		WHERE s.module_id =
+		#{moduleID} and s.isdelete = 0
+		GROUP BY s.state_name
+	</select>
+
+	<select id="selectBattery"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.sj.vo.BatteryDiagramVO">
+<!-- 		根据模块ID查询设备电量分布(杨) -->
+		<!-- SELECT -->
+		<!-- SUM( -->
+		<!-- CASE -->
+		<!-- WHEN t1.Battery <![CDATA[<]]> -->
+		<!-- 20 -->
+		<!-- THEN 1 -->
+		<!-- ELSE 0 -->
+		<!-- END -->
+		<!-- ) -->
+		<!-- AS lbcount, -->
+		<!-- SUM( -->
+		<!-- CASE -->
+		<!-- WHEN t1.Battery >= 20 -->
+		<!-- THEN 1 -->
+		<!-- ELSE 0 -->
+		<!-- END -->
+		<!-- ) -->
+		<!-- AS count, -->
+		<!-- t2.`moduleid` AS moduleid -->
+		<!-- FROM -->
+		<!-- t_device_all t1 -->
+		<!-- INNER JOIN -->
+		<!-- t_device_group t2 -->
+		<!-- ON t2.`moduleid` = #{moduleid} -->
+		<!-- AND -->
+		<!-- t2.`isdelete` = 0 -->
+		<!-- INNER JOIN t_device_group_relation t3 -->
+		<!-- ON t3.`groupid` -->
+		<!-- = t2.`id` -->
+		<!-- AND -->
+		<!-- t3.`moduleid` = #{moduleid} -->
+		<!-- AND t3.`isdelete` = 0 -->
+		<!-- AND -->
+		<!-- t3.`deviceid` = -->
+		<!-- t1.`id` -->
+		<!-- INNER JOIN t_user_dgroup_relation t4 -->
+		<!-- ON -->
+		<!-- t4.`devicegroupid` = -->
+		<!-- t2.`id` -->
+		<!-- AND t4.`isdelete` = 0 -->
+		<!-- AND t4.`adduserid` = -->
+		<!-- #{userid} -->
+		<!-- AND -->
+		<!-- t3.`adduserid` = t4.`adduserid` -->
+		<!-- WHERE t1.`isdelete` = 0 -->
+		<!-- AND -->
+		<!-- t1.moduleid=#{moduleid} -->
+		<!-- <if test="starttime!=null"> -->
+		<!-- AND t1.`addtime` >= #{starttime} -->
+		<!-- </if> -->
+		<!-- <if test="endtime!=null"> -->
+		<!-- AND t1.`addtime` &lt;= #{endtime} -->
+		<!-- </if> -->
+		SELECT
+		SUM(
+		CASE
+		WHEN t1.`battery` &lt; 20
+		THEN 1
+		ELSE 0
+		END
+		) AS lbcount,
+		SUM(
+		CASE
+		WHEN t1.Battery >= 20
+		THEN 1
+		ELSE 0
+		END
+		) AS COUNT,
+		t2.`moduleid` AS moduleid
+		FROM
+		t_device_all t1
+		INNER JOIN t_device_group_relation t2
+		ON t1.`isdelete` = 0
+		AND t2.`isdelete` = 0
+		AND t1.`id` = t2.`deviceid`
+		AND t1.`moduleid` = #{moduleid}
+		INNER JOIN t_device_group t3
+		ON t3.`isdelete` = 0
+		AND t3.`id` = t2.`groupid`
+		INNER JOIN t_user_dgroup_relation t4
+		ON t4.`isdelete` = 0
+		AND t4.`devicegroupid` = t3.`id`
+		INNER JOIN t_user t5
+		ON t5.`isdelete` = 0
+		AND t4.`userid` = t5.`id`
+		AND t5.`id` = #{userid}
+	</select>
+
+
+
+	<select id="selectDevOpenTimes"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.sj.vo.DevOpenTimesVO">
+		<!-- 根据模块ID查询设备开启次数(杨) -->
+		SELECT
+		<if test="querytype==2">
+			DATE_FORMAT(t1.`addtime`, '%Y-%m') AS dateTime,
+		</if>
+		<if test="querytype==1">
+			DATE(t1.`addtime`) AS DATETIME,
+		</if>
+		COUNT(t1.`id`) AS openCount,
+		t5.`moduleid` AS moduleid
+		FROM
+		t_dev_alarm
+		t1
+		INNER JOIN t_dev_alarm_state t2
+		ON t1.`alarmstateid` = t2.`id`
+		AND
+		t2.`module_id` = #{moduleid}
+		AND t2.`isdelete` = 0
+		INNER JOIN
+		t_device_all
+		t3
+		ON t1.`deviceid` = t3.`id` and t3.`moduleid` =
+		#{moduleid}
+		AND
+		t1.`moduleid` = #{moduleid}
+		INNER JOIN
+		t_device_group_relation t4
+		ON
+		t4.`deviceid` = t3.`id`
+		AND t4.`isdelete`
+		=
+		0
+		AND t4.`moduleid` =
+		#{moduleid}
+		INNER JOIN t_device_group t5
+		ON
+		t5.`id` =
+		t4.`groupid`
+		AND
+		t5.`isdelete` = 0
+		AND t5.`moduleid` =
+		#{moduleid}
+		INNER
+		JOIN
+		t_user_dgroup_relation t6
+		ON t6.`devicegroupid` =
+		t5.`id`
+		AND
+		t6.`isdelete` = 0
+		INNER JOIN t_user t7
+		ON t7.`id` =
+		t6.`userid`
+		AND
+		t7.`isdelete` = 0
+		AND t7.`id` = #{userid}
+		<if test="querytype==2">
+			GROUP BY DATE_FORMAT(t1.`addtime`, '%Y-%m')
+		</if>
+		<if test="querytype==1">
+			GROUP BY DATE(t1.`addtime`)
+		</if>
+	</select>
+	<!-- 根据模块ID查询设备损坏率(杨) -->
+	<select id="selectFailureRate"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.sj.vo.DevFailureRateVO">
+		SELECT
+		#{moduleID} AS moduleID
+
+		, a.DATE AS date
+		,IFNULL(a.devCount,0) AS devCount
+		,IFNULL(a.repairCount,0) AS
+		repairCount
+		,IFNULL(a.currentMonthBrokenCount,0) AS
+		currentMonthBrokenCount
+		,IFNULL(a.cumulativeBrokenCountAfterRepair,0)
+		AS
+		cumulativeBrokenCountAfterRepair
+		FROM
+		(
+		SELECT
+		t3.`moduleid` AS
+		moduleID,
+		DATE_FORMAT(t1.`addtime`, '%m') AS DATE,
+		(SELECT
+		COUNT(c.id)
+		FROM
+		t_dev_alarm c
+		WHERE
+		MONTH(c.addtime) =
+		MONTH(t1.`addtime`)
+		AND
+		c.moduleid = #{moduleID}
+		AND
+		c.handlestate = 2)
+		AS repairCount,
+		(SELECT
+		COUNT(c.id)
+		FROM
+		t_dev_alarm c
+		INNER JOIN
+		t_dev_alarm_state s
+		ON
+		c.`alarmstateid` = s.`id`
+		AND s.`type`
+		= 2
+		WHERE
+		MONTH(c.addtime) =
+		MONTH(t1.`addtime`)
+		AND c.moduleid =
+		#{moduleID}
+		) AS
+		currentMonthBrokenCount,
+		(SELECT
+		COUNT(c.id)
+		FROM
+		t_dev_alarm c
+		INNER JOIN
+		t_dev_alarm_state s
+		ON c.`alarmstateid` = s.`id`
+		AND s.`type` = 2
+		WHERE
+		MONTH(c.addtime) &lt;= MONTH(t1.`addtime`) +1
+		AND
+		c.handlestate != 2
+		AND
+		c.moduleid = #{moduleID}) AS
+		cumulativeBrokenCount,
+		(SELECT
+		COUNT(c.id)
+		FROM
+		t_dev_alarm c
+		INNER JOIN
+		t_dev_alarm_state s
+		ON
+		c.`alarmstateid` =
+		s.`id`
+		AND s.`type` = 2
+		WHERE
+		MONTH(c.addtime) &lt;=
+		MONTH(t1.`addtime`)
+		AND c.handlestate != 2
+		AND
+		c.moduleid = 10) AS
+		cumulativeBrokenCountAfterRepair,
+		(SELECT
+		COUNT(b.id)
+		FROM
+		t_device_all
+		b
+		INNER JOIN t_device_group_relation ttt3
+		ON
+		ttt3.`deviceid` = b.`id`
+		AND
+		ttt3.`isdelete` = 0
+		AND ttt3.`moduleid` =
+		#{moduleID}
+		AND b.`moduleid` =
+		#{moduleID}
+		INNER JOIN
+		t_device_group ttt4
+		ON ttt4.`id` = ttt3.`groupid`
+		AND ttt4.`isdelete` =
+		0
+		AND ttt4.`moduleid`
+		= #{moduleID}
+		INNER JOIN
+		t_user_dgroup_relation
+		ttt5
+		ON
+		ttt5.`devicegroupid` = ttt4.`id`
+		AND
+		ttt5.`isdelete` = 0
+		INNER
+		JOIN
+		t_user ttt6
+		ON ttt5.`userid` = ttt6.`id`
+		AND ttt6.`id` = #{userID}
+		AND
+		ttt6.`isdelete` = 0
+		WHERE b.addtime &lt;=
+		LAST_DAY(MAX(t1.`addtime`)))
+		AS devCount
+		FROM
+		t_dev_alarm t1
+		INNER JOIN
+		t_device_all
+		t2
+		ON t1.`deviceid`
+		= t2.`id`
+		AND t2.`isdelete` = 0
+		AND
+		t1.`moduleid` = #{moduleID}
+		AND
+		t2.`moduleid` = #{moduleID}
+		AND
+		t2.`isdelete` = 0
+		INNER JOIN
+		t_device_group_relation t3
+		ON t3.`deviceid`
+		= t2.`id`
+		AND t3.`isdelete`
+		= 0
+		AND t3.`moduleid` =
+		#{moduleID}
+		INNER JOIN
+		t_device_group t4
+		ON
+		t4.`id` = t3.`groupid`
+		AND
+		t4.`isdelete` = 0
+		AND
+		t4.`moduleid` =
+		#{moduleID}
+		INNER JOIN
+		t_user_dgroup_relation t5
+		ON
+		t5.`devicegroupid` =
+		t4.`id`
+		AND
+		t5.`isdelete` = 0
+		INNER JOIN t_user t6
+		ON
+		t5.`userid` =
+		t6.`id`
+		AND
+		t6.`id` = #{userID}
+		AND t6.`isdelete` = 0
+		WHERE
+		t1.`addtime`
+		>=
+		#{startTime}
+		AND t1.`addtime` &lt;= #{endTime}
+		GROUP BY
+		DATE_FORMAT(t1.`addtime`, '%m') )
+		a
+
+	</select>
+
+
+	<select id="selectDevAgingRate"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.sj.vo.DevAgingRateVO">
+		<!-- 根据模块ID查询设备老化率(杨) -->
+		SELECT
+		t2.`moduleid` AS moduleid,
+		COUNT(DISTINCT (t1.`id`)) devcount,
+		FLOOR(DATEDIFF(NOW(), t1.`addtime`) / 365) AS year
+		FROM
+		t_device_all
+		t1
+		INNER JOIN t_device_group_relation t2
+		ON t2.`deviceid` = t1.`id`
+		AND
+		t2.`moduleid` = #{moduleID}
+		AND t1.`moduleid` = #{moduleID}
+		AND
+		t2.`isdelete` = 0
+		AND t1.`isdelete` = 0
+		INNER JOIN t_device_group t3
+		ON
+		t3.`id` = t2.`groupid`
+		AND t3.`isdelete`
+		= 0
+		INNER JOIN
+		t_user_dgroup_relation t4
+		ON t4.`devicegroupid` = t3.`id`
+		AND
+		t4.`isdelete` = 0
+		INNER JOIN t_user t5
+		ON t5.`id` = t4.`userid`
+		AND
+		t5.`id` = #{userID}
+		AND t5.`isdelete` = 0
+		GROUP BY
+		FLOOR(DATEDIFF(NOW(),t1.`addtime`)/365)
+	</select>
+
+	<select id="selectOneDevInfo"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.sj.DevInfo">
+		<!-- 根据模块ID查询单个设备信息(杨) -->
+		SELECT
+		t2.`moduleid` AS moduleid,
+		FLOOR(DATEDIFF(NOW(), t1.`addtime`))
+		AS day,
+		t1.`code`,
+		t1.`devnum`,
+		<!-- DATE(t1.`addtime`) AS addtime, -->
+		DATE_FORMAT(t1.`addtime`,'%Y年%m月%d日') AS addtime,
+		SUM(
+		CASE
+		WHEN
+		(SELECT
+		TYPE
+		FROM
+		t_dev_alarm_state
+		WHERE id = t6.`alarmstateid`
+		AND isdelete = 0)
+		= 1
+		THEN 1
+		ELSE 0
+		END
+		) AS alarmcount,
+		SUM(
+		CASE
+		WHEN
+		(SELECT
+		TYPE
+		FROM
+		t_dev_alarm_state
+		WHERE id = t6.`alarmstateid`
+		AND
+		isdelete = 0) = 2
+		THEN
+		1
+		ELSE 0
+		END
+		) AS failurecount,
+		SUM(
+		CASE
+		WHEN
+		(SELECT
+		TYPE
+		FROM
+		t_dev_alarm_state
+		WHERE id = t6.`alarmstateid`
+		AND isdelete = 0)
+		= 3
+		THEN
+		1
+		ELSE 0
+		END
+		) AS othercount,
+		(SELECT
+		COUNT(*)
+		FROM
+		t_dev_alarm tt1
+		INNER JOIN
+		t_dev_alarm_state tt2
+		ON tt1.moduleid = #{moduleID}
+		AND
+		tt1.deviceid =
+		#{deviceId}
+		AND tt1.alarmstateid = tt2.id
+		AND tt2.type =
+		1) AS opencount
+		FROM
+		t_device_all
+		t1
+		INNER JOIN t_device_group_relation t2
+		ON
+		t2.`deviceid` = t1.`id`
+		AND t2.`moduleid` = #{moduleID}
+		AND
+		t1.`moduleid` = #{moduleID}
+		AND t2.`isdelete` = 0
+		AND t1.`isdelete` = 0
+		INNER JOIN t_device_group t3
+		ON t3.`id` = t2.`groupid`
+		AND t3.`isdelete`
+		= 0
+		INNER JOIN t_user_dgroup_relation t4
+		ON t4.`devicegroupid` = t3.`id`
+		AND t4.`isdelete` = 0
+		INNER JOIN t_user t5
+		ON t5.`id` = t4.`userid`
+		AND
+		t5.`id` = #{userid}
+		AND t5.`isdelete` = 0
+		LEFT JOIN t_dev_alarm t6
+		ON
+		t6.`moduleid` = #{moduleID}
+		AND t6.`deviceid` = t1.`id`
+		AND
+		YEAR(t6.`addtime`) = #{year}
+		WHERE t1.`id` = #{deviceId}
+	</select>
+
+	<select id="selectDevAlarmHandleByTime"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.sj.vo.DevAlarmHandleByTimeVO">
+		<!-- 根据模块ID和时间查询报警处理(杨) -->
+		<if test="queryType==1">
+			SELECT
+			IFNULL(a.alarmcount, 0) AS alarmcount,
+			#{moduleID} as
+			moduleid,
+			IFNULL(a.falsecount, 0) AS falsecount,
+			IFNULL(a.handlecount,
+			0) AS handlecount,
+			s.TheDate AS DATE
+			FROM
+			(
+			SELECT
+			DATE_FORMAT(TheDate,
+			'%Y-%m') AS TheDate
+			FROM
+			(
+			SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH)
+			AS TheDate,
+			@d := @d - 1 DAY
+			FROM
+			t_power,
+			(SELECT @d := 0) temp
+			) test
+			LIMIT 0, 12
+			) AS s
+			LEFT JOIN (
+			SELECT
+			DATE_FORMAT(t1.addtime, '%Y-%m') AS
+			date,
+			COUNT(t1.`id`) AS
+			alarmcount,
+			SUM(
+			CASE
+			WHEN t1.`handlestate` = 2
+			THEN
+			1
+			ELSE
+			0
+			END
+			) AS
+			handlecount,
+			SUM(
+			CASE
+			WHEN t1.`handleresult` = 1 THEN
+			1
+			ELSE
+			0
+			END
+			) AS
+			falsecount
+			FROM
+			t_dev_alarm t1
+			INNER JOIN t_device_all t2
+			ON
+			t1.`deviceid` = t2.`id`
+			AND t1.`moduleid` = #{moduleID}
+			AND
+			t2.`moduleid` = #{moduleID}
+			AND t2.`isdelete` = 0
+			INNER JOIN
+			t_device_group_relation t3 ON t3.`deviceid` = t2.`id`
+			AND
+			t3.`isdelete` = 0
+			AND t3.`moduleid` = #{moduleID}
+			INNER JOIN
+			t_device_group t4 ON t4.`id` = t3.`groupid`
+			AND t4.`isdelete` = 0
+			AND
+			t4.`moduleid` = #{moduleID}
+			INNER JOIN t_user_dgroup_relation t5 ON
+			t5.`devicegroupid` = t4.`id`
+			AND t5.`isdelete` = 0
+			INNER JOIN t_user t6
+			ON t6.`id` = t5.`userid`
+			AND t6.`isdelete` = 0
+			AND t6.`id` = #{userID}
+
+			GROUP BY
+			DATE_FORMAT(t1.addtime, '%Y-%m')
+			) a ON a.date=s.TheDate
+			ORDER
+			BY
+			s.TheDate
+
+
+		</if>
+
+
+		<if test="queryType==2">
+			SELECT
+			IFNULL(a.alarmcount, 0) AS alarmcount,
+			#{moduleID} as
+			moduleid,
+			IFNULL(a.falsecount, 0) AS falsecount,
+			IFNULL(a.handlecount,
+			0) AS handlecount,
+			DATE_FORMAT(s.TheDate,
+			'%m.%d') AS DATE
+			FROM
+			(
+			SELECT
+			ADDDATE(CURDATE(), INTERVAL @d DAY) AS
+			TheDate,
+			@d := @d - 1 DAY
+			FROM
+			t_power,
+			(SELECT @d := 0) temp
+			WHERE
+			ADDDATE(CURDATE(), INTERVAL @d DAY)
+			>= DATE_ADD(CURDATE(), INTERVAL -
+			29 DAY)
+			) AS s
+			LEFT JOIN (
+			SELECT
+			DATE(t1.`addtime`) AS date,
+			COUNT(t1.`id`) AS alarmcount,
+			SUM(
+			CASE
+			WHEN
+			t1.`handlestate` = 2 THEN
+			1
+			ELSE
+			0
+			END
+			) AS handlecount,
+			SUM(
+			CASE
+			WHEN
+			t1.`handleresult` = 1 THEN
+			1
+			ELSE
+			0
+			END
+			) AS falsecount
+			FROM
+			t_dev_alarm t1
+			INNER JOIN t_device_all t2
+			ON t1.`deviceid` = t2.`id`
+			AND t1.`moduleid`
+			=#{moduleID}
+			AND
+			t2.`moduleid` =#{moduleID}
+			AND t2.`isdelete` = 0
+			INNER
+			JOIN
+			t_device_group_relation t3 ON t3.`deviceid` = t2.`id`
+			AND
+			t3.`isdelete` = 0
+			AND t3.`moduleid` = #{moduleID}
+			INNER JOIN
+			t_device_group t4 ON t4.`id` = t3.`groupid`
+			AND t4.`isdelete` = 0
+			AND
+			t4.`moduleid` = #{moduleID}
+			INNER JOIN t_user_dgroup_relation t5 ON
+			t5.`devicegroupid` = t4.`id`
+			AND t5.`isdelete` = 0
+			INNER JOIN t_user t6
+			ON t6.`id` = t5.`userid`
+			AND t6.`isdelete` = 0
+			AND t6.`id` = #{userID}
+
+			GROUP BY DATE_FORMAT(t1.addtime, '%Y-%m-%d')
+			) a ON a.date = s.TheDate
+			ORDER BY
+			s.TheDate
+		</if>
+
+
+		<if test="queryType==3">
+			SELECT
+			IFNULL(a.alarmcount, 0) AS alarmcount,
+			#{moduleID} as
+			moduleid,
+			IFNULL(a.falsecount, 0) AS falsecount,
+			IFNULL(a.handlecount,
+			0) AS handlecount,
+			s.TheDate AS DATE
+			FROM
+			(
+			SELECT
+			DATE_FORMAT(TheDate,
+			'%Y-%m') AS TheDate
+			FROM
+			(
+			SELECT
+			ADDDATE(#{endTime}, INTERVAL @d MONTH)
+			AS TheDate,
+			@d := @d - 1 MONTH
+			FROM
+			t_power,
+			(SELECT @d := 0) temp
+			) test
+			LIMIT 0, 12
+			) AS s
+			LEFT JOIN (
+			SELECT
+			DATE_FORMAT(t1.addtime, '%Y-%m') AS
+			date,
+			COUNT(t1.`id`) AS
+			alarmcount,
+			SUM(
+			CASE
+			WHEN t1.`handlestate` = 2
+			THEN
+			1
+			ELSE
+			0
+			END
+			) AS
+			handlecount,
+			SUM(
+			CASE
+			WHEN t1.`handleresult` = 1 THEN
+			1
+			ELSE
+			0
+			END
+			) AS
+			falsecount
+			FROM
+			t_dev_alarm t1
+			INNER JOIN t_device_all t2
+			ON
+			t1.`deviceid` = t2.`id`
+			AND t1.`moduleid` = #{moduleID}
+			AND
+			t2.`moduleid` = #{moduleID}
+			AND t2.`isdelete` = 0
+			INNER JOIN
+			t_device_group_relation t3 ON t3.`deviceid` = t2.`id`
+			AND
+			t3.`isdelete` = 0
+			AND t3.`moduleid` = #{moduleID}
+			INNER JOIN
+			t_device_group t4 ON t4.`id` = t3.`groupid`
+			AND t4.`isdelete` = 0
+			AND
+			t4.`moduleid` = #{moduleID}
+			INNER JOIN t_user_dgroup_relation t5 ON
+			t5.`devicegroupid` = t4.`id`
+			AND t5.`isdelete` = 0
+			INNER JOIN t_user t6
+			ON t6.`id` = t5.`userid`
+			AND t6.`isdelete` = 0
+			AND t6.`id` = #{userID}
+
+			GROUP BY
+			DATE_FORMAT(t1.addtime, '%Y-%m')
+			) a ON a.date=s.TheDate
+			ORDER
+			BY
+			s.TheDate
+
+
+		</if>
+
+		<if test="queryType==4">
+			SELECT
+			IFNULL(a.alarmcount, 0) AS alarmcount,
+			#{moduleID} as
+			moduleid,
+			IFNULL(a.falsecount, 0) AS falsecount,
+			IFNULL(a.handlecount,
+			0) AS handlecount,
+			s.TheDate AS DATE
+			FROM
+			(
+			SELECT
+			DATE_FORMAT(TheDate,
+			'%Y') AS TheDate
+			FROM
+			(
+			SELECT
+			ADDDATE(CURDATE(),
+			INTERVAL @d YEAR) AS
+			TheDate,
+			@d := @d - 1 YEAR
+			FROM
+			t_power,
+			(SELECT @d
+			:= 0) temp
+			) test
+			LIMIT
+			0, 5
+			) AS s
+			LEFT JOIN (
+			SELECT
+			DATE_FORMAT(t1.addtime, '%Y') AS date,
+			COUNT(t1.`id`) AS alarmcount,
+			SUM(
+			CASE
+			WHEN t1.`handlestate` = 2 THEN
+			1
+			ELSE
+			0
+			END
+			) AS handlecount,
+			SUM(
+			CASE
+			WHEN t1.`handleresult` = 1 THEN
+			1
+			ELSE
+			0
+			END
+			) AS falsecount
+			FROM
+			t_dev_alarm t1
+			INNER JOIN t_device_all t2
+			ON t1.`deviceid` = t2.`id`
+			AND t1.`moduleid` = #{moduleID}
+			AND
+			t2.`moduleid` = #{moduleID}
+			AND
+			t2.`isdelete` = 0
+			INNER JOIN
+			t_device_group_relation t3 ON
+			t3.`deviceid` = t2.`id`
+			AND t3.`isdelete`
+			= 0
+			AND t3.`moduleid` =
+			#{moduleID}
+			INNER JOIN t_device_group t4 ON
+			t4.`id` = t3.`groupid`
+			AND
+			t4.`isdelete` = 0
+			AND t4.`moduleid` =
+			#{moduleID}
+			INNER JOIN
+			t_user_dgroup_relation t5 ON t5.`devicegroupid`
+			= t4.`id`
+			AND
+			t5.`isdelete` = 0
+			INNER JOIN t_user t6 ON t6.`id` =
+			t5.`userid`
+			AND
+			t6.`isdelete` = 0
+			AND t6.`id` = #{userID}
+
+			GROUP BY
+			DATE_FORMAT(t1.addtime, '%Y')
+			) a ON a.date=s.TheDate
+			ORDER BY
+			s.TheDate
+		</if>
+
+	</select>
+
+	<!-- 地图设备位置 -->
+	<select id="selectDevList"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.sj.TGroup">
+		SELECT * ,r.contacts as mname,r.telephone as mtelephone
+		,COUNT(p.deviceid) AS Dnum,
+		SUM( CASE WHEN n.state=0 THEN 1 ELSE 0 END
+		) AS normalcount,
+		SUM( CASE WHEN n.state=1 THEN 1 ELSE 0 END ) AS
+		alarmcount,
+		SUM( CASE WHEN n.state=2 THEN 1 ELSE 0 END ) AS
+		failurecount,
+		SUM( CASE WHEN n.state=3 THEN 1 ELSE 0 END ) AS
+		othercount
+		FROM t_device_group g
+		LEFT JOIN t_user_dgroup_relation u ON
+		u.devicegroupid=g.id
+		LEFT JOIN t_user r ON g.managerid=r.id
+		LEFT JOIN
+		t_device_group_relation p ON p.groupid=u.devicegroupid and
+		p.moduleid=#{moduleid}
+		LEFT JOIN
+		t_device_all
+		n ON n.id=p.deviceid
+		WHERE
+		u.userid=#{userid}
+		and n.moduleid=#{moduleid}
+		AND g.moduleid=#{moduleid}
+		and g.isdelete = 0 and
+		g.isenable = 1 and
+		n.isdelete=0 AND n.isenable=1
+
+		<if test="code != null and code != ''">
+			AND (g.groupcode LIKE CONCAT('%', #{code}, '%')
+			or
+			g.groupname LIKE CONCAT('%', #{code}, '%'))
+		</if>
+		GROUP BY g.id
+
+	</select>
+	<select id="GroupListDev"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.sj.GroupListDev">
+		SELECT j.id as id , j.x as x , j.y as y , j.state as state , c.site as
+		site , c.picpath as
+		picpath,j.lat,j.lng,j.devnum,j.code,tu.contacts,case when j.state=0
+		then '正常' when j.state=1 then '报警'
+		when j.state=2 then '故障' else '其他'
+		end as alarmstateName
+		FROM t_item_pic c
+		LEFT JOIN t_dev_item_pic p
+		on
+		p.item_pic_id = c.id and p.isdelete = 0
+		LEFT JOIN
+		t_device_group_relation g on g.moduleid = #{moduleid} and g.isdelete =
+		0 and g.isenable = 1 and g.deviceid = p.dev_id
+		LEFT JOIN
+		t_device_all
+		j
+		on j.id = p.dev_id
+		left join t_user tu on tu.id=j.own_id
+		WHERE c.itemid
+		= #{groupid} and j.moduleid = #{moduleid}
+		and g.groupid = c.itemid and
+		c.isdelete = 0
+		<if test="site!='' and site!=null">
+			and c.site = #{site}
+		</if>
+	</select>
+
+	<select id="SeleteMap"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.sj.SeleteMap">
+		SELECT p.id as id , p.picpath
+		as picpath , p.site as site ,
+		p.itemid as itemid
+		FROM t_item_pic p
+		WHERE p.itemid = #{groupid} and
+		p.isenable = 1
+	</select>
+
+
+	<select id="selectDevAlarmHandleType"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.sj.vo.DevAlarmHandleTypeVO">
+		<!-- 根据模块ID查询设备报警类型统计(水位设备不适用) -->
+		SELECT
+		t3.`moduleid` AS moduleid,
+		SUM(
+		CASE
+		WHEN t1.`id` != 0
+		THEN 1
+		ELSE 0
+		END
+		) AS allalarmcount,
+		SUM(
+		CASE
+		WHEN
+		(SELECT
+		TYPE
+		FROM
+		t_dev_alarm_state
+		WHERE id = t1.`alarmstateid`) = 2
+		THEN 1
+		ELSE 0
+		END
+		) AS failurecount,
+		SUM(
+		CASE
+		WHEN
+		(SELECT
+		TYPE
+		FROM
+		t_dev_alarm_state
+		WHERE id =
+		t1.`alarmstateid`) = 1
+		THEN 1
+		ELSE 0
+		END
+		) AS alarmcount,
+		SUM(
+		CASE
+		WHEN
+		(SELECT
+		TYPE
+		FROM
+		t_dev_alarm_state
+		WHERE id = t1.`alarmstateid`) = 3
+		THEN
+		1
+		ELSE 0
+		END
+		) AS othercount
+		FROM
+		t_dev_alarm t1
+		INNER JOIN
+		t_device_all
+		t2
+		ON
+		t1.`deviceid` = t2.`id`
+		AND t2.`isdelete` = 0
+		AND t2.`moduleid` =
+		#{moduleID}
+		AND t1.`moduleid` = #{moduleID}
+		INNER JOIN
+		t_device_group_relation t3
+		ON t3.`moduleid` =
+		#{moduleID}
+		AND
+		t3.`deviceid` = t2.`id`
+		AND t3.`isdelete` = 0
+		INNER JOIN
+		t_device_group
+		t4
+		ON t3.`groupid` = t4.`id`
+		AND t4.`isdelete` = 0
+		AND
+		t4.`moduleid` =
+		#{moduleID}
+		INNER JOIN t_user_dgroup_relation t5
+		ON
+		t5.`devicegroupid` =
+		t4.`id`
+		AND t5.`isdelete` = 0
+		INNER JOIN t_user t6
+		ON t6.`id` =
+		t5.`userid`
+		AND t6.`isdelete` = 0
+		AND t6.`id` = #{userID}
+		WHERE
+		YEAR(t1.`addtime`) = #{Time}
+	</select>
+
+	<select id="selectDev"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.sj.selectDev">
+		SELECT y.devnum as devnum , y.addtime as addtime ,
+		TIMESTAMPDIFF(DAY,
+		y.addtime, NOW()) as days, y.`code` as code
+		FROM
+		t_device_all
+		y
+		WHERE y.id = #{devid} and y.isdelete = 0 and y.isenable =
+		1 and y.`moduleid` = #{moduleid}
+	</select>
+
+	<select id="AlarmList"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.sj.DevState">
+		SELECT dg.moduleid as moduleID , YEAR(s.addtime) as yearStr
+		,
+		COUNT(als.type) as allAlarmCount ,
+		ifnull(SUM(CASE WHEN als.type = 1
+		THEN 1 ELSE 0 END),0) AS alarmCount,
+		ifnull(SUM(CASE WHEN als.type = 2
+		THEN 1 ELSE 0 END),0) AS
+		failureCount,
+		ifnull(SUM(CASE WHEN als.type = 3
+		THEN 1 ELSE 0 END),0) AS otherCount
+		FROM
+
+		t_device_all
+
+		s
+		LEFT JOIN
+		t_device_group_relation dg on dg.moduleid = #{moduleID} and
+		dg.deviceid = s.id and dg.isenable = 1
+		RIGHT JOIN
+		t_user_dgroup_relation ug on ug.userid = #{userID} and
+		ug.devicegroupid = dg.groupid and ug.isenable = 1
+		LEFT JOIN t_dev_alarm
+		al on al.moduleid = dg.moduleid and al.deviceid =
+		s.id and YEAR
+		(al.addtime) = 2018
+		LEFT JOIN t_dev_alarm_state als on als.isdelete = 0
+		and als.module_id =
+		dg.moduleid and als.id = al.alarmstateid
+		WHERE
+		s.isdelete = 0 and s.isenable = 1 and s.id = #{devid} and s.moduleid =
+		#{moduleID}
+	</select>
+
+
+	<select id="selectDevStateCount"
+		resultType="com.hotcomm.prevention.bean.mysql.datashow.sj.vo.DevStateCountVO">
+		<!-- 根据模块ID查询不同状态的设备数量(地磁不适用) -->
+		<!-- SELECT -->
+		<!-- t2.`moduleid` AS moduleid, -->
+		<!-- SUM( -->
+		<!-- CASE -->
+		<!-- WHEN t1.`isdelete` != 1 -->
+		<!-- AND -->
+		<!-- t1.isenable=1 -->
+		<!-- THEN 1 -->
+		<!-- ELSE 0 -->
+		<!-- END -->
+		<!-- ) AS devCount, -->
+		<!-- SUM( -->
+		<!-- CASE -->
+		<!-- WHEN t1.`state` = 1 -->
+		<!-- THEN 1 -->
+		<!-- ELSE 0 -->
+		<!-- END -->
+		<!-- ) AS -->
+		<!-- alarmcount, -->
+		<!-- SUM( -->
+		<!-- CASE -->
+		<!-- WHEN t1.`state` = 2 -->
+		<!-- THEN 1 -->
+		<!-- ELSE 0 -->
+		<!-- END -->
+		<!-- ) AS -->
+		<!-- failurecount, -->
+		<!-- SUM( -->
+		<!-- CASE -->
+		<!-- WHEN t1.`state` = 3 -->
+		<!-- THEN 1 -->
+		<!-- ELSE 0 -->
+		<!-- END -->
+		<!-- ) AS -->
+		<!-- repaircount, -->
+		<!-- SUM( -->
+		<!-- CASE -->
+		<!-- WHEN t1.`state` = 3 -->
+		<!-- THEN 1 -->
+		<!-- ELSE 0 -->
+		<!-- END -->
+		<!-- ) AS othercount -->
+		<!-- FROM -->
+		<!-- t_device_all -->
+		<!-- t1 -->
+		<!-- INNER JOIN t_device_group_relation t2 -->
+		<!-- ON t2.`deviceid` = t1.`id` -->
+		<!-- AND -->
+		<!-- t2.`moduleid` = #{moduleID} -->
+		<!-- AND t1.`moduleid` = #{moduleID} -->
+		<!-- AND -->
+		<!-- t2.`isdelete` = 0 -->
+		<!-- AND t1.`isdelete` = 0 -->
+		<!-- INNER JOIN t_device_group t3 -->
+		<!-- ON -->
+		<!-- t3.`id` = t2.`groupid` -->
+		<!-- AND t3.`moduleid` -->
+		<!-- = t2.`moduleid` -->
+		<!-- AND -->
+		<!-- t3.`isdelete` = 0 -->
+		<!-- INNER JOIN t_user_dgroup_relation -->
+		<!-- t4 -->
+		<!-- ON -->
+		<!-- t4.`devicegroupid` = t3.`id` -->
+		<!-- AND t4.`isdelete` = 0 -->
+		<!-- INNER JOIN -->
+		<!-- t_user t5 -->
+		<!-- ON t5.`id` = t4.`userid` -->
+		<!-- AND t5.`isdelete` = 0 -->
+		<!-- AND t5.`id` = -->
+		<!-- #{userID} -->
+		SELECT SUM(devnum) devcount,SUM(alarmCount)
+		alarmCount,SUM(failurecount)
+		failurecount,SUM(repaircount)
+		repaircount,SUM(othercount) othercount,moduleid
+		FROM
+		(SELECT
+		t1.`moduleid` AS moduleid,
+		SUM(
+		DISTINCT
+		CASE
+		WHEN t1.`isdelete` = 0
+		THEN 1
+		ELSE 0
+		END
+		) AS devnum,
+		SUM(
+		CASE
+		WHEN
+		(SELECT
+		a.`handlestate`
+		FROM
+		t_dev_alarm a
+		INNER JOIN t_dev_alarm_state s
+		ON a.`alarmstateid` =
+		s.`id`
+		AND s.`type` = 1
+		WHERE a.`deviceid` = t1.`id`
+		AND a.`moduleid` =
+		t1.`moduleid`
+		ORDER BY a.`addtime` DESC
+		LIMIT 1) = 0
+		THEN 1
+		ELSE 0
+		END
+		) AS
+		alarmCount,
+		SUM(
+		CASE
+		WHEN
+		(SELECT
+		a.`handlestate`
+		FROM
+		t_dev_alarm a
+		INNER
+		JOIN t_dev_alarm_state s
+		ON a.`alarmstateid` = s.`id`
+		AND s.`type` = 2
+		WHERE a.`deviceid` = t1.`id`
+		AND a.`moduleid` = t1.`moduleid`
+		ORDER BY
+		a.`addtime` DESC
+		LIMIT 1) = 0
+		THEN 1
+		ELSE 0
+		END
+		) AS failurecount,
+		SUM(
+		CASE
+		WHEN
+		(SELECT
+		a.`handlestate`
+		FROM
+		t_dev_alarm a
+		INNER JOIN
+		t_dev_alarm_state s
+		ON a.`alarmstateid` = s.`id`
+		AND s.`type` = 1
+		WHERE
+		a.`deviceid` = t1.`id`
+		AND a.`moduleid` = t1.`moduleid`
+		ORDER BY
+		a.`addtime` DESC
+		LIMIT 1) = 1
+		THEN 1
+		ELSE 0
+		END
+		) AS repaircount,
+		SUM(
+		CASE
+		WHEN
+		(SELECT
+		a.`handlestate`
+		FROM
+		t_dev_alarm a
+		INNER JOIN
+		t_dev_alarm_state s
+		ON a.`alarmstateid` = s.`id`
+		AND s.`type` = 3
+		WHERE
+		a.`deviceid` = t1.`id`
+		AND a.`moduleid` = t1.`moduleid`
+		ORDER BY
+		a.`addtime` DESC
+		LIMIT 1) = 0
+		THEN 1
+		ELSE 0
+		END
+		) AS othercount
+		FROM
+		t_device_all t1
+		INNER JOIN t_device_group_relation t2
+		ON t2.`deviceid` =
+		t1.`id`
+		AND t2.`moduleid` = #{moduleID}
+		AND t1.`moduleid` = #{moduleID}
+		AND t2.`isdelete` = 0
+		AND t1.`isdelete` = 0
+		INNER JOIN t_device_group t3
+		ON t3.`id` = t2.`groupid`
+		AND t3.`moduleid` = t2.`moduleid`
+		AND
+		t3.`isdelete` = 0
+		INNER JOIN t_user_dgroup_relation t4
+		ON
+		t4.`devicegroupid` = t3.`id`
+		AND t4.`isdelete` = 0
+		INNER JOIN t_user t5
+		ON t5.`id` = t4.`userid`
+		AND t5.`isdelete` = 0
+		AND t5.`id` = #{userID}
+		GROUP BY t1.`id`
+		) test
+	</select>
+
+
+
+</mapper>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.system.TUserPgrouRelationpMapper">
+	<select id="selectByRoleId" resultType="com.hot.manage.entity.system.TUserPgrouRelationp">
+		SELECT * FROM
+		t_user_pgrou_relationp WHERE groupid=#{id}
+	</select>
+</mapper>

@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.yg.YGEventParticMapper">
+	<select id="selectAllEventParticForTime" resultType="com.hot.manage.entity.yg.vo.YGEventPartic">
+
+		SELECT
+		e.id,s.state_name,e.`level`,u.contacts as
+		addusername,u.telephone1 as
+		addusertelephone,e.addtime,y.devnum,y.`code`,e.state,u1.contacts as
+		assignname
+		FROM t_hk_event e
+		LEFT JOIN t_alarm_state s ON
+		e.`describe`=s.id
+		LEFT JOIN t_hk_evdevrelation t ON t.eventid=e.id
+		LEFT
+		JOIN t_device_yg y ON y.id= t.devid
+		LEFT JOIN t_hk_woevrelation v ON
+		v.relationid = e.id AND v.relationtype=1 AND v.moduleid=2
+		LEFT JOIN t_hk_wo w ON
+		w.id=v.woid AND w.moduleid=2
+		LEFT JOIN t_user u1 on u1.id=w.assignid
+		LEFT JOIN t_user u
+		ON u.id=e.adduserid
+		<where>
+			e.moduleid=2
+			<if test="startTime!=null">AND e.addtime &gt;= #{startTime}</if>
+			<if test="endTime!=null">AND e.addtime
+				&lt;=#{endTime}</if>
+			<if test="message!=null">
+				AND
+				CONCAT_WS(&apos;/&apos;,s.state_name,u.contacts,y.devnum,y.`code`,u1.contacts)
+				LIKE CONCAT(&apos;%&apos;,#{message},&apos;%&apos;) COLLATE
+				utf8_unicode_ci
+			</if>
+		</where>
+	</select>
+	<select id="selectAllEventParticForState" resultType="com.hot.manage.entity.yg.vo.YGEventPartic">
+		SELECT
+		e.id,s.state_name,e.`level`,u.contacts as
+		addusername,u.telephone1 as
+		addusertelephone,e.addtime,y.devnum,y.`code`,e.state,u1.contacts as
+		assignname
+		FROM t_hk_event e
+		LEFT JOIN t_alarm_state s ON
+		e.`describe`=s.id
+		LEFT JOIN t_hk_evdevrelation t ON t.eventid=e.id
+		LEFT
+		JOIN t_device_yg y ON y.id= t.devid
+		LEFT JOIN t_hk_woevrelation v ON
+		v.relationid = e.id AND v.relationtype=1 AND v.moduleid=2
+		LEFT JOIN t_hk_wo w ON
+		w.id=v.woid AND w.moduleid=2
+		LEFT JOIN t_user u1 on u1.id=w.assignid
+		LEFT JOIN t_user u
+		ON u.id=e.adduserid
+		<where>
+			e.moduleid=2
+			<choose>
+				<when test="eventstateid!=-1">
+					and e.`describe`=#{eventstateid}
+				</when>
+			</choose>
+			<choose>
+				<when test="state!=-1">
+					and e.state=#{state}
+				</when>
+			</choose>
+		</where>
+	</select>
+	<insert id="insertOneEvent" parameterType="com.hot.manage.entity.yg.param.YGEventParam"
+		useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO t_hk_event
+		VALUES
+		(
+		#{id},#{code},#{ygeventParam.isdispatch},#{state},#{ygeventParam.describe},#{ygeventParam.level},#{ygeventParam.instructions},#{ygeventParam.adduserid},#{addtime},2
+		)
+	</insert>
+	<update id="updateEventCode">
+		update t_hk_event set `code` = #{code} where id=#{id}
+	</update>
+	<insert id="insertEventDevRel">
+		INSERT INTO t_hk_evdevrelation
+		(eventid,devid) VALUES(#{eventid},#{devid})
+	</insert>
+	
+	<select id="selectAllEventParticForMas" resultType="com.hot.manage.entity.yg.vo.YGEventPartic">
+
+		SELECT
+		e.id,s.state_name,e.`level`,u.contacts as
+		addusername,u.telephone1 as
+		addusertelephone,e.addtime,y.devnum,y.`code`,e.state,u1.contacts as
+		assignname
+		FROM t_hk_event e
+		LEFT JOIN t_alarm_state s ON
+		e.`describe`=s.id
+		LEFT JOIN t_hk_evdevrelation t ON t.eventid=e.id
+		LEFT
+		JOIN t_device_yg y ON y.id= t.devid
+		LEFT JOIN t_hk_woevrelation v ON
+		v.relationid = e.id AND v.relationtype=1 AND v.moduleid=2
+		LEFT JOIN t_hk_wo w ON
+		w.id=v.woid AND w.moduleid=2
+		LEFT JOIN t_user u1 on u1.id=w.assignid
+		LEFT JOIN t_user u
+		ON u.id=e.adduserid
+		<where>
+			e.moduleid=2
+			<if test="startTime!=null">AND e.addtime &gt;= #{startTime}</if>
+			<if test="endTime!=null">AND e.addtime
+				&lt;=#{endTime}</if>
+			<if test="message!=null">
+				AND
+				CONCAT_WS(&apos;/&apos;,s.state_name,u.contacts,y.devnum,y.`code`,u1.contacts)
+				LIKE CONCAT(&apos;%&apos;,#{message},&apos;%&apos;) COLLATE
+				utf8_unicode_ci
+			</if>
+			<choose>
+				<when test="eventstateid!=-1">
+					and e.`describe`=#{eventstateid}
+				</when>
+			</choose>
+			<choose>
+				<when test="state!=-1">
+					and e.state=#{state}
+				</when>
+			</choose>
+		</where>
+	</select>
+</mapper>

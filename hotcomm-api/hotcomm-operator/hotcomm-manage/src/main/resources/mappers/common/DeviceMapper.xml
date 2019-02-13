@@ -1,0 +1,901 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.common.DeviceMapper">
+	<sql id="moduleidtable">
+		<if test="moduleid==1">t_device_dc</if>
+		<if test="moduleid==2">t_device_yg</if>
+		<if test="moduleid==3">t_device_jg</if>
+		<if test="moduleid==4">t_device_pm</if>
+		<if test="moduleid==5">t_device_wt</if>
+		<if test="moduleid==6">t_device_et</if>
+		<if test="moduleid==7">t_device_sl</if>
+		<if test="moduleid==8">t_device_hw</if>
+		<if test="moduleid==9">t_device_ljt</if>
+		<if test="moduleid==10">t_device_sj</if>
+		<if test="moduleid==11">t_device_mc</if>
+		<if test="moduleid==12">t_device_krq</if>
+		<if test="moduleid==13">t_device_ywj</if>
+		<if test="moduleid==14">t_device_sxdl</if>
+		<if test="moduleid==15">t_device_sxdy</if>
+		<if test="moduleid==16">t_device_sy</if>
+		<if test="moduleid==17">t_device_sydl</if>
+	</sql>
+	<sql id="insertDevice">
+		<if test="moduleid==1">
+			<!-- 地磁 -->
+			INSERT INTO `t_device_dc` ( `devnum`, `mac`, `code`, `lat`, `lng`,
+			`coordinate`, `isenable`, `isdelete`, `addtime`, `adduserid`,
+			`state`, `Battery`, `x`, `y`, `own_id`,`devtype`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.code}, #{deviceInsertParam.lat},
+			#{deviceInsertParam.lng}, 1, 1, 0,
+			#{deviceInsertParam.addtime},#{userid}, 0,'100',
+			#{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype});
+		</if>
+
+		<if test="moduleid==2">
+			<!-- #烟感 -->
+			INSERT INTO `t_device_yg` ( `devnum`, `mac`, `code`, `addtime`,
+			`isdelete`, `isenable`, `adduserid`, `lat`, `lng`, `state`,
+			`battery`, `x`, `y`, `own_id`,`devtype`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.code}, #{deviceInsertParam.addtime}, 0, 1,
+			#{userid}, #{deviceInsertParam.lat}, #{deviceInsertParam.lng}, 0,
+			'100', #{deviceInsertParam.x},#{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype});
+		</if>
+
+		<if test="moduleid==3">
+			<!-- #井盖 -->
+			INSERT INTO `t_device_jg` ( `devnum`, `mac`, `code`, `position`,
+			`state`, `lng`, `lat`, `addtime`, `adduserid`, `isdelete`,
+			`isenable`, `Battery`, `x`, `y`, `own_id`,`devtype`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.code}, 1, '0', #{deviceInsertParam.lng},
+			#{deviceInsertParam.lat}, #{deviceInsertParam.addtime}, #{userid},
+			'0', '1', '100' , #{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype});
+		</if>
+
+		<if test="moduleid==4">
+			<!-- #PM2.5 -->
+			INSERT INTO `t_device_pm` (`mac`, `code`, `x`, `y`, `state`,
+			`adduserid`, `addtime`, `isenable`, `isdelete`, `devnum`, `lat`,
+			`lng`, `own_id`,`devtype`)
+			VALUES ( #{deviceInsertParam.mac}, #{deviceInsertParam.code},
+			#{deviceInsertParam.x}, #{deviceInsertParam.y}, '0', #{userid},
+			#{deviceInsertParam.addtime}, '1', '0', #{deviceInsertParam.devnum},
+			#{deviceInsertParam.lat}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype});
+		</if>
+
+		<if test="moduleid==5">
+			<!-- #水表 -->
+			INSERT INTO `t_device_wt` ( `mac`, `code`, `x`, `y`, `state`,
+			`adduserid`, `addtime`, `isenable`, `isdelete`, `devnum`, `lat`,
+			`lng`, `own_id`,`devtype`)
+			VALUES ( #{deviceInsertParam.mac}, #{deviceInsertParam.code},
+			#{deviceInsertParam.x}, #{deviceInsertParam.y}, '0', #{userid},
+			#{deviceInsertParam.addtime}, '1', '0', #{deviceInsertParam.devnum},
+			#{deviceInsertParam.lat}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype});
+		</if>
+
+		<if test="moduleid==6">
+			<!-- #电表 -->
+			INSERT INTO `t_device_et` ( `mac`, `code`, `x`, `y`, `state`,
+			`adduserid`, `addtime`, `isenable`, `isdelete`, `devnum`, `lat`,
+			`lng`, `own_id`,`devtype`)
+			VALUES ( #{deviceInsertParam.mac}, #{deviceInsertParam.code},
+			#{deviceInsertParam.x}, #{deviceInsertParam.y}, '0', #{userid},
+			#{deviceInsertParam.addtime}, '1', '0', #{deviceInsertParam.devnum},
+			#{deviceInsertParam.lat}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype});
+		</if>
+
+		<if test="moduleid==7">
+			<!-- #路灯 -->
+			INSERT INTO `t_device_sl` ( `mac`, `code`, `x`, `y`, `state`,
+			`adduserid`, `addtime`, `isenable`, `isdelete`, `devnum`, `lat`,
+			`lng`, `own_id`,`devtype`)
+			VALUES ( #{deviceInsertParam.mac}, #{deviceInsertParam.code},
+			#{deviceInsertParam.x}, #{deviceInsertParam.y}, '0', #{userid},
+			#{deviceInsertParam.addtime}, '1', '0', #{deviceInsertParam.devnum},
+			#{deviceInsertParam.lat}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype});
+		</if>
+
+		<if test="moduleid==8">
+			<!-- #红外 -->
+			INSERT INTO `t_device_hw` ( `mac`, `code`, `lng`, `lat`, `state`,
+			`battery`, `addtime`, `isenable`, `isdelete`, `adduserid`, `x`, `y`,
+			`devnum`, `own_id`,`devtype`)
+			VALUES ( #{deviceInsertParam.mac}, #{deviceInsertParam.code},
+			#{deviceInsertParam.lng}, #{deviceInsertParam.lat}, 0, '100',
+			#{deviceInsertParam.addtime}, '1', '0', #{userid},
+			#{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.devnum},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype});
+		</if>
+
+		<if test="moduleid==9">
+			<!-- #垃圾桶 -->
+			INSERT INTO `t_device_ljt` ( `mac`, `lng`, `lat`, `state`, `battery`,
+			`addtime`, `isenable`, `isdelete`, `adduserid`, `code`, `devnum`,
+			`x`, `y`, `own_id`,`devtype`)
+			VALUES ( #{deviceInsertParam.mac},#{deviceInsertParam.lng},
+			#{deviceInsertParam.lat}, 0, '100' , #{deviceInsertParam.addtime}, 1,
+			0, #{userid}, #{deviceInsertParam.code}, #{deviceInsertParam.devnum},
+			#{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype});
+		</if>
+
+		<if test="moduleid==10">
+			<!-- #水浸 -->
+			INSERT INTO `t_device_sj` ( `mac`, `lng`, `lat`, `state`, `battery`,
+			`addtime`, `isenable`, `isdelete`, `adduserid`, `code`, `devnum`,
+			`x`, `y`, `own_id`,`devtype`)
+			VALUES ( #{deviceInsertParam.mac}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.lat}, 0, '100' , #{deviceInsertParam.addtime}, 1,
+			0, #{userid}, #{deviceInsertParam.code}, #{deviceInsertParam.devnum},
+			#{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype});
+		</if>
+
+		<if test="moduleid==11">
+			<!-- #门磁 -->
+			INSERT INTO `t_device_mc` ( `devnum`, `mac`, `lng`, `lat`, `state`,
+			`battery`, `addtime`, `isenable`, `isdelete`, `adduserid`, `code`,
+			`x`, `y`, `own_id`,`devtype`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.lng}, #{deviceInsertParam.lat}, '0', '100',
+			#{deviceInsertParam.addtime}, '1', '0', #{userid},
+			#{deviceInsertParam.code}, #{deviceInsertParam.x},
+			#{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype});
+		</if>
+
+		<if test="moduleid==12">
+			<!-- #可燃气 -->
+			INSERT INTO `t_device_krq` ( `devnum`, `mac`, `code`, `x`, `y`,
+			`isenable`, `isdelete`, `addtime`, `adduserid`, `state`, `lat`,
+			`lng`, `battery`, `own_id`,`devtype`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.code}, #{deviceInsertParam.x},
+			#{deviceInsertParam.y}, '1', '0', #{deviceInsertParam.addtime},
+			#{userid}, '0', #{deviceInsertParam.lat}, #{deviceInsertParam.lng},
+			'100', #{deviceInsertParam.own_id},#{deviceInsertParam.devtype});
+		</if>
+
+		<if test="moduleid==13">
+			<!-- #液位计 -->
+			INSERT INTO `t_device_ywj` ( `devnum`, `mac`, `code`, `lng`, `lat`,
+			`state`, `battery`, `addtime`, `isenable`, `isdelete`, `adduserid`,
+			`x`, `y`, `own_id`,`devtype`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.code}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.lat}, '0', '100', #{deviceInsertParam.addtime},
+			'1', '0', #{userid}, #{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype});
+		</if>
+		<if test="moduleid==14">
+			INSERT INTO `t_device_sxdl` ( `devnum`, `mac`, `code`,
+			`lng`, `lat`, `state`, `battery`, `addtime`, `isenable`, `isdelete`,
+			`adduserid`, `x`, `y`, `own_id`,`devtype`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.code}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.lat}, '0', '100', #{deviceInsertParam.addtime},
+			'1', '0', #{userid}, #{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype});
+		</if>
+		<if test="moduleid==15">
+			INSERT INTO `t_device_sxdy` ( `devnum`, `mac`, `code`,
+			`lng`, `lat`, `state`, `battery`, `addtime`, `isenable`, `isdelete`,
+			`adduserid`, `x`, `y`, `own_id`,`devtype`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.code}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.lat}, '0', '100', #{deviceInsertParam.addtime},
+			'1', '0', #{userid}, #{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype});
+		</if>
+		<if test="moduleid==16">
+			INSERT INTO `t_device_sy` ( `devnum`, `mac`, `code`,
+			`lng`, `lat`, `state`, `battery`, `addtime`, `isenable`, `isdelete`,
+			`adduserid`, `x`, `y`, `own_id`,`devtype`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.code}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.lat}, '0', '100', #{deviceInsertParam.addtime},
+			'1', '0', #{userid}, #{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype});
+		</if>
+		<if test="moduleid==17">
+			INSERT INTO `t_device_sydl` ( `devnum`, `mac`, `code`,
+			`lng`, `lat`, `state`, `battery`, `addtime`, `isenable`, `isdelete`,
+			`adduserid`, `x`, `y`, `own_id`,`devtype`)
+			VALUES ( #{deviceInsertParam.devnum}, #{deviceInsertParam.mac},
+			#{deviceInsertParam.code}, #{deviceInsertParam.lng},
+			#{deviceInsertParam.lat}, '0', '100', #{deviceInsertParam.addtime},
+			'1', '0', #{userid}, #{deviceInsertParam.x}, #{deviceInsertParam.y},
+			#{deviceInsertParam.own_id},#{deviceInsertParam.devtype});
+		</if>
+	</sql>
+	<select id="AppDeviceInfo" resultType="com.hot.manage.entity.common.DeviceInfo">
+		SELECT
+		dev.id as deviceid,tm.id as moduleid,dev.devnum,tm.`name` as
+		modulename,dg.groupname,tu.contacts AS
+		managername,dev.addtime,tu1.contacts AS
+		addname,GROUP_CONCAT(dv.videoPath) AS videoPath
+		FROM
+		<include refid="moduleidtable"></include>
+		dev
+		LEFT JOIN t_module tm ON tm.id=#{moduleid} AND tm.isdelete=0
+		LEFT
+		JOIN t_device_group_relation dgr ON dgr.deviceid = dev.id AND
+		dgr.moduleid = #{moduleid} AND dgr.isdelete = 0
+		LEFT JOIN t_user tu ON
+		tu.isdelete = 0 AND tu.id = dev.own_id
+		LEFT JOIN t_user tu1 ON
+		tu1.isdelete = 0 AND tu1.id = dev.adduserid
+		LEFT JOIN t_device_group dg
+		ON dg.id = dgr.groupid AND dg.isdelete = 0 AND dg.moduleid =
+		#{moduleid}
+		LEFT JOIN t_dev_video_relation dvr ON dvr.deviceid = dev.id
+		AND dvr.moduleid = #{moduleid} AND dvr.isdelete = 0
+		LEFT JOIN
+		t_device_video dv ON dv.id = dvr.videoid AND dv.isenable = 1
+		where
+		dev.id=#{deviceid}
+		GROUP BY dev.id
+	</select>
+	<select id="getDeviceAlarmHandleTime" resultType="com.hot.manage.entity.common.DeviceHandleTime">
+		SELECT tda.id
+		as alarmid,tda.addtime,tda.handlestate,tu.contacts as
+		`name`,tda.handleTime,das.state_name,dhs.state_name as handlename
+		FROM
+		t_dev_alarm tda
+		LEFT JOIN t_dev_alarm_state das ON das.id=tda.alarmstateid AND
+		das.module_id=#{moduleid} AND das.isdelete=0
+		LEFT JOIN
+		t_dev_handle_state dhs ON dhs.id=tda.handlestate AND
+		dhs.module_id=#{moduleid} AND dhs.isdelete=0
+		LEFT JOIN t_user tu on
+		tu.id=tda.`handler` AND tu.isenable=1
+		where tda.moduleid=#{moduleid}
+		AND tda.deviceid=#{deviceid}
+	</select>
+	<insert id="insertDevReGroup">
+		INSERT INTO `t_device_group_relation` ( `deviceid`,
+		`groupid`, `moduleid`, `addtime`, `adduserid`, `isenable`, `isdelete`)
+		VALUES ( #{devid}, #{groupid}, #{moduleid}, #{addtime}, #{userid},
+		'1', '0');
+	</insert>
+	<insert id="insertDevReVideo">
+		INSERT INTO `t_dev_video_relation` ( `deviceid`,
+		`videoid`, `isdelete`, `moduleid`)
+		VALUES ( #{devid}, #{videoid}, '0', #{moduleid});
+	</insert>
+	<insert id="insertDevItemPic">
+		INSERT INTO `t_dev_item_pic` ( `item_pic_id`,
+		`dev_id`, `moduleid`, `addtime`, `isenable`, `isdelete`)
+		VALUES (#{itempicid}, #{devid}, #{moduleid}, #{addtime}, '1', '0');
+	</insert>
+	<insert id="insertAPPDevice" useGeneratedKeys="true"
+		keyProperty="deviceInsertParam.insertId" parameterType="com.hot.manage.entity.common.DeviceInsertParam">
+		<include refid="insertDevice"></include>
+	</insert>
+	<select id="selectOptionalGroup" resultType="com.hot.manage.entity.common.OptionalGroup">
+		select dg.id as
+		groupid,dg.groupname,dg.moduleid,tm.`name` as modulename
+		FROM
+		t_user_dgroup_relation udr
+		LEFT JOIN t_device_group dg on
+		dg.id=udr.devicegroupid AND dg.isdelete=0
+		LEFT JOIN t_user tu ON
+		tu.id=udr.userid AND tu.isdelete=0
+		LEFT JOIN t_module tm ON tm.id=
+		dg.moduleid AND tm.isdelete=0
+		WHERE udr.userid=#{userid} AND
+		udr.isdelete=0
+	</select>
+	<select id="selectDevOptionalUser" resultType="com.hot.manage.entity.common.DevOptionalUser">
+		SELECT
+		u.id,u.contacts
+		FROM
+		t_user u
+		WHERE
+		u.id=#{userid} OR u.fatherid = #{userid} and u.isdelete!=1
+	</select>
+	<select id="selectDevForUser" resultType="com.hot.manage.entity.common.alarm.AlarmDev">
+		SELECT y.id,GROUP_CONCAT(vi.videoPath) as videopath,g.moduleid,m.`name` as
+		modulename,y.devnum,y.mac,y.lng,y.lat,y.`code`,CONCAT(y.own_id,',',g.managerid)
+		as ownid,GROUP_CONCAT(DISTINCT u.contacts) as contacts
+		FROM
+		<include refid="moduleidtable" />
+		y
+		LEFT JOIN t_device_group_relation r ON r.deviceid=y.id AND
+		r.isenable=1
+		LEFT JOIN t_device_group g ON g.id=r.groupid AND
+		g.isenable=1
+		LEFT JOIN t_module m ON m.id=g.moduleid AND m.isenable=1
+		LEFT JOIN t_dev_video_relation v ON y.id=v.deviceid AND v.isdelete=0
+		AND v.moduleid=m.id
+		LEFT JOIN t_device_video vi ON v.videoid=vi.id AND
+		vi.isenable=1
+		LEFT JOIN t_user u ON u.id in (y.own_id,g.managerid) AND u.isenable = 1
+		WHERE y.id =#{deviceid}
+		AND m.id=#{moduleid}
+		AND y.isenable = 1
+	</select>
+	<select id="selectAppDeviceforDevnum" resultType="com.hot.manage.entity.common.DeviceForDevnum">
+		select
+		dev.id,dev.devnum,dev.moduleid,tm.`name`,dev.mac
+		from t_getAppAlarm dev
+		LEFT
+		JOIN t_module tm on tm.id=dev.moduleid
+		where dev.devnum=#{devnum}
+	</select>
+	<select id="selectAppDeviceforMac" resultType="com.hot.manage.entity.common.DeviceForDevnum">
+		select
+		dev.id,dev.devnum,dev.moduleid,tm.`name`,dev.mac
+		from t_getAppAlarm dev
+		LEFT
+		JOIN t_module tm on tm.id=dev.moduleid
+		where dev.mac=#{mac}
+	</select>
+	<select id="selectAppDeviceType" resultType="com.hot.manage.entity.common.DeviceType">
+		select *
+		from
+		t_dev_type
+		where moduleid=#{moduleid} AND isdelete=0
+	</select>
+
+	<select id="selectAlarmNums" resultType="com.hot.manage.entity.common.AlarmNums">
+		SELECT s.state_name as stateName ,DATE_FORMAT(N.addtime, '%Y-%m-%d'),
+		COUNT(N.handleresult) as Num
+		FROM t_dev_handle_state s
+		LEFT JOIN ( SELECT * FROM (
+		<if test="queryType==1">
+			SELECT
+			ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate,
+			@d
+			:= @d - 1 DAY
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp
+			WHERE ADDDATE(CURDATE(),
+			INTERVAL @d DAY)
+			>= DATE_ADD(CURDATE(), INTERVAL
+			-
+			1 MONTH)
+			)AS M
+		</if>
+		<if test="queryType==2">
+			SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 6) AS M
+		</if>
+		<if test="queryType==3">
+			SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 12) AS M
+		</if>
+		<if test="queryType==4">
+			SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 36
+			) AS M
+		</if>
+		LEFT JOIN(
+		SELECT DATE_FORMAT(A.addtime, '%Y-%m-%d') as addtime
+		,A.moduleid,handleresult FROM t_dev_alarm A
+		LEFT JOIN t_device_group_relation dg on dg.moduleid = A.moduleid and
+		dg.deviceid =A.deviceid and dg.isenable = 1
+		LEFT JOIN t_user_dgroup_relation ug on ug.userid =#{userid}
+		WHERE A.moduleid=#{moduleID} AND ug.devicegroupid=dg.groupid
+		GROUP BY A.addtime) AS Y
+		<if test="queryType==1">
+			ON Y.addtime=M.TheDate
+		</if>
+		<if test="queryType==2">
+			ON M.TheDate = DATE_FORMAT( Y.addtime, '%Y-%m')
+		</if>
+		<if test="queryType==3">
+			ON M.TheDate = DATE_FORMAT( Y.addtime, '%Y-%m')
+		</if>
+		<if test="queryType==4">
+			ON M.TheDate = DATE_FORMAT( Y.addtime, '%Y-%m')
+		</if>
+
+		) AS N ON s.id = N.handleresult WHERE s.module_id = #{moduleID} AND
+		s.isdelete = 0
+		GROUP BY s.id
+
+	</select>
+
+
+	<select id="selectAlarmHandleNums" resultType="com.hot.manage.entity.common.AlarmHandleNums">
+
+		SELECT M.*,ifnull(handlingcount,0) as
+		handlingcount,ifnull(unhandlecount,0) as unhandlecount,
+		ifnull(handlecount,0) as handlecount,ifnull(num,0) as num FROM
+		<if test="queryType==1">
+			( SELECT
+			ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate,
+			@d
+			:= @d - 1 DAY
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp
+			WHERE ADDDATE(CURDATE(),
+			INTERVAL @d
+			DAY) >= DATE_ADD(CURDATE(), INTERVAL
+			-
+			1 MONTH)
+			) AS M
+		</if>
+		<if test="queryType==2">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 6) AS M
+		</if>
+		<if test="queryType==3">
+			( SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 12) AS M
+		</if>
+
+		<if test="queryType==4">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 36) AS M
+		</if>
+		LEFT JOIN ( SELECT DATE_FORMAT(A.addtime, '%Y-%m-%d') as alarmtime ,
+		SUM( CASE WHEN A.handlestate=0 THEN 1 ELSE 0 END) AS unhandlecount,
+		SUM( CASE WHEN A.handlestate=1 THEN 1 ELSE 0 END) AS handlingcount,
+		SUM( CASE WHEN A.handlestate=2 THEN 1 ELSE 0 END) AS handlecount,
+		COUNT(A.id) as num FROM t_dev_alarm as A
+		LEFT JOIN t_device_group_relation dg on dg.moduleid =#{moduleID}
+		and dg.deviceid = A.deviceid and dg.isenable = 1
+		LEFT JOIN t_user_dgroup_relation ug on ug.userid =#{userid}
+		and ug.isenable = 1
+
+		WHERE A.moduleid=#{moduleID} and ug.devicegroupid = dg.groupid
+
+		GROUP BY DATE_FORMAT(A.addtime, '%Y-%m-%d')
+
+		) AS Y
+		<if test="queryType==1">
+			ON M.TheDate = Y.alarmtime
+
+		</if>
+		<if test="queryType==2">
+			ON M.TheDate = DATE_FORMAT( Y.alarmtime, '%Y-%m')
+		</if>
+		<if test="queryType==3">
+			ON M.TheDate = DATE_FORMAT( Y.alarmtime, '%Y-%m')
+		</if>
+
+		<if test="queryType==4">
+			ON M.TheDate = DATE_FORMAT( Y.alarmtime, '%Y-%m')
+		</if>
+
+	</select>
+	<!-- selectGroupAlarmHandleNums -->
+	<select id="selectGroupAlarmHandleNums" resultType="com.hot.manage.entity.common.AlarmHandleNums">
+		SELECT M.*,ifnull(handlingcount,0) as
+		handlingcount,ifnull(unhandlecount,0) as unhandlecount,
+		ifnull(handlecount,0) as handlecount,ifnull(num,0) as num FROM
+		<if test="queryType==1">
+			( SELECT
+			ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate,
+			@d
+			:= @d - 1 DAY
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp
+			WHERE ADDDATE(CURDATE(),
+			INTERVAL @d
+			DAY) >= DATE_ADD(CURDATE(), INTERVAL
+			-
+			1 MONTH)
+			) AS M
+		</if>
+		<if test="queryType==2">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 6) AS M
+		</if>
+		<if test="queryType==3">
+			( SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 12) AS M
+		</if>
+		<if test="queryType==4">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 36) AS M
+		</if>
+
+		LEFT JOIN ( SELECT DATE_FORMAT(A.addtime, '%Y-%m-%d') as alarmtime ,
+		SUM( CASE WHEN A.handlestate=0 THEN 1 ELSE 0 END) AS unhandlecount,
+		SUM( CASE WHEN A.handlestate=1 THEN 1 ELSE 0 END) AS handlingcount,
+		SUM( CASE WHEN A.handlestate=2 THEN 1 ELSE 0 END) AS handlecount,
+		COUNT(A.id) as num,
+		dg.groupid as groupid
+		FROM t_dev_alarm as A
+		LEFT JOIN t_device_group_relation dg on dg.moduleid =#{moduleID}
+		and dg.deviceid =A.deviceid and dg.isenable = 1
+		LEFT JOIN t_user_dgroup_relation ug on ug.userid =#{userid}
+		and ug.isenable = 1 AND ug.devicegroupid=#{groupid}
+
+		WHERE A.moduleid=#{moduleID} and ug.devicegroupid = dg.groupid
+
+		GROUP BY DATE_FORMAT(A.addtime, '%Y-%m-%d')
+
+		) AS Y
+
+		<if test="queryType==1">
+			ON M.TheDate = Y.alarmtime
+
+		</if>
+		<if test="queryType==2">
+			ON M.TheDate = DATE_FORMAT( Y.alarmtime, '%Y-%m')
+		</if>
+		<if test="queryType==3">
+			ON M.TheDate = DATE_FORMAT( Y.alarmtime, '%Y-%m')
+		</if>
+
+
+		<if test="queryType==4">
+			ON M.TheDate = DATE_FORMAT( Y.alarmtime, '%Y-%m')
+		</if>
+
+	</select>
+
+
+	<select id="selectGroupAlarmNums" resultType="com.hot.manage.entity.common.AlarmNums">
+		SELECT s.state_name as stateName ,DATE_FORMAT(N.addtime, '%Y-%m-%d'),
+		COUNT(N.handleresult) as Num
+		FROM t_dev_handle_state s
+		LEFT JOIN ( SELECT * FROM (
+		<if test="queryType==1">
+			SELECT
+			ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate,
+			@d
+			:= @d - 1 DAY
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp
+			WHERE ADDDATE(CURDATE(),
+			INTERVAL @d DAY)
+			>= DATE_ADD(CURDATE(), INTERVAL
+			-
+			1 MONTH)
+			)AS M
+		</if>
+		<if test="queryType==2">
+			SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 6) AS M
+		</if>
+		<if test="queryType==3">
+			SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 12) AS M
+		</if>
+		<if test="queryType==4">
+			SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 36) AS M
+		</if>
+
+		LEFT JOIN(
+		SELECT DATE_FORMAT(A.addtime, '%Y-%m-%d') as addtime
+		,dg.groupid,A.moduleid,handleresult FROM t_dev_alarm A
+		LEFT JOIN t_device_group_relation dg on dg.moduleid = A.moduleid and
+		dg.deviceid =A.deviceid and dg.isenable = 1
+		LEFT JOIN t_user_dgroup_relation ug on ug.userid =#{userid}
+		WHERE A.moduleid=#{moduleID} and ug.devicegroupid=dg.groupid
+		GROUP BY A.addtime) AS Y
+		<if test="queryType==1">
+			ON Y.addtime=M.TheDate
+		</if>
+		<if test="queryType==2">
+			ON M.TheDate = DATE_FORMAT( Y.addtime, '%Y-%m')
+		</if>
+		<if test="queryType==3">
+			ON M.TheDate = DATE_FORMAT( Y.addtime, '%Y-%m')
+		</if>
+
+		<if test="queryType==4">
+			ON M.TheDate = DATE_FORMAT( Y.addtime, '%Y-%m')
+		</if>
+		AND Y.groupid=#{groupid}
+		) AS N ON s.id = N.handleresult WHERE s.module_id = #{moduleID} AND
+		s.isdelete = 0
+		GROUP BY s.id
+
+	</select>
+
+	<select id="selectAllGroupByUserId" resultType="com.hot.manage.entity.common.AllGroupByUserId">
+		SELECT
+		t1.`groupname`,
+		t1.`id` AS groupid
+		FROM
+		t_device_group t1
+		INNER JOIN
+		t_user_dgroup_relation t2
+		ON t1.`id` = t2.`devicegroupid`
+		AND
+		t1.`isdelete` = 0
+		AND t2.`isdelete` = 0
+		AND t1.`moduleid` = #{moduleid}
+		INNER JOIN
+		t_user t3
+		ON t3.`id` = t2.`userid`
+		AND t3.`isdelete` = 0
+		AND
+		t3.`id` = #{userid}
+	</select>
+
+	<select id="selectAllDevByUserid" resultType="com.hot.manage.entity.common.AllDevByUserid">
+		SELECT
+		t1.`id` AS deviceid,
+		t1.`mac` AS mac,
+		t3.`id` AS relationGroupid,
+		t3.`groupname` AS relationGroupName
+		FROM
+		<if test="moduleid==1">t_device_dc</if>
+		<if test="moduleid==2">t_device_yg</if>
+		<if test="moduleid==3">t_device_jg</if>
+		<if test="moduleid==4">t_device_pm</if>
+		<if test="moduleid==5">t_device_wt</if>
+		<if test="moduleid==6">t_device_et</if>
+		<if test="moduleid==7">t_device_sl</if>
+		<if test="moduleid==8">t_device_hw</if>
+		<if test="moduleid==9">t_device_ljt</if>
+		<if test="moduleid==10">t_device_sj</if>
+		<if test="moduleid==11">t_device_mc</if>
+		<if test="moduleid==12">t_device_krq</if>
+		<if test="moduleid==13">t_device_ywj</if>
+		<if test="moduleid==14">t_device_sxdl</if>
+		<if test="moduleid==15">t_device_sxdy</if>
+		<if test="moduleid==16">t_device_sy</if>
+		<if test="moduleid==17">t_device_sydl</if>
+		t1
+		INNER JOIN t_device_group_relation t2
+		ON t2.`moduleid` = #{moduleid}
+		AND t2.`deviceid` = t1.`id`
+		AND t2.`isdelete` = 0
+		AND t1.`isdelete` = 0
+		INNER JOIN t_device_group t3
+		ON t3.`id` = t2.`groupid`
+		AND t3.`moduleid`
+		= t2.`moduleid`
+		AND t3.`isdelete` = 0
+		INNER JOIN t_user_dgroup_relation
+		t4
+		ON t4.`devicegroupid` = t3.`id`
+		AND t4.`isdelete` = 0
+		INNER JOIN
+		t_user t5
+		ON t4.`userid` = t5.`id`
+		AND t5.`id` = #{userid}
+		AND
+		t5.`isdelete` = 0
+	</select>
+
+	<select id="selectGroupInfo" resultType="com.hot.manage.entity.common.GroupInfo">
+
+		
+		SELECT
+	contact,
+	telephone,
+	num,
+	groupname,
+	alarmcount,
+	faultcount
+FROM
+	(
+		SELECT
+			SUM( CASE WHEN t1.state  = 1 THEN
+					1
+				ELSE
+					0
+				END
+			) AS alarmcount,
+			SUM(
+				CASE
+				WHEN t1.state  = 2 THEN
+					1
+				ELSE
+					0
+				END
+			) AS faultcount
+		FROM
+			t_dev_alarm t0
+		INNER JOIN 
+			<if test="moduleid == 1">t_device_dc</if>
+		<if test="moduleid == 2">t_device_yg</if>
+		<if test="moduleid == 3">t_device_jg</if>
+		<if test="moduleid == 8">t_device_hw</if>
+		<if test="moduleid == 9">t_device_ljt</if>
+		<if test="moduleid == 10">t_device_sj</if>
+		<if test="moduleid == 11">t_device_mc</if>
+		<if test="moduleid == 12">t_device_krq</if>
+		<if test="moduleid == 13">t_device_ywj</if>
+		<if test="moduleid == 14">t_device_sxdl</if>
+		<if test="moduleid == 15">t_device_sxdy</if>
+		<if test="moduleid == 16">t_device_sy</if>
+		<if test="moduleid == 17">t_device_sydl</if>
+		t1 
+		ON t1.`isdelete` = 0 AND t1.`isenable` = 1 AND t0.`deviceid` = t1.`id` 	AND t0.`moduleid` = #{moduleid}
+		INNER JOIN t_device_group_relation t2 ON t2.`deviceid` = t1.`id` 	AND t2.`isdelete` = 0 AND t1.`isenable` = 1 AND t2.`moduleid` = #{moduleid}
+		INNER JOIN t_device_group t3 ON t3.`id` = t2.`groupid` 	AND t3.`moduleid` = t2.`moduleid` AND t3.`isdelete` = 0 
+	AND t3.`isenable` = 1
+		AND t3.`id` = #{groupid}   WHERE t0.handlestate !=2
+	) AS a,
+	(
+		SELECT
+			COUNT(t1.`id`) AS num
+		FROM
+			
+			<if test="moduleid == 1">t_device_dc</if>
+		<if test="moduleid == 2">t_device_yg</if>
+		<if test="moduleid == 3">t_device_jg</if>
+		<if test="moduleid == 8">t_device_hw</if>
+		<if test="moduleid == 9">t_device_ljt</if>
+		<if test="moduleid == 10">t_device_sj</if>
+		<if test="moduleid == 11">t_device_mc</if>
+		<if test="moduleid == 12">t_device_krq</if>
+		<if test="moduleid == 13">t_device_ywj</if>
+		<if test="moduleid == 14">t_device_sxdl</if>
+		<if test="moduleid == 15">t_device_sxdy</if>
+		<if test="moduleid == 16">t_device_sy</if>
+		<if test="moduleid == 17">t_device_sydl</if>
+			
+			t1
+		INNER JOIN t_device_group_relation t2 ON t2.`deviceid` = t1.`id`
+		AND t2.`isdelete` = 0
+		AND t1.`isenable` = 1
+		AND t2.`moduleid` =#{moduleid}
+		INNER JOIN t_device_group t3 ON t3.`id` = t2.`groupid`
+		AND t3.`moduleid` = t2.`moduleid`
+		AND t3.`isdelete` = 0
+		AND t3.`isenable` = 1
+		AND t3.`id` = #{groupid}
+		WHERE
+			t1.`isdelete` = 0
+		AND t1.`isenable` = 1
+	) AS b,
+	(
+		SELECT
+			t2.`groupname`,
+			t1.`contacts` AS contact,
+			t1.`telephone`
+		FROM
+			t_user t1
+		LEFT JOIN t_device_group t2 ON t2.managerid = t1.id
+		WHERE
+			t2.`id` = #{groupid}
+	) AS c
+
+		
+	</select>
+
+
+
+</mapper>

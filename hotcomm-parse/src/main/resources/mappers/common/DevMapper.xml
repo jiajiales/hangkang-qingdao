@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.parse.db.common.DevMapper">
+	<select id="DevMsg" resultType="com.hot.parse.entity.common.DevMsg">
+		SELECT y.id as deviceid , y.mac as mac
+		<if test="moduleid == 9"> , y.height , y.alarmheight</if>
+		<if test="moduleid == 13"> , y.plusminus , y.alarmvalue</if>
+		<if test="moduleid==14 or moduleid==15 or moduleid==16 or moduleid==17">
+			, y.lessalarmvalue , y.topalarmvalue , y.alarmset
+		</if>
+		, y.lat as lat , y.lng as lng , y.code as code
+		FROM
+		t_device_all
+		y
+		WHERE (y.mac = upper(#{mac}) or y.mac = lcase(#{mac})) and y.isdelete
+		= 0 and y.isenable = 1
+	</select>
+
+	<update id="updatedev">
+		UPDATE
+		t_device_all
+		y SET
+		y.lastDataTime = #{date}
+		<if test="state != null and state != ''"> ,y.state = #{state}  </if>
+		<if test="battery != null and battery != ''"> ,y.battery = #{battery} </if>
+		WHERE y.mac = #{mac}
+	</update>
+
+	<select id="seldevstate" resultType="com.hot.parse.entity.common.DevMsg">
+		select id as deviceid
+		from t_dev_alarm_state
+		where state_name = #{state_name} and module_id = #{moduleid}
+	</select>
+
+	<select id="seldevnum" resultType="com.hot.parse.entity.common.DevMsg">
+		SELECT y.id as deviceid , y.mac as mac
+		<if test="moduleid==14 or moduleid==15 or moduleid==16 or moduleid==17">
+			, y.lessalarmvalue , y.topalarmvalue , y.alarmset
+		</if>
+		, y.lat as lat , y.lng as lng , y.code as code
+		FROM
+		t_device_all
+		y
+		WHERE y.devnum = #{devnum} and y.isdelete = 0 and y.isenable = 1
+	</select>
+</mapper>

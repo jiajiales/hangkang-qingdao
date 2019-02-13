@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.mysql.manage.home.HomeMapper">
+	<!-- <update id="createTemporaryTable">
+		CREATE TEMPORARY TABLE IF NOT EXISTS t_AllDevice ENGINE = InnoDB (
+		select * from (
+			(select 1 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac,aa.addtime
+			from t_device_all aa
+			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1
+			where aa.isdelete!=1 and aa.isenable=1)
+			UNION ALL
+			(select 2 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac,aa.addtime
+			from t_device_yg aa
+			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1
+			where aa.isdelete!=1 and aa.isenable=1)
+			UNION ALL
+			(select 3 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac,aa.addtime
+			from t_device_jg aa
+			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1
+			where aa.isdelete!=1 and aa.isenable=1)
+			UNION ALL
+			(select 4 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac,aa.addtime
+			from t_device_pm aa
+			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1
+			where aa.isdelete!=1 and aa.isenable=1)
+			UNION ALL
+			(select 5 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac,aa.addtime
+			from t_device_wt aa
+			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1
+			where aa.isdelete!=1 and aa.isenable=1)
+			UNION ALL
+			(select 6 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac,aa.addtime
+			from t_device_et aa
+			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1
+			where aa.isdelete!=1 and aa.isenable=1)
+			UNION ALL
+			(select 7 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac,aa.addtime
+			from t_device_sl aa
+			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1
+			where aa.isdelete!=1 and aa.isenable=1)
+			UNION ALL
+			(select 8 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac,aa.addtime
+			from t_device_hw aa
+			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1
+			where aa.isdelete!=1 and aa.isenable=1)
+			UNION ALL
+			(select 9 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac,aa.addtime
+			from t_device_ljt aa
+			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1
+			where aa.isdelete!=1 and aa.isenable=1)
+			UNION ALL
+			(select 10 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac,aa.addtime
+			from t_device_sj aa
+			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1
+			where aa.isdelete!=1 and aa.isenable=1)
+			UNION ALL
+			(select 11 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac,aa.addtime
+			from t_device_mc aa
+			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1
+			where aa.isdelete!=1 and aa.isenable=1)
+			UNION ALL
+			(select 12 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac,aa.addtime
+			from t_device_krq aa
+			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1
+			where aa.isdelete!=1 and aa.isenable=1)
+			UNION ALL
+			(select 13 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac,aa.addtime
+			from t_device_ywj aa
+			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1
+			where aa.isdelete!=1 and aa.isenable=1)
+			UNION ALL
+			(select 14 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac,aa.addtime
+			from t_device_sxdl aa
+			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1
+			where aa.isdelete!=1 and aa.isenable=1)
+			UNION ALL
+			(select 15 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac,aa.addtime
+			from t_device_sxdy aa
+			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1
+			where aa.isdelete!=1 and aa.isenable=1)
+			UNION ALL
+			(select 16 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac,aa.addtime
+			from t_device_sy aa
+			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1
+			where aa.isdelete!=1 and aa.isenable=1)
+			UNION ALL
+			(select 17 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.own_id,aa.mac,aa.addtime
+			from t_device_sydl aa
+			LEFT JOIN t_user tu ON tu.id=aa.own_id AND tu.isenable=1
+			where aa.isdelete!=1 and aa.isenable=1)
+			) as a
+		)
+	</update>
+	<update id="dropTemporaryTable">
+		DROP TEMPORARY TABLE IF EXISTS t_AllDevice
+	</update> -->
+	<select id="selectTotalData" resultType="com.hotcomm.prevention.bean.mysql.manage.home.HomeTotalData">
+		SELECT
+			SUM(devTotal) AS devTotal,
+			SUM(devAddCount) AS devAddCount,
+			SUM(alarmTotal) AS alarmTotal,
+			SUM(alarmAddCount) AS alarmAddCount,
+			SUM(woTotal) AS woTotal,
+			SUM(woAddCount) AS woAddCount,
+			SUM(checkPointTotal) AS checkPointTotal,
+			SUM(checkCount) AS checkCount
+		FROM
+			(
+				SELECT
+					COUNT(a.id) AS devTotal,
+					SUM(CASE WHEN ( TO_DAYS(NOW()) - TO_DAYS(a.addtime)) = 1 THEN 1 ELSE 0	END)  AS devAddCount,
+					0 AS alarmTotal,
+					0 AS alarmAddCount,
+					0 AS woTotal,
+					0 AS woAddCount,
+					0 AS checkPointTotal,
+					0 AS checkCount
+				FROM
+					t_device_all a
+					LEFT JOIN t_user tu ON tu.id=a.own_id AND tu.isenable=1
+					where a.isdelete!=1 and a.isenable=1
+					<if test="module == 1">
+					<!-- 环境监测,pm2.5 -->
+						and a.moduleid = 4
+					</if>
+					<if test="module == 2">
+					<!-- 市政管理,井盖 -->
+						and a.moduleid = 3
+					</if>
+					<if test="module == 3">
+					<!-- 停车管理,地磁 -->
+						and a.moduleid = 1
+					</if>
+					<if test="module == 4">
+					<!-- 消防安全,烟感，红外，门磁，可燃气，水浸 -->
+						and (a.moduleid = 2 or a.moduleid = 8 or a.moduleid = 11 or a.moduleid = 12 or a.moduleid = 10)
+					</if>
+				UNION ALL
+		
+		 		<!-- #报警统计，总报警数量，昨天新增报警数量 -->
+				SELECT
+					0 AS devTotal,
+					0 AS devAddCount,
+					COUNT(a.id) AS alarmTotal,
+					SUM(CASE WHEN (TO_DAYS(NOW()) - TO_DAYS(a.addtime)) = 1 THEN 1 ELSE	0	END) AS alarmAddCount,
+					0 AS woTotal,
+					0 AS woAddCount,
+					0 AS checkPointTotal,
+					0 AS checkCount
+				FROM
+					t_dev_alarm a
+				INNER JOIN t_device_group_relation r ON a.deviceid = r.deviceid	AND a.moduleid = r.moduleid	AND r.isenable = 1 AND r.isdelete!=1
+				INNER JOIN t_user_dgroup_relation d ON d.devicegroupid = r.groupid AND d.isenable = 1 AND d.isdelete!=1
+				WHERE
+					d.userid = #{userid}
+					<if test="module == 1">
+					<!-- 环境监测,pm2.5 -->
+						and a.moduleid = 4
+					</if>
+					<if test="module == 2">
+					<!-- 市政管理,井盖 -->
+						and a.moduleid = 3
+					</if>
+					<if test="module == 3">
+					<!-- 停车管理,地磁 -->
+						and a.moduleid = 1
+					</if>
+					<if test="module == 4">
+					<!-- 消防安全,烟感，红外，门磁，可燃气，水浸 -->
+						and (a.moduleid = 2 or a.moduleid = 8 or a.moduleid = 11 or a.moduleid = 12 or a.moduleid = 10)
+					</if>
+				UNION ALL
+				<!-- #工单数量统计,工单总数，昨日新增数量 -->
+				SELECT
+					0 AS devTotal,
+					0 AS devAddCount,
+					0 AS alarmTotal,
+					0 AS alarmAddCount,
+					COUNT(w.id) AS woTotal,
+					SUM(CASE WHEN (TO_DAYS(NOW()) - TO_DAYS(w.addtime)) = 1 THEN 1 ELSE	0	END) AS woAddCount,
+					0 AS checkPointTotal,
+					0 AS checkCount
+				FROM
+					t_hk_wo w
+				INNER JOIN t_hk_wodevrelation wd ON w.id = wd.woid AND w.moduleid = wd.moduleid	
+				INNER JOIN t_device_group_relation r ON r.deviceid = wd.devid AND wd.moduleid = r.moduleid AND r.isenable = 1 AND r.isdelete!=1
+				RIGHT JOIN t_user_dgroup_relation u ON u.devicegroupid = r.groupid AND u.isenable = 1 AND u.isdelete!=1
+				WHERE
+					u.userid = #{userid}
+					<if test="module == 1">
+					<!-- 环境监测,pm2.5 -->
+						and w.moduleid = 4
+					</if>
+					<if test="module == 2">
+					<!-- 市政管理,井盖 -->
+						and w.moduleid = 3
+					</if>
+					<if test="module == 3">
+					<!-- 停车管理,地磁 -->
+						and w.moduleid = 1
+					</if>
+					<if test="module == 4">
+					<!-- 消防安全,烟感，红外，门磁，可燃气，水浸 -->
+						and (w.moduleid = 2 or w.moduleid = 8 or w.moduleid = 11 or w.moduleid = 12 or w.moduleid = 10)
+					</if>
+				UNION ALL
+		 		<!-- #巡检统计 -->
+				SELECT
+					0 AS devTotal,
+					0 AS devAddCount,
+					0 AS alarmTotal,
+					0 AS alarmAddCount,
+					0 AS woTotal,
+					0 AS woAddCount,
+					COUNT(s.id) AS checkPointTotal,
+					COUNT(g.id) AS checkCount
+				FROM
+					t_hk_signdevice s
+				LEFT JOIN t_hk_signlog g ON g.signid = s.id
+				INNER JOIN t_hk_patdevrelationdevice p ON p.signdeviceid = s.id	AND p.isdelete = 0
+				INNER JOIN t_device_group_relation r ON s.deviceid = r.deviceid	AND r.moduleid = s.moduleid	AND r.isenable = 1 AND r.isdelete!=1
+				INNER JOIN t_user_dgroup_relation u ON u.devicegroupid = r.groupid AND u.isenable = 1 AND u.isdelete!=1
+				WHERE
+					u.userid = #{userid} AND s.isdelete = 0
+					<if test="module == 1">
+					<!-- 环境监测,pm2.5 -->
+						and s.moduleid = 4
+					</if>
+					<if test="module == 2">
+					<!-- 市政管理,井盖 -->
+						and s.moduleid = 3
+					</if>
+					<if test="module == 3">
+					<!-- 停车管理,地磁 -->
+						and s.moduleid = 1
+					</if>
+					<if test="module == 4">
+					<!-- 消防安全,烟感，红外，门磁，可燃气，水浸 -->
+						and (s.moduleid = 2 or s.moduleid = 8 or s.moduleid = 11 or s.moduleid = 12 or s.moduleid = 10)
+					</if>
+			) T
+	</select>
+	<select id="selectAlarmTrend" resultType="com.hotcomm.prevention.bean.mysql.manage.home.HomeAlarmTrend">
+		SELECT m.id as moduleid,m.`name` as
+		modulename,DATE_FORMAT(a.addtime,'%c-%d') as addtime,COUNT(a.id) as
+		alarmcount
+		FROM t_dev_alarm a
+		LEFT JOIN t_device_group_relation r ON
+		a.deviceid=r.deviceid AND
+		a.moduleid=r.moduleid AND r.isenable=1
+		LEFT
+		JOIN t_user_dgroup_relation
+		s ON s.devicegroupid=r.groupid AND
+		s.isenable=1
+		LEFT JOIN t_module m ON a.moduleid=m.id AND m.isenable=1
+		WHERE
+		s.userid=#{userid}
+		<if test="module == 1">
+		<!-- 环境监测,pm2.5 -->
+			and a.moduleid = 4
+		</if>
+		<if test="module == 2">
+		<!-- 市政管理,井盖 -->
+			and a.moduleid = 3
+		</if>
+		<if test="module == 3">
+		<!-- 停车管理,地磁 -->
+			and a.moduleid = 1
+		</if>
+		<if test="module == 4">
+		<!-- 消防安全,烟感，红外，门磁，可燃气，水浸 -->
+			and (a.moduleid = 2 or a.moduleid = 8 or a.moduleid = 11 or a.moduleid = 12 or a.moduleid = 10)
+		</if>
+		<if test="type==1">
+			AND DATE_SUB(NOW(), INTERVAL 7 DAY) &lt;=DATE(a.addtime)
+		</if>
+		<if test="type==2">
+			AND DATE_SUB(NOW(), INTERVAL 30 DAY) &lt;=DATE(a.addtime)
+		</if>
+		GROUP BY a.moduleid,DATE_FORMAT(a.addtime,'%c-%d')
+		ORDER BY addtime
+	</select>
+	<select id="selectWoTrend" resultType="com.hotcomm.prevention.bean.mysql.manage.home.HomeWoTrend">
+		SELECT DATE_FORMAT(w.addtime,'%c-%d') as datetime,COUNT(w.id) as
+		total,SUM(CASE WHEN w.state=0 THEN 1 ELSE 0 END) as unhandlewocount,
+		SUM(CASE WHEN w.state=1 THEN 1 ELSE 0 END) as hangupwocount,SUM(CASE
+		WHEN
+		w.state=2 THEN 1 ELSE 0 END) as handlecount
+		FROM t_hk_wo w
+		INNER
+		JOIN
+		t_hk_wodevrelation r ON w.id=r.woid AND
+		w.moduleid=r.moduleid
+		INNER
+		JOIN
+		t_device_group_relation d ON d.deviceid=r.devid AND
+		d.moduleid=r.moduleid AND d.isenable=1
+		INNER JOIN
+		t_user_dgroup_relation u ON u.devicegroupid=d.groupid AND u.isenable=1
+		WHERE u.userid=#{userid}
+		<if test="module == 1">
+		<!-- 环境监测,pm2.5 -->
+			and w.moduleid = 4
+		</if>
+		<if test="module == 2">
+		<!-- 市政管理,井盖 -->
+			and w.moduleid = 3
+		</if>
+		<if test="module == 3">
+		<!-- 停车管理,地磁 -->
+			and w.moduleid = 1
+		</if>
+		<if test="module == 4">
+		<!-- 消防安全,烟感，红外，门磁，可燃气，水浸 -->
+			and (w.moduleid = 2 or w.moduleid = 8 or w.moduleid = 11 or w.moduleid = 12 or w.moduleid = 10)
+		</if>
+		<if test="type==1">
+			AND DATE_SUB(NOW(), INTERVAL 7 DAY) &lt;=DATE(w.addtime)
+		</if>
+		<if test="type==2">
+			AND DATE_SUB(NOW(), INTERVAL 30 DAY) &lt;=DATE(w.addtime)
+		</if>
+		GROUP BY DATE_FORMAT(w.addtime,'%c-%d')
+		ORDER BY datetime
+	</select>
+	<select id="selectDataForDay" resultType="com.hotcomm.prevention.bean.mysql.manage.home.HomeDataForDay">
+		SELECT
+		moduleid,m.`name` as modulename,
+		SUM(alarmcount) AS alarmcount,
+		SUM(wocount) AS wocount
+		FROM
+		(
+		(
+		SELECT
+		a.moduleid AS moduleid,
+		SUM(CASE WHEN a.handlestate=0 THEN 1 ELSE 0 END)
+		AS alarmcount,
+		0 AS wocount
+		FROM
+		t_dev_alarm a
+		INNER JOIN
+		t_device_group_relation r ON a.deviceid = r.deviceid
+		AND r.moduleid =
+		a.moduleid
+		AND r.isenable = 1
+		INNER JOIN t_user_dgroup_relation u ON
+		u.devicegroupid = r.groupid
+		AND u.isenable = 1
+		WHERE
+		u.userid = #{userid}
+		AND DATE(a.addtime)=DATE(NOW())
+		<if test="module == 1">
+		<!-- 环境监测,pm2.5 -->
+			and a.moduleid = 4
+		</if>
+		<if test="module == 2">
+		<!-- 市政管理,井盖 -->
+			and a.moduleid = 3
+		</if>
+		<if test="module == 3">
+		<!-- 停车管理,地磁 -->
+			and a.moduleid = 1
+		</if>
+		<if test="module == 4">
+		<!-- 消防安全,烟感，红外，门磁，可燃气，水浸 -->
+			and a.moduleid in (2,8,11,12,10)
+		</if>
+		GROUP BY moduleid
+		)
+		UNION
+		(
+		SELECT
+		w.moduleid AS moduleid,
+		0 AS alarmcount,
+		SUM(CASE WHEN o.state=0 THEN 1 ELSE 0 END) AS wocount
+		FROM
+		t_hk_wodevrelation w
+		INNER JOIN t_hk_wo o ON w.woid=o.id AND
+		o.isdelete=0
+		INNER JOIN t_device_group_relation r ON w.devid =
+		r.deviceid
+		AND r.moduleid = w.moduleid
+		AND r.isenable = 1
+		INNER JOIN
+		t_user_dgroup_relation u ON u.devicegroupid = r.groupid
+		AND u.isenable
+		= 1
+		WHERE
+		u.userid = #{userid} AND DATE(o.addtime)=DATE(NOW())
+		<if test="module == 1">
+		<!-- 环境监测,pm2.5 -->
+			and w.moduleid = 4
+		</if>
+		<if test="module == 2">
+		<!-- 市政管理,井盖 -->
+			and w.moduleid = 3
+		</if>
+		<if test="module == 3">
+		<!-- 停车管理,地磁 -->
+			and w.moduleid = 1
+		</if>
+		<if test="module == 4">
+		<!-- 消防安全,烟感，红外，门磁，可燃气，水浸 -->
+			and w.moduleid in (2,8,11,12,10)
+		</if>
+		GROUP BY
+		moduleid
+		)
+		) T
+		INNER JOIN t_module m ON m.id=moduleid AND m.isenable=1
+		GROUP BY moduleid;
+	</select>
+</mapper>

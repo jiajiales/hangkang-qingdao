@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.data.db.ResourceMapper">
+
+	<resultMap type="Resource" id="ResourceMap">
+		<id column="id" property="id" />
+		<result column="res_path" property="path" />
+		<result column="res_type" property="type" />
+		<result column="res_name" property="name" />
+		<result column="res_weight" property="weight" />
+		<result column="res_status" property="status" />
+		<result column="res_pid" property="pid" />
+		<result column="res_key" property="key" />
+	</resultMap>
+
+	<select id="getResourcesByUserId" resultMap="ResourceMap">
+		SELECT f5.* 
+		FROM sys_resource f5 
+		<where>
+			id IN (
+				SELECT DISTINCT f2.`resource_id` 
+				FROM sys_member_role f1
+				INNER JOIN sys_role_resource f2 ON f1.`role_id` = f2.`role_id`
+				<where>
+					f1.`member_id` = #{memberId}
+				</where>
+			) and f5.res_status = 1
+		</where>
+	</select>
+
+	<select id="getResourdTree" resultType="ResourceVO">
+		SELECT f1.id id, f1.`res_path` path, f1.`res_name` `name`,
+			f1.`res_key` `key`, f1.`res_pid` pid, f1.`res_type` `type`,
+			f1.`res_weight` weight, f1.`res_status` `status`, f1.`res_name` `text`,
+			IFNULL((SELECT f2.res_name FROM sys_resource f2 WHERE f2.id=f1.res_pid),'') pname
+		FROM sys_resource f1
+	</select>
+
+	<select id="getMenus" resultType="ResourcMenuVO">
+		SELECT f1.id `id`,f1.res_name `menuName` 
+		FROM sys_resource f1
+		<where>
+			f1.`res_status` = 1 AND f1.res_type = 1
+		</where>
+	</select>
+
+</mapper>

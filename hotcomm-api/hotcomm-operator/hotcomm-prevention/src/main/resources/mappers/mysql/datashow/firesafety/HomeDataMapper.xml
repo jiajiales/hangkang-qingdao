@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.mysql.datashow.firesafety.HomeDataMapper">
+	<!-- 终端数据 -->
+	<select id="selectGroupData" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.GroupDataVo">
+		select 
+			 COUNT(devall.id) as alldevcount,
+			 COUNT(CASE WHEN devall.state=0 THEN devall.id END) as normaldevcount,
+			 COUNT(CASE WHEN devall.state=1 THEN devall.id END) as alarmdevcount,
+		     COUNT(CASE WHEN devall.state=2 THEN devall.id END) as faultdevcount
+		FROM 
+				t_device_all devall
+		LEFT JOIN t_device_group_relation dgr ON dgr.deviceid=devall.id AND dgr.isenable=1 AND dgr.isdelete!=1 AND dgr.moduleid=devall.moduleid
+		LEFT JOIN t_device_group dg ON dg.id=dgr.groupid AND dg.isdelete!=1 AND dg.isenable=1
+		RIGHT JOIN t_user_dgroup_relation udr ON udr.devicegroupid = dg.id AND udr.isdelete!=1 AND udr.isenable=1 AND udr.userid=#{userid}
+		<where> 
+			<if test="moduleid != '' ">
+				devall.moduleid in (${moduleid}) 
+			</if>
+				AND devall.isdelete!=1 AND devall.isenable=1
+		</where>
+	</select>
+	<!-- 地图数据 -->
+	<select id="selectGroupForMap" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.GroupForMapVo">
+		SELECT dg.areaid,ta.areaname,ta.lat as y,ta.lng as x,
+			   COUNT(devall.id) as alldevcount,
+				SUM(CASE WHEN devall.state=0 THEN 1 ELSE 0 END) as normaldevcount,
+				SUM(CASE WHEN devall.state=1 THEN 1 ELSE 0 END) as alarmdevcount,
+				SUM(CASE WHEN devall.state=2 THEN 1 ELSE 0 END) as faultdevcount
+		from t_device_all devall
+		LEFT JOIN t_device_group_relation dgr ON dgr.deviceid=devall.id AND dgr.moduleid=devall.moduleid AND dgr.isdelete!=1 AND dgr.isenable=1
+		LEFT JOIN t_device_group dg ON dg.id=dgr.groupid AND dg.isdelete!=1 AND dg.isenable=1 AND dg.moduleid=devall.moduleid
+		LEFT JOIN t_area ta ON ta.id =dg.areaid
+		RIGHT JOIN t_user_dgroup_relation udr ON udr.devicegroupid=dg.id AND udr.isdelete!=1 AND udr.isenable=1 AND udr.userid=#{userid}
+		<where> 
+			<if test="moduleid!=''">
+				devall.moduleid in (${moduleid}) 
+			</if>AND devall.isdelete!=1 AND devall.isenable=1
+		</where>
+		GROUP BY ta.id	
+	</select>
+	
+	<!-- 设备实时报警通知 -->
+	<select id="selectDevInform" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.DevInformVo">
+		SELECT devall.`code`,tda.addtime,tda.handlestate
+		FROM t_dev_alarm tda 
+		LEFT JOIN t_device_all devall on devall.id = tda.deviceid AND devall.moduleid=tda.moduleid 
+		RIGHT JOIN (
+					select tda.moduleid,tda.deviceid,MAX(tda.addtime) as addtimes 
+					from t_dev_alarm tda 
+					group BY tda.moduleid,tda.deviceid
+					) 
+		lastdatadev ON lastdatadev.deviceid=tda.deviceid AND lastdatadev.moduleid=tda.moduleid AND lastdatadev.addtimes=tda.addtime
+		<where> 
+			tda.handlestate != 2 AND devall.isdelete!=1 AND devall.isenable=1
+			<if test="moduleid!=''">
+			and tda.moduleid in (${moduleid})
+			</if>
+		</where>
+	</select>
+	
+	<!-- 运行数据概况 -->
+	<select id="selectOperationalDataOverview" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.OperationalDataOverviewVo">
+		select SUM(CASE WHEN tda.handlestate=2 and tda.isdispatch=1 THEN 1 ELSE 0 END) as alertcount,
+			  SUM(CASE WHEN tda.handlestate=2 and tda.moduleid=2 AND tdas.state_name = tdhs.state_name AND tdhs.state_name LIKE '%火灾%' THEN 1 ELSE 0 END) as firecount,
+			  SUM(CASE WHEN tda.moduleid=2 AND tda.isdispatch=1  THEN 1 ELSE 0 END) as firehazardcount,
+			  SUM(CASE WHEN (tda.moduleid=16 OR tda.moduleid=2) AND tda.isdispatch=1 THEN 1 ELSE 0 END) as executecount
+		from t_dev_alarm tda 
+		LEFT JOIN t_dev_alarm_state tdas ON tdas.id=tda.alarmstateid AND tdas.module_id=tda.moduleid AND tdas.isdelete!=1
+		LEFT JOIN t_dev_handle_state tdhs ON tdhs.id=tda.handleresult AND tdhs.module_id=tda.moduleid AND tdhs.isdelete!=1
+	</select>
+	<select id="getAveHandleTime" resultType="double">
+		SELECT (SUM(TIMESTAMPDIFF(MINUTE,tda.addtime,tda.handleTime))/COUNT(tda.id)) as avetimecount
+		from t_dev_alarm tda 
+		WHERE tda.handlestate=2;
+	</select>
+	
+	<!-- 设备报警趋势图 -->
+	<select id="selectAlarmTrendByYear" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.AlarmTrendVo">
+		SELECT temp1.TheDate,COUNT(tda.id) as alarmcount
+		FROM (
+			SELECT
+				DATE_FORMAT(ADDDATE(CURDATE(), INTERVAL @d MONTH),'%Y-%m') AS TheDate ,@d :=@d - 1 as DateTime
+			FROM
+				t_power,
+				(SELECT @d := 0) temp
+			WHERE
+				ADDDATE(CURDATE(), INTERVAL @d MONTH) >= date_sub(CURDATE(), INTERVAL  12 MONTH)
+			ORDER BY
+				TheDate
+		) temp1
+		LEFT JOIN t_dev_alarm tda ON DATE_FORMAT(tda.addtime, '%Y-%m') = temp1.TheDate
+		<if test="moduleid!=''">
+			and tda.moduleid in (${moduleid})
+		</if>
+		GROUP BY temp1.TheDate
+		ORDER BY
+			temp1.TheDate desc
+	</select>
+	<select id="selectAlarmTrendByDay" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.AlarmTrendVo">
+		SELECT temp1.TheDate,COUNT(tda.id) as alarmcount
+		FROM (
+			SELECT
+				ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate ,@d :=@d - 1 DAY
+			FROM
+				t_power,
+				(SELECT @d := 0) temp
+			WHERE
+				ADDDATE(CURDATE(), INTERVAL @d DAY) > date_add(CURDATE(), INTERVAL - 30 DAY)
+			ORDER BY
+				DAY
+				LIMIT 31
+		) temp1
+		LEFT JOIN t_dev_alarm tda ON DATE_FORMAT(tda.addtime, '%Y-%m-%d') = temp1.TheDate
+		<if test="moduleid!=''">
+			and tda.moduleid in (${moduleid})
+		</if>
+		GROUP BY temp1.TheDate
+		ORDER BY
+			temp1.TheDate desc
+	</select>
+	<!-- 警情实时动态指数 -->
+	<select id="selectAalarmIndex" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.AlarmIndexVo">
+		SELECT SUM(CASE WHEN wer.id is not null THEN 1 ELSE 0 END)as handlealarmcount,
+			   SUM(CASE WHEN tda.isdispatch is NULL THEN 1 ELSE 0 END) as unhandlealarmcount
+		FROM t_dev_alarm tda 
+		LEFT JOIN t_hk_woevrelation wer ON wer.relationid=tda.id AND wer.relationtype=2 AND wer.moduleid=tda.moduleid AND tda.moduleid IN (2,12,11,8,11)
+		where tda.moduleid in (2,12,11,8,10)
+	</select>
+</mapper>

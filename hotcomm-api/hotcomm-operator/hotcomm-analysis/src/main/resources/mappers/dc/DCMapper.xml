@@ -1,0 +1,615 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.analysis.db.dc.DCMapper">
+	<select id="DevStateNum" resultType="com.hot.analysis.bean.dc.DevStateNum">
+		SELECT dg.moduleid as
+		moduleid,
+		COUNT(1) as devcount,
+		SUM(CASE WHEN d.state = 1 THEN 1 ELSE 0
+		end) as parkingcount,
+		SUM(CASE WHEN d.state = 0 THEN 1 ELSE 0 end) as
+		freecount,
+		SUM(CASE WHEN d.state = 2 THEN 1 ELSE 0 end) as faultcount
+		FROM t_device_dc d
+		LEFT JOIN t_device_group_relation dg on dg.moduleid
+		= 1 and dg.deviceid =
+		d.id and dg.isdelete = 0 and dg.isenable = 1
+		RIGHT JOIN t_user_dgroup_relation ug on ug.userid = #{userid} and
+		ug.isdelete = 0 and ug.isenable = 1 and ug.devicegroupid = dg.groupid
+		WHERE d.isdelete = 0 and d.isenable = 1
+	</select>
+	<select id="DevUseRate" resultType="com.hot.analysis.bean.dc.DevUseRate">
+		SELECT date_format(d.addtime, '%Y-%m-%d') as date ,
+		COUNT(DAY(d.addtime))*100/(24*60*(SELECT COUNT(id) FROM t_device_dc
+		WHERE isdelete = 0 and isenable = 1)) as userate
+		FROM log_dc d
+		WHERE
+		date_sub(curdate(), INTERVAL
+		<if test="querytype == 1">7</if>
+		<if test="querytype == 2">15</if>
+		<if test="querytype == 3">30</if>
+		DAY) &lt;= date(d.addtime) and d.addtime &lt; NOW()
+		GROUP BY
+		DAY(d.addtime)
+	</select>
+	<select id="DCParkingSlotsData" resultType="com.hot.analysis.bean.dc.DCParkingSlotsData">
+		SELECT
+		DATE_FORMAT(d.addtime,'%Y-%m-%d-%H') date ,
+		SUM(CASE WHEN d.carflag = 1
+		THEN 1 ELSE 0 end) as innum,
+		SUM(CASE WHEN d.carflag = 0 THEN 1 ELSE 0
+		end) as outnum
+		FROM log_dc d
+		WHERE to_days(d.addtime) = to_days(now())
+		GROUP BY date
+		ORDER BY date asc
+	</select>
+	<select id="selectGroList" resultType="com.hot.analysis.bean.dc.DCGroup">
+		SELECT * ,r.realname as
+		mname,r.telephone as telephone
+		,COUNT(p.deviceid) AS dnum ,
+
+		COUNT(q.id)
+		as nunum,
+		SUM(
+		DISTINCT
+		CASE
+		WHEN
+		(SELECT
+		TYPE
+		FROM
+		t_dev_alarm_state
+		WHERE id
+		= a.`alarmstateid`) = 2
+		AND a.`handlestate` != 2
+		THEN 1
+		ELSE 0
+		END
+		) AS
+		failurecount
+
+		FROM t_device_group g
+		LEFT JOIN t_user_dgroup_relation u ON
+		u.devicegroupid=g.id
+		LEFT JOIN t_user r ON g.managerid=r.id
+		LEFT JOIN
+		t_device_group_relation p ON p.groupid=u.devicegroupid and
+		p.moduleid=#{userid}
+		LEFT JOIN t_dev_alarm a ON a.deviceid=p.deviceid
+		and a.moduleid=#{userid}
+		LEFT JOIN t_device_dc q on q.id=p.deviceid and
+		q.state=0
+		WHERE u.userid=#{userid} AND g.moduleid=#{userid} and
+		g.isdelete = 0 and
+		g.isenable = 1
+		GROUP BY g.id
+	</select>
+	<select id="DCIncome" resultType="com.hot.analysis.bean.dc.DCIncome">
+		SELECT
+		DATE_FORMAT(lo.DateDay,'%c-%d') as DateDay,SUM(lo.TotalMoney) as
+		TotalMoney
+		FROM t_report_parklog lo
+		LEFT JOIN t_device_dc dc on
+		dc.isdelete = 0 and dc.isenable = 1 and dc.mac = lo.Mac
+		LEFT JOIN
+		t_device_group_relation dg on dg.isdelete = 0 and dg.isenable = 1 and
+		dg.moduleid = 1 and dg.deviceid = dc.id
+		RIGHT JOIN
+		t_user_dgroup_relation ug on ug.isdelete = 0 and ug.isenable = 1 and
+		ug.userid = #{userid} and ug.devicegroupid = dg.groupid
+		WHERE
+		DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(lo.DateDay)
+		group by
+		day(lo.DateDay)
+		ORDER BY lo.DateDay asc
+	</select>
+	<select id="selectSixMonthPakingCount" resultType="Integer">
+<!-- 		SELECT -->
+<!-- 		COUNT(lg.id) AS sixMonthPakingCount -->
+<!-- 		FROM -->
+<!-- 		t_device_dc dc -->
+<!-- 		INNER JOIN -->
+<!-- 		log_dc -->
+<!-- 		lg -->
+<!-- 		ON lg.`macAddr` = dc.`mac` -->
+<!-- 		AND lg.`carflag` = 1 -->
+<!-- 		INNER JOIN -->
+<!-- 		t_device_group_relation t1 -->
+<!-- 		ON t1.`deviceid` = dc.`id` -->
+<!-- 		AND t1.`isdelete` -->
+<!-- 		= 0 -->
+<!-- 		INNER JOIN t_device_group t2 -->
+<!-- 		ON t1.`groupid` = t2.`id` -->
+<!-- 		AND -->
+<!-- 		t2.`isdelete` = 0 -->
+<!-- 		INNER JOIN t_user_dgroup_relation t3 -->
+<!-- 		ON -->
+<!-- 		t3.`devicegroupid` = t2.`id` -->
+<!-- 		AND t3.`isdelete` = 0 -->
+<!-- 		INNER JOIN t_user t4 -->
+<!-- 		ON t4.`id` = t3.`userid` -->
+<!-- 		AND t4.`isdelete` = 0 -->
+<!-- 		AND t4.`id` = #{userid} -->
+<!-- 		WHERE dc.`isdelete` = 0 -->
+<!-- 		<if test="devid!=null and devid!=0"> -->
+<!-- 		AND dc.`id`=#{devid} -->
+<!-- 		</if> -->
+<!-- 		AND dc.`isenable` = 1 -->
+<!-- 		AND -->
+<!-- 		DATE_SUB(#{beforeSixMonth}, INTERVAL 1 MONTH) -->
+<!-- 		&lt;= DATE(lg.`addtime`) -->
+<!-- 		GROUP BY MONTH(lg.`addtime`) -->
+		
+		SELECT
+		SUM(
+		CASE
+		WHEN MONTH(ADDTIME) = MONTH(TheDate)
+		THEN 1
+		ELSE 0
+		END
+		) AS
+		sixMonthPakingCount
+		FROM
+		(SELECT
+		*
+		FROM
+		(SELECT
+		lg.*
+		FROM
+		t_device_dc dc
+		LEFT JOIN log_dc lg
+		ON lg.`macAddr` = dc.`mac`
+		AND lg.`carflag` = 1
+		INNER JOIN t_device_group_relation t1
+		ON t1.`deviceid` = dc.`id`
+		AND
+		t1.`isdelete` = 0
+		AND t1.`moduleid`=1
+		INNER JOIN t_device_group t2
+		ON t1.`groupid` = t2.`id`
+		AND t2.`isdelete` = 0
+		INNER JOIN t_user_dgroup_relation t3
+		ON
+		t3.`devicegroupid` = t2.`id`
+		AND t3.`isdelete` = 0
+		INNER JOIN t_user t4
+		ON t4.`id` = t3.`userid`
+		AND t4.`isdelete` = 0
+		AND t4.`id` = #{userid}
+		WHERE dc.`isdelete` = 0
+		<if test="devid!=null and devid!=0">
+			AND dc.`id`=#{devid}
+		</if>
+		AND dc.`isenable` = 1
+<!-- 		GROUP BY MONTH(lg.`addtime`) -->
+		GROUP BY lg.`id`
+		) AS test1,
+		(SELECT
+		ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+		@d := @d - 1 MONTH
+		FROM
+		t_power,
+		(SELECT
+		@d := 0) temp
+		LIMIT 0, 6) AS test2) AS testall
+		GROUP
+		BY TheDate
+	</select>
+
+	<select id="selectSixMonthDevCount" resultType="Integer">
+		SELECT
+		SUM(
+		CASE
+		WHEN dc.`addtime` &lt; #{thatMonth}
+		THEN 1
+		ELSE 0
+		END
+		) AS devcount
+		FROM
+		t_device_dc dc
+		INNER JOIN t_device_group_relation tt3
+		ON tt3.`moduleid`
+		= 1
+		AND tt3.`deviceid` = dc.`id`
+		AND tt3.`isdelete` = 0
+		INNER JOIN
+		t_device_group tt4
+		ON tt3.`groupid` = tt4.`id`
+		AND tt4.`isdelete` = 0
+		AND tt4.`moduleid` = 1
+		INNER JOIN t_user_dgroup_relation tt5
+		ON
+		tt5.`devicegroupid` = tt4.`id`
+		AND tt5.`isdelete` = 0
+		INNER JOIN t_user
+		tt6
+		ON tt6.`id` = tt5.`userid`
+		AND tt6.`isdelete` = 0
+		AND tt6.`id` =
+		#{userid}
+	</select>
+
+	<select id="selectSixMonthPakingCountMoney" resultType="Integer">
+		<!-- SELECT -->
+		<!-- SUM(lg.`TotalMoney`) AS sixMonthPakingCountMoney -->
+		<!-- FROM -->
+		<!-- t_device_dc -->
+		<!-- dc -->
+		<!-- INNER JOIN t_report_parklog lg -->
+		<!-- ON lg.`Mac` = dc.`mac` -->
+		<!-- INNER JOIN -->
+		<!-- t_device_group_relation t1 -->
+		<!-- ON t1.`deviceid` = dc.`id` -->
+		<!-- AND t1.`isdelete` -->
+		<!-- = -->
+		<!-- 0 -->
+		<!-- INNER JOIN t_device_group t2 -->
+		<!-- ON t1.`groupid` = t2.`id` -->
+		<!-- AND -->
+		<!-- t2.`isdelete` -->
+		<!-- = 0 -->
+		<!-- INNER JOIN t_user_dgroup_relation t3 -->
+		<!-- ON -->
+		<!-- t3.`devicegroupid` = t2.`id` -->
+		<!-- AND t3.`isdelete` = 0 -->
+		<!-- INNER JOIN t_user t4 -->
+		<!-- ON t4.`id` = t3.`userid` -->
+		<!-- AND -->
+		<!-- t4.`isdelete` = 0 -->
+		<!-- AND t4.`id` = #{userid} -->
+		<!-- WHERE dc.`isdelete` = 0 -->
+		<!-- <if test="devid!=null and devid!=0"> -->
+		<!-- AND dc.`id`=#{devid} -->
+		<!-- </if> -->
+		<!-- AND -->
+		<!-- dc.`isenable` = 1 -->
+		<!-- AND DATE_SUB(#{beforeSixMonth}, INTERVAL 1 MONTH) -->
+		<!-- &lt;= -->
+		<!-- DATE(lg.`InTime`) -->
+		<!-- GROUP BY MONTH(lg.`InTime`) -->
+		SELECT CASE WHEN sixMonthPakingCountMoney IS NULL THEN 0 ELSE sixMonthPakingCountMoney END AS sixMonthPakingCountMoney FROM (
+		SELECT
+		SUM(
+		CASE
+		WHEN MONTH(ADDTIME) = MONTH(TheDate)
+		THEN
+		sixMonthPakingCountMoney
+		ELSE 0
+		END
+		) AS sixMonthPakingCountMoney
+		FROM
+		(SELECT
+		*
+		FROM
+		(
+		SELECT
+		SUM(lg.`TotalMoney`) AS
+		sixMonthPakingCountMoney,lg.`InTime` AS
+		ADDTIME
+		FROM
+		t_device_dc
+		dc
+		INNER
+		JOIN t_report_parklog lg
+		ON lg.`Mac` =
+		dc.`mac`
+		INNER JOIN
+		t_device_group_relation t1
+		ON t1.`deviceid` = dc.`id`
+		AND t1.`isdelete`
+		=
+		0
+		AND t1.`moduleid` = 1
+		INNER JOIN t_device_group t2
+		ON t1.`groupid` =
+		t2.`id`
+		AND
+		t2.`isdelete`
+		= 0
+		INNER JOIN t_user_dgroup_relation t3
+		ON
+		t3.`devicegroupid` = t2.`id`
+		AND t3.`isdelete` = 0
+		INNER JOIN t_user t4
+		ON t4.`id` = t3.`userid`
+		AND
+		t4.`isdelete` = 0
+		AND t4.`id` = #{userid}
+		WHERE
+		dc.`isdelete` = 0
+		<if test="devid!=null and devid!=0">
+			AND dc.`id`=#{devid}
+		</if>
+		AND
+		dc.`isenable` = 1
+		AND DATE_SUB(NOW(),
+		INTERVAL 6 MONTH)
+		&lt;
+		DATE(lg.`InTime`)
+		GROUP BY MONTH(lg.`InTime`)
+		) AS test1,
+		(SELECT
+		ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+		@d := @d - 1 MONTH
+		FROM
+		t_power,
+		(SELECT
+		@d := 0) temp
+		LIMIT 0, 6) AS test2) AS testall
+		GROUP
+		BY TheDate
+		 ) AS try
+	</select>
+
+	<select id="devPackingTimesAndRank" resultType="com.hot.analysis.bean.dc.DCDevInfo">
+		<!-- SELECT * FROM -->
+		<!-- ( -->
+		<!-- SELECT -->
+		<!-- obj.devid -->
+		<!-- AS devid, -->
+		<!-- obj.alarmcount AS parkingCount, -->
+		<!-- @rownum := -->
+		<!-- @rownum + 1 AS -->
+		<!-- rownum -->
+		<!-- FROM -->
+		<!-- (SELECT -->
+		<!-- t3.`moduleid` AS moduleid, -->
+		<!-- t2.`id` AS -->
+		<!-- devid, -->
+		<!-- SUM( -->
+		<!-- CASE -->
+		<!-- WHEN t1.`macAddr` = t2.`mac` -->
+		<!-- AND t1.`carflag` = 1 -->
+		<!-- THEN 1 -->
+		<!-- ELSE 0 -->
+		<!-- END -->
+		<!-- ) AS -->
+		<!-- alarmcount, -->
+		<!-- t1.addtime -->
+		<!-- FROM -->
+		<!-- log_dc t1 -->
+		<!-- INNER JOIN t_device_dc -->
+		<!-- t2 -->
+		<!-- ON -->
+		<!-- t1.`macAddr` = t2.`mac` -->
+		<!-- AND t2.`isdelete` = 0 -->
+		<!-- INNER JOIN -->
+		<!-- t_device_group_relation t3 -->
+		<!-- ON t3.`moduleid` = 1 -->
+		<!-- AND t3.`deviceid` = -->
+		<!-- t2.`id` -->
+		<!-- AND t3.`isdelete` = 0 -->
+		<!-- INNER JOIN t_device_group t4 -->
+		<!-- ON -->
+		<!-- t3.`groupid` = t4.`id` -->
+		<!-- AND t4.`isdelete` = 0 -->
+		<!-- AND t4.`moduleid` = 1 -->
+		<!-- INNER -->
+		<!-- JOIN t_user_dgroup_relation t5 -->
+		<!-- ON t5.`devicegroupid` = t4.`id` -->
+		<!-- AND -->
+		<!-- t5.`isdelete` = 0 -->
+		<!-- INNER JOIN t_user t6 -->
+		<!-- ON t6.`id` = t5.`userid` -->
+		<!-- AND -->
+		<!-- t6.`isdelete` = 0 -->
+		<!-- AND t6.`id` = #{userid} -->
+		<!-- GROUP BY t2.`id`) AS obj, -->
+		<!-- (SELECT -->
+		<!-- @rownum := 0) r -->
+		<!-- ) AS test -->
+		<!-- WHERE devid = #{devid} -->
+		SELECT
+		*
+		FROM
+		(SELECT
+		obj.devid AS devid,
+		<!-- obj.alarmcount AS parkingCount, -->
+		CASE WHEN obj.alarmcount IS NULL THEN 0 ELSE obj.alarmcount END AS
+		parkingCount,
+		@rownum := @rownum + 1 AS rownum
+		FROM
+		(SELECT
+		t3.`moduleid`
+		AS moduleid,
+		t2.`id` AS devid,
+		SUM(
+		CASE
+		WHEN t1.`macAddr` = t2.`mac`
+		AND
+		t1.`carflag` = 1
+		THEN 1
+		ELSE 0
+		END
+		) AS alarmcount,
+		t1.addtime
+		FROM
+		t_device_dc t2
+		LEFT JOIN log_dc t1
+		ON t1.`macAddr` = t2.`mac`
+		AND
+		t2.`isdelete` = 0
+		INNER JOIN t_device_group_relation t3
+		ON t3.`moduleid`
+		= 1
+		AND t3.`deviceid` = t2.`id`
+		AND t3.`isdelete` = 0
+		INNER JOIN
+		t_device_group t4
+		ON t3.`groupid` = t4.`id`
+		AND t4.`isdelete` = 0
+		AND
+		t4.`moduleid` = 1
+		INNER JOIN t_user_dgroup_relation t5
+		ON
+		t5.`devicegroupid` = t4.`id`
+		AND t5.`isdelete` = 0
+		INNER JOIN t_user t6
+		ON t6.`id` = t5.`userid`
+		AND t6.`isdelete` = 0
+		AND t6.`id` = #{userid}
+		GROUP BY t2.`id`) AS obj,
+		(SELECT
+		@rownum := 0) r) AS test
+		WHERE devid =
+		#{devid}
+	</select>
+
+	<select id="devPackingMoneyAndRank" resultType="com.hot.analysis.bean.dc.DCDevInfo">
+		<!-- SELECT * FROM( -->
+		<!-- SELECT -->
+		<!-- obj.devid -->
+		<!-- AS Moneydevid, -->
+		<!-- obj.alarmcount AS parkingMoneyCount, -->
+		<!-- @rownum := @rownum + -->
+		<!-- 1 AS MoneyRownum -->
+		<!-- FROM -->
+		<!-- (SELECT -->
+		<!-- t3.`moduleid` AS -->
+		<!-- moduleid, -->
+		<!-- t2.`id` AS devid, -->
+		<!-- SUM( -->
+		<!-- CASE -->
+		<!-- WHEN t1.`mac` = t2.`mac` -->
+		<!-- THEN -->
+		<!-- t1.`TotalMoney` -->
+		<!-- ELSE 0 -->
+		<!-- END -->
+		<!-- ) AS -->
+		<!-- alarmcount -->
+		<!-- FROM -->
+		<!-- t_report_parklog t1 -->
+		<!-- INNER -->
+		<!-- JOIN t_device_dc t2 -->
+		<!-- ON t1.`mac` -->
+		<!-- = t2.`mac` -->
+		<!-- INNER JOIN -->
+		<!-- t_device_group_relation t3 -->
+		<!-- ON t3.`moduleid` = 1 -->
+		<!-- AND t3.`deviceid` = -->
+		<!-- t2.`id` -->
+		<!-- AND t3.`isdelete` = 0 -->
+		<!-- INNER JOIN -->
+		<!-- t_device_group t4 -->
+		<!-- ON t3.`groupid` -->
+		<!-- = t4.`id` -->
+		<!-- AND t4.`isdelete` = 0 -->
+		<!-- AND -->
+		<!-- t4.`moduleid` = 1 -->
+		<!-- INNER JOIN -->
+		<!-- t_user_dgroup_relation t5 -->
+		<!-- ON -->
+		<!-- t5.`devicegroupid` = t4.`id` -->
+		<!-- AND -->
+		<!-- t5.`isdelete` = 0 -->
+		<!-- INNER JOIN t_user t6 -->
+		<!-- ON t6.`id` = t5.`userid` -->
+		<!-- AND -->
+		<!-- t6.`isdelete` = 0 -->
+		<!-- AND t6.`id` = #{userid} -->
+		<!-- GROUP BY t2.`id`) AS obj, -->
+		<!-- (SELECT -->
+		<!-- @rownum := 0) r -->
+		<!-- ) AS test -->
+		<!-- WHERE Moneydevid = #{devid} -->
+		SELECT * FROM(
+		SELECT
+		obj.devid
+		AS Moneydevid,
+		CASE WHEN obj.alarmcount IS
+		NULL THEN 0 ELSE obj.alarmcount END AS parkingMoneyCount,
+		@rownum :=
+		@rownum +
+		1 AS MoneyRownum
+		FROM
+		(
+		SELECT
+		t3.`moduleid` AS
+		moduleid,
+		t2.`id`
+		AS devid,
+		SUM(
+		CASE
+		WHEN t1.`mac` =
+		t2.`mac`
+		THEN
+		t1.`TotalMoney`
+		ELSE 0
+		END
+		)
+		AS
+		alarmcount
+		FROM
+		t_device_dc t2
+		LEFT
+		JOIN t_report_parklog t1
+		ON t1.`mac`
+		= t2.`mac`
+		INNER JOIN
+		t_device_group_relation t3
+		ON t3.`moduleid` = 1
+		AND
+		t3.`deviceid` =
+		t2.`id`
+		AND t3.`isdelete` = 0
+		INNER JOIN
+		t_device_group t4
+		ON t3.`groupid`
+		= t4.`id`
+		AND t4.`isdelete` = 0
+		AND
+		t4.`moduleid` = 1
+		INNER JOIN
+		t_user_dgroup_relation t5
+		ON
+		t5.`devicegroupid` = t4.`id`
+		AND
+		t5.`isdelete` = 0
+		INNER JOIN t_user t6
+		ON t6.`id` = t5.`userid`
+		AND
+		t6.`isdelete` = 0
+		AND t6.`id` = #{userid}
+		GROUP BY t2.`id`
+		) AS obj,
+		(SELECT
+		@rownum := 0) r
+		) AS test
+		WHERE Moneydevid = #{devid}
+	</select>
+
+	<select id="queryDev" resultType="com.hot.analysis.bean.dc.DCDevInfo">
+		SELECT DISTINCT * FROM (
+		SELECT
+		t2.`moduleid` AS
+		moduleid,
+		FLOOR(DATEDIFF(NOW(), t1.`addtime`)) AS DAY,
+		t1.`code`,
+		t1.`devnum`,
+		DATE_FORMAT(t1.`addtime`, '%Y-%m-%d') AS ADDTIME
+		FROM
+		t_device_dc t1
+		INNER JOIN t_device_group_relation t2
+		ON
+		t2.`deviceid` =
+		t1.`id`
+		AND t2.`moduleid` = 1
+		AND t2.`isdelete` = 0
+		AND
+		t1.`isdelete` = 0
+		INNER JOIN t_device_group t3
+		ON t3.`id` = t2.`groupid`
+		AND t3.`isdelete`
+		= 0
+		INNER JOIN t_user_dgroup_relation t4
+		ON
+		t4.`devicegroupid` = t3.`id`
+		AND t4.`isdelete` = 0
+		INNER JOIN t_user t5
+		ON t5.`id` = t4.`userid`
+		AND
+		t5.`id` = #{userid}
+		AND t5.`isdelete` = 0
+		WHERE t1.`id` = #{devid}) AS test
+	</select>
+</mapper>

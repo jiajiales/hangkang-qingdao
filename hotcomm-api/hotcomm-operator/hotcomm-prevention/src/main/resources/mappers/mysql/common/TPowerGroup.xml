@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.mysql.common.TPowerGroupMapper">
+	<select id="selectRoleByUserid" resultType="com.hotcomm.prevention.bean.mysql.common.entity.TPowerGroup">	
+		SELECT * FROM t_power_group g
+		INNER JOIN t_user_pgrou_relationp u ON g.id=u.groupid AND u.isenable=1
+		WHERE u.userid=#{userid} 
+		AND g.isenable=1
+	</select>
+	<select id="selectRolesByFid" resultType="com.hotcomm.prevention.bean.mysql.common.entity.TPowerGroup">
+		select * FROM t_power_group WHERE fatherid=#{fatherid} and isenable=1
+	</select>
+</mapper>

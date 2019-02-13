@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+
+<head th:include="common">
+    <meta content="text/html;charset=UTF-8" />
+    <meta http-equiv="Access-Control-Allow-Origin" content="*" />
+    <link rel="stylesheet" href="/css/system/member.css" />
+</head>
+<script type="text/javascript" src="/static/js/service/deviceType.js"></script>
+
+<body style="height: 100%;">
+    <div class="easyui-layout">
+        <div id="deviceType_search" data-options="region:'north',border:false" style="height: 60px;padding: 10px;overflow: hidden;">
+            <form id="deviceType_search_form" class="searcher-form">
+                <input name="typeName" class="easyui-textbox field" style="width: 300px;" label="设备类型名称：" labelWidth="91" />
+                <!-- 	      <input name="name" class="easyui-textbox field" label="设备组名称：" labelWidth="85"/> -->
+                <a id="deviceType_search_button" class="easyui-linkbutton searcher" data-options="iconCls:'fa fa-search'">检索</a>
+                <a id="deviceType_reset_button" class="easyui-linkbutton reset" data-options="iconCls:'fa fa-repeat'">重置</a>
+            </form>
+        </div>
+        <div>
+            <table class="easyui-datagrid" style="" id="deviceType_datagrid"></table>
+        </div>
+    </div>
+    <script type="text/javascript">
+        $(function () {
+            $(".layout-panel").css("position", "static");
+        });
+    </script>
+    <script th:inline="javascript">
+		$(function () {
+	     	var b = [[${buttons}]];
+	     	setButtons(b);
+	        generateButtons(buttons);
+		});
+    </script>
+</body>
+
+</html>

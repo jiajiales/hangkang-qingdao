@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/code/hotcomm" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/code/hotcomm/hotcomm-api" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/code/hotcomm/hotcomm-api/hotcomm-operator" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/code/hotcomm/hotcomm-api/hotcomm-operator/hotcomm-analysis" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/code/hotcomm/hotcomm-api/hotcomm-operator/hotcomm-manage" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/code/hotcomm/hotcomm-api/hotcomm-socketioService" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/code/hotcomm/hotcomm-api/hotcomm_loginService" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/code/hotcomm/hotcomm-applys" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/code/hotcomm/hotcomm-applys/hotcomm-api-shaoxin" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/code/hotcomm/hotcomm-applys/hotcomm-apply-guangqi" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/code/hotcomm/hotcomm-data" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/code/hotcomm/hotcomm-data/hotcomm-data-mqtt" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/code/hotcomm/hotcomm-data/hotcomm-data-service" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/code/hotcomm/hotcomm-data/hotcomm-data-source" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/code/hotcomm/hotcomm-framework" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/code/hotcomm/hotcomm-parse" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/code/hotcomm/hotcomm-view" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/code/hotcomm/hotcomm-view/hotcomm-data-view" charset="UTF-8" />
+  </component>
+</project>

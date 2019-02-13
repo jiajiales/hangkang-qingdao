@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.mysql.manage.material.SuppliesPersonnelMapper">
+
+	<select id="materialuserList" resultType="com.hotcomm.prevention.bean.mysql.manage.material.MaterialuserList">
+		SELECT um.id , u.userNum , u.contacts , um.addtime , u.telephone , COUNT(m.id) as materialnum 
+		FROM t_hk_usermaterial um
+		LEFT JOIN t_user u on u.isdelete = 0 and u.isenable = 1 and u.id = um.userid
+		LEFT JOIN t_hk_material m on m.isdelete = 0 and m.isenable = 1
+		 and (m.usermaterialid1 = um.id or m.usermaterialid2 = um.id or m.usermaterialid3 = um.id)
+		WHERE um.isdelete = 0 and um.isenable = 1
+		<if test="starttime!='' and starttime!=null">
+		and	um.addtime &gt;= #{starttime} 
+		</if>
+		<if test="endtime!='' and endtime!=null">
+		and	um.addtime &lt;= #{endtime} 
+		</if>
+		<if test="numorcontacts!='' and numorcontacts!=null">
+			and (u.userNum LIKE CONCAT('%',#{numorcontacts},'%') or u.contacts LIKE CONCAT('%',#{numorcontacts},'%'))
+		</if>
+		GROUP BY um.id
+		ORDER BY um.addtime DESC
+	</select>
+
+</mapper>

@@ -1,0 +1,18 @@
+<form class="app-form" id="vhost-config-form">
+	<input type="hidden" name="memberId" />
+	<div class="field">
+		<input class="easyui-textbox" id="vhost" name="vhost" style="width: 100%"
+			data-options="label:'虚拟主机地址：',labelWidth:102,required:true,validType:['vhost','length[2,35]']" />
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" id="vhostAccount" name="vhostAccount" style="width: 100%"
+			data-options="label:'虚拟主机账号：',labelWidth:102,required:true,validType:['vhostAccount','length[2,30]']" />
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" id="vhostPassword" name="vhostPassword" style="width: 100%"
+			data-options="label:'虚拟主机密码：',labelWidth:102,required:true,validType:['vhostPassword','length[5,30]']" />
+	</div>
+	<div>
+		<label id="customText"></label>
+	</div>
+</form>

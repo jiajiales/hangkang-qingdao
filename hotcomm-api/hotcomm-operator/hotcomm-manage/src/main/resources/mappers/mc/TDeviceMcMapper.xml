@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.mc.TDeviceMcMapper">
+	<select id="selectPage" resultType="com.hot.manage.entity.mc.TDeviceMcVo">
+		select o.contacts AS ownName,COUNT(DISTINCT v.deviceid) AS
+		relationVideoCount,m.*,g.id as
+		groupid,g.moduleid,g.groupname,g.managerid,u.contacts as
+		username,c.site,p.item_pic_id as itemPicId,c.picpath
+		FROM t_device_mc m
+		LEFT JOIN t_device_group_relation r ON m.id=r.deviceid AND
+		r.isenable=1
+		LEFT JOIN t_device_group g ON g.id=r.groupid AND
+		g.moduleid=r.moduleid
+		AND g.isenable=1
+		LEFT JOIN t_user_dgroup_relation
+		t ON
+		t.devicegroupid=g.id AND t.isenable=1
+		LEFT JOIN t_user u ON
+		u.id=t.userid AND u.isenable=1
+		LEFT JOIN t_dev_item_pic p ON
+		p.dev_id=m.id AND p.moduleid=r.moduleid AND p.moduleid=g.moduleid AND
+		p.isenable=1
+		LEFT JOIN t_item_pic c ON c.id=p.item_pic_id AND
+		c.itemid=g.id AND
+		c.isenable=1
+		LEFT JOIN t_dev_video_relation v ON
+		v.deviceid=m.id AND v.moduleid=11
+		LEFT JOIN t_user o ON o.id=m.own_id
+		<where>
+			1=1
+			<!-- <if test="param.moduleid!=null"> -->
+			<!-- AND g.moduleid=#{param.moduleid} -->
+			<!-- </if> -->
+			<if test="param.groupid!=null">
+				AND g.id=#{param.groupid}
+			</if>
+			<!-- <if test="param.userid!=null"> -->
+			<!-- AND u.id=#{param.userid} -->
+			<!-- </if> -->
+			<if test="param.context!=null and param.context!=''">
+				AND (m.devnum LIKE CONCAT('%',#{param.context},'%') or
+				m.code LIKE CONCAT('%',#{param.context},'%') or 
+				m.mac LIKE CONCAT('%',#{param.context},'%'))
+			</if>
+			<if test="param.starttime!=null and param.starttime!=''">
+				AND m.addtime &gt;=#{param.starttime}
+			</if>
+			<if test="param.endtime!=null and param.endtime!=''">
+				AND m.addtime &lt;=#{param.endtime}
+			</if>
+			<if test="param.batterystate!=null and param.batterystate==0">
+				AND 20 &lt;m.battery &lt;=100
+			</if>
+			<if test="param.batterystate!=null and param.batterystate==1">
+				AND m.battery &lt;=20
+			</if>
+			AND m.isenable=1
+		</where>
+		GROUP BY m.id
+		ORDER BY m.id desc
+	</select>
+	<select id="selectByIdModuleid" resultType="com.hot.manage.entity.mc.TDeviceMcVo">
+		select m.*,g.id as
+		groupid,g.moduleid,g.groupname,g.managerid,u.contacts as
+		username,c.site,p.item_pic_id as
+		itemPicId,c.picpath,GROUP_CONCAT(t666.`videoid`) AS videos
+		FROM
+		t_device_mc m
+		LEFT JOIN t_device_group_relation r ON m.id=r.deviceid
+		AND r.isenable=1
+		LEFT JOIN t_device_group g ON g.id=r.groupid AND
+		g.isenable=1
+		LEFT JOIN t_user u ON u.id=g.managerid AND u.isenable=1
+		LEFT JOIN t_dev_item_pic p ON p.dev_id=m.id AND p.moduleid=r.moduleid
+		AND p.moduleid=g.moduleid AND p.isenable=1
+		LEFT JOIN t_item_pic c ON
+		c.id=p.item_pic_id AND c.itemid=g.id AND c.isenable=1
+		LEFT JOIN t_dev_video_relation t666
+		ON m.`id`=t666.`deviceid`
+		AND t666.`moduleid`=11
+		LEFT JOIN t_device_video t888
+		ON t666.`videoid`=t888.`id`
+		AND t888.`isdelete`=0
+		WHERE m.id=#{id}
+		AND g.moduleid=#{moduleid}
+		AND
+		m.isenable=1
+	</select>
+	<select id="selectListByExampl" resultType="com.hot.manage.entity.mc.TDeviceMc">
+		SELECT y.* FROM
+		t_device_yg y
+		LEFT JOIN t_dev_item_pic p ON p.dev_id=y.id AND
+		p.isenable=1
+		LEFT JOIN t_item_pic c ON c.id=p.item_pic_id AND
+		c.isenable=1
+		LEFT JOIN t_device_group g ON g.id=c.itemid AND
+		g.isenable=1 AND g.moduleid=p.moduleid
+		LEFT JOIN
+		t_device_group_relation r ON r.groupid=g.id AND r.groupid=c.itemid AND
+		r.isenable=1
+		WHERE g.moduleid=#{moduleid}
+		AND c.site=#{site}
+		AND
+		g.id=#{groupid}
+		GROUP BY y.id
+	</select>
+</mapper>

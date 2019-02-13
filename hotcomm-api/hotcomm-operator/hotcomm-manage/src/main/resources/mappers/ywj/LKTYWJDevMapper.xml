@@ -1,0 +1,593 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.ywj.LKTYWJDevMapper">
+
+	<update id="LKTYWJChangeYwjOwner">
+		UPDATE t_device_ywj SET own_id=#{ownid} WHERE id IN
+		(${devid})
+	</update>
+
+	<select id="LKTYWJDevList" resultType="com.hot.manage.entity.ywj.LKTYWJDevList">
+		SELECT y.id as devid , y.devnum as devnum , y.mac as mac ,
+		dg.groupname as groupname , y.code as code , dg.managerid as managerid
+		,
+		u.contacts as contacts , y.addtime as addtime , y.lat as lat , y.lng
+		as lng , y.x,y.y,ip.id as itempicid,ip.`site`,
+		y.state as state ,
+		y.battery as battery , y.lastvalue1 as lastvalue1 ,
+		y.lastvalue2 as
+		lastvalue2 , y.lastvalue3 as lastvalue3 , y.lastvalue4 as
+		lastvalue4 ,
+		y.lastvalue5 as lastvalue5 , y.lastvalue6 as lastvalue6 ,
+		y.adduserid
+		as adduserid,
+		y.lastalarmtime as lastalarmtime ,
+		y.maxalarmvalue as
+		maxalarmvalue ,y.minalarmvalue as
+		minalarmvalue , y.plusminus as
+		plusminus ,
+		ip.picpath as
+		picpath
+		FROM
+		t_device_ywj y
+		LEFT JOIN
+		t_device_group_relation tg on
+		tg.moduleid =
+		#{moduleid} and tg.deviceid
+		= y.id
+		LEFT JOIN
+		t_device_group dg on dg.id
+		= tg.groupid
+		LEFT JOIN t_user
+		u on u.id =
+		y.own_id
+		LEFT JOIN
+		t_dev_item_pic dip on dip.dev_id = y.id
+		AND
+		dip.moduleid=#{moduleid}
+		AND dip.isdelete=0
+		LEFT JOIN t_item_pic ip
+		on
+		ip.id=dip.item_pic_id AND
+		ip.itemid= dg.id AND ip.isdelete=0
+		RIGHT
+		JOIN
+		t_user_dgroup_relation udr
+		ON udr.devicegroupid = dg.id AND
+		udr.userid
+		=#{userid} AND udr.isdelete
+		!=1 AND udr.isenable !=0
+		WHERE
+		y.isenable =
+		1
+		<if test="Starttime!='' and Starttime!=null">
+			and y.addtime &gt;= #{Starttime}
+		</if>
+		<if test="Endtime!='' and Endtime!=null">
+			and y.addtime &lt;= #{Endtime}
+		</if>
+		<if test="context!='' and context!=null">
+			and (y.devnum LIKE CONCAT('%',#{context},'%') or
+			y.code
+			LIKE CONCAT('%',#{context},'%') or
+			y.mac LIKE
+			CONCAT('%',#{context},'%'))
+		</if>
+		<if test="Batterytype==1">
+			and y.Battery &lt; 20
+		</if>
+		<if test="Batterytype==2">
+			and y.Battery &gt;= 20
+		</if>
+		<if test="groupid != null and groupid != ''">
+			and tg.groupid = #{groupid}
+		</if>
+	</select>
+	<insert id="LKTYWJAddSignDevList">
+		CALL
+		Get_AddSignDevList(#{moduleid,jdbcType=INTEGER},#{devid,jdbcType=VARCHAR},#{patrolid,jdbcType=INTEGER});
+	</insert>
+	<update id="LKTYWJUpdateDev">
+		UPDATE t_device_ywj jg , t_device_group_relation dg
+		SET jg.id = jg.id
+		<if test="ownid!='' and ownid!=null">
+			,jg.own_id=#{ownid}
+		</if>
+		<if test="devnum!='' and devnum!=null">
+			, jg.devnum = #{devnum}
+		</if>
+		<if test="code !='' and code !=null">
+			, jg.code = #{code}
+		</if>
+		<if test="lat!='' and lat!=null">
+			, jg.lat = #{lat}
+		</if>
+		<if test="lng!='' and lng!=null">
+			, jg.lng = #{lng}
+		</if>
+		<if test="x!='' and x!=null">
+			, jg.x = #{x}
+		</if>
+		<if test="y!='' and y!=null">
+			, jg.y = #{y}
+		</if>
+		<if test="mac !='' and mac !=null">
+			, jg.mac = #{mac}
+		</if>
+		<if test="minalarmvalue !=null and minalarmvalue!=''">
+			, jg.minalarmvalue = #{minalarmvalue}
+		</if>
+		<if test="maxalarmvalue !=null and maxalarmvalue!=''">
+			, jg.maxalarmvalue = #{maxalarmvalue}
+		</if>
+		<if test="groupid!='' and groupid!=null">
+			, dg.groupid = #{groupid}
+		</if>
+		WHERE jg.id = #{devid} and dg.moduleid = #{moduleid} and dg.deviceid =
+		#{devid}
+	</update>
+	<insert id="LKTYWJUpdateDevAddPic">
+		call
+		Get_UpdateDevAddPic(#{devid,jdbcType=INTEGER},#{itempicid,jdbcType=INTEGER},#{moduleid,jdbcType=INTEGER});
+	</insert>
+	<select id="LKTYWJGroupList" resultType="com.hot.manage.entity.ywj.LKTYWJGroupList">
+		SELECT g.id as id , g.groupname as groupname, g.groupcode as groupcode
+		,GROUP_CONCAT(p.id) as
+		itempicid , GROUP_CONCAT(p.picpath) as picpath ,
+		GROUP_CONCAT(p.site)
+		as site , g.x as lng , g.y as lat , g.itemnum as
+		itemnum , u.contacts as contacts,
+		g.addtime as addtime , g.imgpath as
+		imgpath
+		FROM t_device_group g
+		RIGHT JOIN t_user_dgroup_relation ug on
+		ug.userid = #{userid} and ug.devicegroupid = g.id and ug.isdelete = 0
+		and ug.isenable = 1
+		LEFT JOIN t_item_pic p on p.itemid = g.id
+		LEFT JOIN
+		t_user u on u.id = g.managerid
+		WHERE g.isdelete = 0 and g.moduleid =
+		#{moduleid}
+		<if test="id!=null">
+			and g.id = #{id}
+		</if>
+		<if test="groupname!='' and groupname!=null">
+			and g.groupname = #{groupname}
+		</if>
+		<if test="itemnum!='' and itemnum!=null">
+			and g.itemnum = #{itemnum}
+		</if>
+		GROUP BY g.id
+	</select>
+	<update id="LKTYWJDeleteDev">
+		update t_device_ywj j , t_device_group_relation g ,
+		t_dev_item_pic p
+		set j.isdelete = 1 , j.isenable = 0 , g.isdelete = 1 ,
+		g.isenable = 0 ,
+		p.isdelete = 1 , p.isenable = 0
+		where j.id = #{devid}
+		and g.deviceid = j.id and g.moduleid = #{moduleid} and p.dev_id = j.id
+		and p.moduleid = #{moduleid}
+	</update>
+	<select id="LKTYWJGroupListDev" resultType="com.hot.manage.entity.ywj.LKTYWJGroupListDev">
+		SELECT j.id as id , j.x as x , j.y as y , j.state as state , c.site as
+		site , c.picpath as picpath
+		FROM t_item_pic c
+		LEFT JOIN t_dev_item_pic p
+		on p.item_pic_id = c.id
+		LEFT JOIN t_device_group_relation g on
+		g.moduleid = #{moduleid} and g.isdelete = 0 and g.isenable = 1 and
+		g.deviceid = p.dev_id
+		LEFT JOIN t_device_ywj j on j.id = p.dev_id
+		WHERE
+		c.itemid = #{groupid} and g.groupid = #{groupid}
+		<if test="site!='' and site!=null">
+			and c.site = #{site}
+		</if>
+	</select>
+	<select id="LKTYWJGroupListDevnum" resultType="com.hot.manage.entity.ywj.LKTYWJDevNum">
+		SELECT COUNT(1) as
+		devnum
+		FROM t_device_group_relation dg
+		LEFT JOIN t_user_dgroup_relation
+		ug on ug.userid = #{userid}
+		WHERE dg.groupid = ug.devicegroupid and
+		dg.moduleid = #{moduleid} and
+		dg.isdelete = 0 and dg.isenable = 1 and
+		dg.groupid = #{groupid}
+	</select>
+	<select id="LKTYWJSelectOnId" resultType="com.hot.manage.entity.ywj.LKTYWJSelectOnId">
+		SELECT jg.id as id , jg.devnum as devnum , jg.lat as lat , jg.lng as
+		lng ,
+		jg.x as x ,jg.y as y ,g.id as groupid,g.groupname as groupname
+		,p.id as
+		itempicid,
+		p.picpath as picpath , p.site as site, jg.lastvalue1
+		as lastvalue1 ,
+		jg.lastvalue2 as lastvalue2 , jg.lastvalue3 as
+		lastvalue3 ,
+		jg.lastvalue4 as lastvalue4 ,
+		jg.lastvalue5 as lastvalue5 ,
+		jg.lastvalue6 as lastvalue6 ,jg.lastalarmtime as lastalarmtime ,
+		jg.maxalarmvalue as maxalarmvalue ,jg.minalarmvalue as minalarmvalue ,
+		jg.plusminus as plusminus,jg.own_id as
+		ownid,tu.contacts,jg.mac,jg.`code`,
+		GROUP_CONCAT(t666.`videoid`) AS
+		videos
+		FROM t_device_ywj jg
+		LEFT JOIN
+		t_device_group_relation dg on
+		dg.moduleid = #{moduleid} and
+		dg.deviceid = jg.id and dg.isenable = 1
+		RIGHT JOIN
+		t_user_dgroup_relation ug on ug.userid = #{userid} and
+		ug.devicegroupid = dg.groupid
+		LEFT JOIN t_dev_item_pic dp on dp.dev_id
+		=
+		dg.deviceid and dp.moduleid = dg.moduleid
+		LEFT JOIN t_item_pic p on
+		p.id
+		= dp.item_pic_id and p.isenable = 1
+		LEFT JOIN t_device_group g on
+		g.id =
+		dg.groupid and g.isenable = 1
+		LEFT JOIN t_user tu on
+		tu.id=jg.own_id and
+		tu.isdelete!=1
+		LEFT JOIN t_dev_video_relation t666
+		ON jg.`id` =
+		t666.`deviceid`
+		AND t666.`moduleid` = 13
+		LEFT JOIN
+		t_device_video t888
+		ON
+		t666.`videoid` = t888.`id`
+		AND t888.`isdelete` = 0
+		WHERE jg.isenable = 1
+		<if test="devid != null">
+			and jg.id = #{devid}
+		</if>
+		<if test="devnum!=null and devnum!=''">
+			and jg.devnum = #{devnum}
+		</if>
+		<if test="macAddr!=null and macAddr!=''">
+			and jg.mac = #{macAddr}
+		</if>
+	</select>
+	<select id="LKTYWJSeleteMap" resultType="com.hot.manage.entity.ywj.LKTYWJSeleteMap">
+		SELECT p.id as id ,
+		p.picpath as picpath , p.site as site , p.itemid as itemid
+		FROM
+		t_item_pic p
+		WHERE p.itemid = #{groupid} and p.isenable = 1
+	</select>
+	<insert id="LKTYWJAddDev" keyProperty="id" useGeneratedKeys="true">
+		INSERT INTO t_device_ywj
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="devnum!='' and devnum!=null">
+				devnum,
+			</if>
+			<if test="macAddr!='' and macAddr!=null">
+				mac,
+			</if>
+			<if test="code!='' and code!=null">
+				code,
+			</if>
+			<if test="lng != null and lng!=''">
+				lng,
+			</if>
+			<if test="lat != null and lat != ''">
+				lat,
+			</if>
+			<if test="x != null and x!=''">
+				x,
+			</if>
+			<if test="y != null and y!=''">
+				y,
+			</if>
+			<if test="maxalarmvalue != null and maxalarmvalue!=''">
+				maxalarmvalue,
+			</if>
+			<if test="minalarmvalue != null and minalarmvalue!=''">
+				minalarmvalue,
+			</if>
+			<if test="addtime != null and addtime != ''">
+				addtime,
+			</if>
+			<if test="userid != null and userid != ''">
+				adduserid,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="devnum!='' and devnum!=null">
+				#{devnum},
+			</if>
+			<if test="macAddr!='' and macAddr!=null">
+				#{macAddr},
+			</if>
+			<if test="code!='' and code!=null">
+				#{code},
+			</if>
+			<if test="lng!='' and lng!=null">
+				#{lng},
+			</if>
+			<if test="lat!='' and lat!=null">
+				#{lat},
+			</if>
+			<if test="x != null and x != ''">
+				#{x},
+			</if>
+			<if test="y != null and y != ''">
+				#{y},
+			</if>
+			<if test="maxalarmvalue != null and maxalarmvalue != ''">
+				#{maxalarmvalue},
+			</if>
+			<if test="minalarmvalue != null and minalarmvalue != ''">
+				#{minalarmvalue},
+			</if>
+			<if test="addtime!='' and addtime!=null">
+				#{addtime},
+			</if>
+			<if test="userid!=null and userid!=''">
+				#{userid},
+			</if>
+		</trim>
+	</insert>
+	<insert id="LKTYWJAddDevGroup">
+		INSERT INTO t_device_group_relation
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="id != null">
+				deviceid,
+			</if>
+			<if test="groupid != null">
+				groupid,
+			</if>
+			<if test="moduleid != null">
+				moduleid,
+			</if>
+			<if test="addtime != null">
+				addtime,
+			</if>
+			<if test="userid != null">
+				adduserid,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="id!='' and id!=null">
+				#{id},
+			</if>
+			<if test="groupid!=null">
+				#{groupid},
+			</if>
+			<if test="moduleid!=null">
+				#{moduleid},
+			</if>
+			<if test="addtime!=null and addtime!=''">
+				#{addtime},
+			</if>
+			<if test="userid!=null">
+				#{userid},
+			</if>
+		</trim>
+	</insert>
+	<insert id="LKTYWJAddDevGroupPic">
+		INSERT INTO t_dev_item_pic
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="itempicid != null">
+				item_pic_id,
+			</if>
+			<if test="id != null">
+				dev_id,
+			</if>
+			<if test="moduleid != null">
+				moduleid,
+			</if>
+			<if test="addtime != null">
+				addtime,
+			</if>
+			<if test="ownid != null">
+				own_id,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="itempicid != null">
+				#{itempicid},
+			</if>
+			<if test="id!=null">
+				#{id},
+			</if>
+			<if test="moduleid!=null">
+				#{moduleid},
+			</if>
+			<if test="addtime!=null and addtime!=''">
+				#{addtime},
+			</if>
+			<if test="ownid !=null and ownid !=''">
+				#{ownid},
+			</if>
+		</trim>
+	</insert>
+
+	<insert id="LKTAddSignDevList">
+		CALL
+		Get_AddSignDevList(#{moduleid,jdbcType=INTEGER},#{devid,jdbcType=VARCHAR},#{patrolid,jdbcType=INTEGER});
+	</insert>
+
+	<select id="checkMac" resultType="com.hot.manage.entity.ywj.LKTYWJSelectOnId">
+		SELECT * FROM t_device_ywj t1
+		WHERE t1.`mac`=#{mac};
+	</select>
+
+	<update id="changeMac">
+		UPDATE t_device_ywj SET mac=#{mac} WHERE id=#{devid}
+	</update>
+
+	<select id="AlarmingTrendForWhichHasBoundaryValue" resultType="com.hot.manage.entity.ywj.AlarmingTrendVO">
+		SELECT
+		test1.TheDate AS DATE,YEAR(NOW()) - YEAR(test1.newdate) AS
+		yearAgo,
+		CASE
+		WHEN test2.maxalarmcount IS NULL
+		THEN 0
+		ELSE
+		test2.maxalarmcount
+		END AS maxalarmcount,
+		CASE
+		WHEN
+		test2.minalarmcount IS
+		NULL
+		THEN 0
+		ELSE test2.minalarmcount
+		END AS
+		minalarmcount
+		FROM
+		<if test="queryType==1">
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d DAY) AS
+			TheDate,ADDDATE(CURDATE(), INTERVAL @d DAY) AS newdate,
+			@d
+			:= @d - 1
+			DAY
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp
+			WHERE ADDDATE(CURDATE(),
+			INTERVAL
+			@d
+			DAY) >= DATE_ADD(CURDATE(), INTERVAL
+			-
+			1 MONTH)
+			) test1
+		</if>
+		<if test="queryType==2">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate,TheDate AS
+			newdate
+			FROM
+			(SELECT
+			ADDDATE(
+			DATE_FORMAT(
+			CURDATE(),
+			CONCAT(YEAR(CURDATE()) + 1,
+			'-%m-%d')
+			),
+			INTERVAL @d MONTH
+			) AS TheDate,
+			@d := @d - 1 MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			WHERE
+			YEAR(TheDate) &lt;=
+			YEAR(CURDATE())
+			AND YEAR(TheDate) >=
+			YEAR(CURDATE()) - 2) test1
+		</if>
+		<if test="queryType==3">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate,TheDate AS
+			newdate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 6)
+			test1
+		</if>
+		LEFT JOIN
+		(
+		SELECT
+		DATE_FORMAT(t1.`addtime`, '%Y-%m-%d') AS DATE,
+		SUM(
+		CASE
+		WHEN
+		(
+		SELECT
+		tt1.`LastValue`
+		FROM
+		log_ywj tt1
+		WHERE tt1.`IMEI`=t2.`mac`
+		AND tt1.`addtime`=t1.`addtime`
+		) - t2.`maxalarmvalue`
+		> 0
+		THEN 1
+		ELSE 0
+		END
+		) AS maxalarmcount,
+		SUM(
+		CASE
+		WHEN
+		(
+		SELECT
+		tt1.`LastValue`
+		FROM
+		log_ywj
+		tt1
+		WHERE tt1.`IMEI`=t2.`mac` AND tt1.`addtime`=t1.`addtime`
+		) -
+		t2.`minalarmvalue`
+		&lt; 0
+		THEN 1
+		ELSE 0
+		END
+		) AS minalarmcount
+		FROM
+		t_dev_alarm t1
+		INNER JOIN t_device_ywj t2
+		ON t1.`deviceid` = t2.`id`
+		AND
+		t1.`moduleid` = 13
+		AND t2.`isdelete` = 0
+		INNER JOIN
+		t_device_group_relation t3
+		ON t3.`deviceid` = t2.`id`
+		AND t3.`isdelete`
+		= 0
+		AND t3.`moduleid` = t1.`moduleid`
+		INNER JOIN t_device_group t4
+		ON
+		t4.`id` = t3.`groupid`
+		AND t4.`isdelete` = 0
+		AND t4.`moduleid` =
+		t1.`moduleid`
+		<if test="groupid != null">
+			AND t4.`id`=#{groupid}
+		</if>
+		INNER JOIN t_user_dgroup_relation t5
+		ON t5.`devicegroupid` = t4.`id`
+		AND t5.`isdelete` = 0
+		INNER JOIN t_user t6
+		ON t6.`id` = t5.`userid`
+		AND
+		t6.`isdelete` = 0
+		AND t6.`id` = #{userid}
+		INNER JOIN t_dev_alarm_state
+		t7
+		ON t7.`state_name` NOT LIKE '%电量%'
+		AND t7.`id` = t1.`alarmstateid`
+		AND t7.`type` = 1
+		AND t7.`module_id` = t1.`moduleid`
+		GROUP BY
+		MONTH(t1.`addtime`)
+		)
+		test2
+		<if test="queryType==1">
+			ON test1.TheDate = test2.DATE
+		</if>
+		<if test="queryType==2">
+			ON test1.TheDate = DATE_FORMAT(test2.DATE, '%Y-%m')
+		</if>
+		<if test="queryType==3">
+			ON test1.TheDate = DATE_FORMAT(test2.DATE, '%Y-%m')
+		</if>
+	</select>
+
+</mapper>

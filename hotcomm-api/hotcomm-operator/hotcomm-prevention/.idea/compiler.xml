@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="hotcomm-analysis" />
+        <module name="hotcomm-api-shaoxin" />
+        <module name="hotcomm-apply-guangqi" />
+        <module name="hotcomm-data-mqtt" />
+        <module name="hotcomm-data-service" />
+        <module name="hotcomm-data-source" />
+        <module name="hotcomm-data-view" />
+        <module name="hotcomm-framework" />
+        <module name="hotcomm-manage" />
+        <module name="hotcomm-parse" />
+        <module name="loginService" />
+        <module name="socketTest" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="hotcomm" target="1.8" />
+      <module name="hotcomm-analysis" target="1.8" />
+      <module name="hotcomm-api" target="1.8" />
+      <module name="hotcomm-api-shaoxin" target="1.8" />
+      <module name="hotcomm-apply-guangqi" target="1.8" />
+      <module name="hotcomm-applys" target="1.8" />
+      <module name="hotcomm-data" target="1.8" />
+      <module name="hotcomm-data-mqtt" target="1.8" />
+      <module name="hotcomm-data-service" target="1.8" />
+      <module name="hotcomm-data-source" target="1.8" />
+      <module name="hotcomm-data-view" target="1.8" />
+      <module name="hotcomm-framework" target="1.8" />
+      <module name="hotcomm-manage" target="1.8" />
+      <module name="hotcomm-operator" target="1.8" />
+      <module name="hotcomm-parse" target="1.8" />
+      <module name="hotcomm-view" target="1.8" />
+      <module name="loginService" target="1.7" />
+      <module name="socketTest" target="1.7" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

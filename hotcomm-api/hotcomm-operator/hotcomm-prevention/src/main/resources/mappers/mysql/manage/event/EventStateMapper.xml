@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.mysql.manage.event.EventStateMapper">
+	<select id="checkState" resultType="int">
+		select COUNT(he.id) as `sum`
+		FROM t_hk_event he
+		WHERE he.`describe`=#{stateid}
+	</select>
+</mapper>

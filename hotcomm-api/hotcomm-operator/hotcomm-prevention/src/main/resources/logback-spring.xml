@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+	<property name="log.system.path" value="D:/hotcomm/hotcomm-prevention/logs/system/system_log" />
+	<property name="log.operation.path" value="D:/hotcomm/hotcomm-prevention/logs/operation/operation_log" />
+	
+	<property name="log.data.path" value="D:/hotcomm/hotcomm-prevention/logs/data" />
+	<property name="data.station.path" value="${log.data.path}/station_info" />
+	<property name="data.rainfall.path" value="${log.data.path}/rainfall_info" />
+	<property name="data.water.path" value="${log.data.path}/water_info" />
+	<!-- 控制台日志输入 -->
+	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+		<layout class="ch.qos.logback.classic.PatternLayout">
+			<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+			</pattern>
+		</layout>
+	</appender>
+
+	<!-- 系统文件日志 -->
+	<appender name="system_log"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${log.system.path}%d{yyyy-MM-dd}.log
+			</fileNamePattern>
+			<maxHistory>30</maxHistory>
+			<totalSizeCap>1GB</totalSizeCap>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%d [%t] [%F:%L] %m%n</pattern>
+		</encoder>
+	</appender>
+	<!-- 用户操作文件日志 -->
+	<appender name="operation_log"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${log.operation.path}%d{yyyy-MM-dd}.log
+			</fileNamePattern>
+			<maxHistory>30</maxHistory>
+			<totalSizeCap>1GB</totalSizeCap>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%d [%t] [%F:%L] %m%n</pattern>
+		</encoder>
+	</appender>
+	<!-- 站点文件日志 -->
+	<appender name="station_log"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${data.station.path}%d{yyyy-MM-dd}.log
+			</fileNamePattern>
+			<maxHistory>30</maxHistory>
+			<totalSizeCap>1GB</totalSizeCap>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%d [%t] [%F:%L] %m%n</pattern>
+		</encoder>
+	</appender>
+	<!-- 雨量文件日志 -->
+	<appender name="rainfall_log"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${data.rainfall.path}%d{yyyy-MM-dd}.log
+			</fileNamePattern>
+			<maxHistory>30</maxHistory>
+			<totalSizeCap>1GB</totalSizeCap>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%d [%t] [%F:%L] %m%n</pattern>
+		</encoder>
+	</appender>
+	<!-- 水位文件日志 -->
+	<appender name="water_log"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${data.water.path}%d{yyyy-MM-dd}.log
+			</fileNamePattern>
+			<maxHistory>30</maxHistory>
+			<totalSizeCap>1GB</totalSizeCap>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%d [%t] [%F:%L] %m%n</pattern>
+		</encoder>
+	</appender>
+
+	<!--系统文件日志 -->
+	<logger level="error" additivity="false" name="com.hotcomm.prevention">
+		<appender-ref ref="console" />
+		<appender-ref ref="system_log" />
+	</logger>
+	<!-- 用户操作文件日志 -->
+	<logger level="info" additivity="false" name="operation_log">
+		<!-- <appender-ref ref="console" /> -->
+		<appender-ref ref="operation_log" />
+	</logger>
+	<!-- 站点信息文件日志 -->
+	<logger level="info" additivity="false" name="station_log">
+		<appender-ref ref="station_log" />
+	</logger>
+
+	<!-- 雨量信息文件日志 -->
+	<logger level="info" additivity="false" name="rainfall_log">
+		<appender-ref ref="rainfall_log" />
+	</logger>
+
+	<!-- 水位信息文件日志 -->
+	<logger level="info" additivity="false" name="water_log">
+		<appender-ref ref="water_log" />
+	</logger>
+
+	<root level="error">
+		<appender-ref ref="console" />
+		<appender-ref ref="system_log" />
+	</root>
+
+</configuration>

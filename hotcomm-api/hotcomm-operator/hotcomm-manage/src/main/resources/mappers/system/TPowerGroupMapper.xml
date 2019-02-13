@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.system.TPowerGroupMapper">
+	<select id="selectAllByUserId" resultType="com.hot.manage.entity.system.TPowerGroup">
+		SELECT p.* FROM t_power_group p
+		LEFT JOIN t_user_pgrou_relationp r ON r.groupid=p.id AND r.isenable=1
+		WHERE r.userid=#{userid}
+		AND p.isenable=1
+	</select>
+	<select id="selectByUserId" resultType="com.hot.manage.entity.system.TPowerGroup">
+		SELECT r.* FROM t_power_group r
+		LEFT JOIN t_user_pgrou_relationp u ON r.id=u.groupid
+		WHERE u.isenable=1 
+		AND u.userid=#{userid}
+		AND r.isenable=1
+	</select>
+	<select id="selctByFatherId" resultType="com.hot.manage.entity.system.TPowerGroup">
+		SELECT * FROM t_power_group
+		WHERE fatherid=#{id}
+		AND isenable=1
+	</select>
+</mapper>

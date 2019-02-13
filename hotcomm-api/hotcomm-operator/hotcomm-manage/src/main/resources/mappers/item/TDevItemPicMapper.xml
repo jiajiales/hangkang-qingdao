@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.item.TDevItemPicMapper">
+	<select id="selectList" resultType="com.hot.manage.entity.item.TDevItemPic">
+		SELECT * FROM t_dev_item_pic
+		WHERE item_pic_id=#{itemPicId}
+	</select>
+	<insert id="insertBatch">
+		INSERT INTO t_dev_item_pic
+		(item_pic_id,dev_id,addtime,moduleid)
+		VALUES
+		<foreach collection="param" item="item" separator=",">
+			(#{item.itemPicId},#{item.devId},#{item.addtime},#{item.moduleid})
+		</foreach>
+	</insert>
+</mapper>

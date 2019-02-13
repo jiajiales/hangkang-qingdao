@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" >
+	<head th:include="common"  >
+		<meta content="text/html;charset=UTF-8" />
+		<meta http-equiv="Access-Control-Allow-Origin" content="*"/>
+		<link rel="stylesheet" href="/css/system/member.css"/>
+	</head>
+	<script type="text/javascript" src="/static/js/system/role.js" ></script>
+	<body>
+		<div class="easyui-layout" fit="true" >
+			<!-- <div  id="role_search" data-options="region:'north',border:false" style="height: 60px;padding: 10px;overflow: hidden;" >
+			    <form id="role_search_from" class="searcher-form">
+			      <input name="roleName" class="easyui-textbox field" label="角色名称：" labelWidth="65"/>
+			      <input name="desc" class="easyui-textbox field" label="描述：" labelWidth="45"/>
+			      <a id="role_search_button" class="easyui-linkbutton searcher" data-options="iconCls:'fa fa-search'">检索</a>
+			      <a id="role_reset_button" class="easyui-linkbutton" data-options="iconCls:'fa fa-repeat'">重置</a>
+			    </form>
+		  	</div> -->
+			<div data-options="region:'center'" border="false">
+				<table id="role_dg"></table>
+			</div>
+			<div id="role-resource-panel" style="width:350px;border-bottom: none;" data-options="headerCls:'noborder',region:'east',collapsible:false,tools:'#role-resource-tools'" title="资源分配">
+				<!-- 资源树 -->
+				<ul id="role-resource-tree"></ul>
+			</div>
+			<div id="role-resource-tools">
+				<a class="fa fa-save" id="role-resource-save"></a>
+			</div>
+		</div>
+	</body>
+</html>

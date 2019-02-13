@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.Chat.TChatFriendReMapper">
+	<select id="selectFriendsList" resultType="com.hot.manage.entity.Chat.TChatUserVo">
+		select tcu.userid,tcu.username,tu.userpicPath as userpicpath 
+		from t_chat_friends_relation cfr
+		LEFT JOIN t_chat_user tcu ON cfr.friendid=tcu.userid AND tcu.isdelete!=1
+		LEFT JOIN t_user tu ON CAST(tu.id AS SIGNED) = tcu.userid
+		WHERE cfr.userid=#{chatuserid} AND cfr.isdelete!=1
+	</select>
+</mapper>

@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.mysql.data.MySQLDataMapper">
+
+	<select id="getLatestTime"
+		resultType="com.hotcomm.prevention.bean.mysql.common.vo.LatestUpDateMySqlTimeVo">
+		SELECT
+		CASE WHEN get_PPTN_LatestTime IS NULL THEN
+		'2000-01-01 00:00:00' ELSE
+		get_PPTN_LatestTime END get_PPTN_LatestTime,
+		CASE WHEN get_RIVER_LatestTime IS NULL THEN '2000-01-01 00:00:00' ELSE
+		get_RIVER_LatestTime END get_RIVER_LatestTime
+		FROM
+		(SELECT
+		*
+		FROM
+		(SELECT
+		MAX(t1.`TM`) AS get_PPTN_LatestTime
+		FROM
+		ST_PPTN_R t1) test1,
+		(SELECT
+		MAX(t2.`TM`) AS get_RIVER_LatestTime
+		FROM
+		ST_RIVER_R t2) test2) test
+	</select>
+
+	<delete id="deleteTStPptnRByTime">
+		DELETE FROM ST_PPTN_R WHERE TM >= #{time}
+	</delete>
+
+	<insert id="insertStPptnRBatchJava">
+		insert into
+		ST_PPTN_R
+		(STCD,TM,
+		DRP,INTV,
+		PDR,DYP,
+		WTH,syn,
+		_MASK_FROM_V2)
+		values
+		(
+		#{info.STCD},
+		#{info.TM},
+		#{info.DRP},
+		#{info.INTV},
+		#{info.PDR},
+		#{info.DYP},
+		#{info.WTH},
+		#{info.syn},
+		#{info._MASK_FROM_V2}
+		)
+	</insert>
+
+	<insert id="insertStRiverRBatchJava">
+		insert into ST_RIVER_R
+		(STCD,TM,
+		Z,Q,
+		XSA,XSAVV,
+		XSMXV,FLWCHRCD,
+		WPTN,MSQMT,
+		MSAMT,MSVMT,
+		syn,_MASK_FROM_V2
+		)
+		values
+		(
+		#{info.STCD},
+		#{info.TM},
+		#{info.Z},
+		#{info.Q},
+		#{info.XSA},
+		#{info.XSAVV},
+		#{info.XSMXV},
+		#{info.FLWCHRCD},
+		#{info.WPTN},
+		#{info.MSQMT},
+		#{info.MSAMT},
+		#{info.MSVMT},
+		#{info.syn},
+		#{info._MASK_FROM_V2}
+		)
+	</insert>
+
+	<delete id="deleteStRiverRByTime">
+		DELETE FROM ST_RIVER_R WHERE TM >= #{time}
+	</delete>
+
+	<insert id="insertStPptnRBatch" parameterType="java.util.List">
+		insert into ST_PPTN_R
+		(STCD,TM,
+		DRP,INTV,
+		PDR,DYP,
+		WTH,syn,
+		_MASK_FROM_V2)
+		values
+		<foreach collection="info" item="info" index="index"
+			separator=",">
+			(
+			#{info.STCD},
+			#{info.TM},
+			#{info.DRP},
+			#{info.INTV},
+			#{info.PDR},
+			#{info.DYP},
+			#{info.WTH},
+			#{info.syn},
+			#{info._MASK_FROM_V2}
+			)
+		</foreach>
+	</insert>
+
+	<insert id="insertStRiverRBatch" parameterType="java.util.List">
+		insert into ST_RIVER_R
+		(STCD,TM,
+		Z,Q,
+		XSA,XSAVV,
+		XSMXV,FLWCHRCD,
+		WPTN,MSQMT,
+		MSAMT,MSVMT,
+		syn,_MASK_FROM_V2
+		)
+		values
+		<foreach collection="info" item="info" index="index"
+			separator=",">
+			(
+			#{info.STCD},
+			#{info.TM},
+			#{info.Z},
+			#{info.Q},
+			#{info.XSA},
+			#{info.XSAVV},
+			#{info.XSMXV},
+			#{info.FLWCHRCD},
+			#{info.WPTN},
+			#{info.MSQMT},
+			#{info.MSAMT},
+			#{info.MSVMT},
+			#{info.syn},
+			#{info._MASK_FROM_V2}
+			)
+		</foreach>
+	</insert>
+	
+	<delete id="deleteSt">
+		delete from st_stbprp_b
+	</delete>
+
+	<update id="updateStStbprpB">
+		update ST_STBPRP_B set
+		STNM = #{info.STNM},
+		RVNM =
+		#{info.RVNM},
+		HNNM = #{info.HNNM},
+		BSNM = #{info.BSNM},
+		STLC =
+		#{info.STLC},
+		ADCD = #{info.ADCD},
+		MDPR = #{info.MDPR},
+		DTMNM =
+		#{info.DTMNM},
+		DTMEL = #{info.DTMEL},
+		STTP = #{info.STTP},
+		FRGRD =
+		#{info.FRGRD},
+		BGFRYM = #{info.BGFRYM},
+		ADMAUTH = #{info.ADMAUTH},
+		STBK =
+		#{info.STBK},
+		DRNA = #{info.DRNA},
+		PHCD = #{info.PHCD},
+		DTPR =
+		#{info.DTPR},
+		EDFRYM = #{info.EDFRYM},
+		ESSTYM = #{info.ESSTYM},
+		ATCUNIT =
+		#{info.ATCUNIT},
+		LOCALITY = #{info.LOCALITY},
+		STAZT = #{info.STAZT},
+		DSTRVM = #{info.DSTRVM},
+		USFL = #{info.USFL},
+		COMMENTS =
+		#{info.COMMENTS},
+		MODITIME = #{info.MODITIME},
+		LGTD = #{info.LGTD},
+		LTTD
+		= #{info.LTTD},
+		IMGURL = #{info.IMGURL},
+		_MASK_FROM_V2 =
+		#{info._MASK_FROM_V2}
+		where STCD =#{info.STCD}
+	</update>
+
+	<select id="selectTStStbprpB"
+		resultType="com.hotcomm.prevention.bean.mysql.common.entity.TStStbprpB">
+		select * from ST_STBPRP_B
+	</select>
+
+	<insert id="insertStStbprpBBatch">
+		insert into ST_STBPRP_B
+		(
+		STCD,STNM,
+		RVNM,HNNM,
+		BSNM,STLC,
+		ADCD,MDPR,
+		DTMNM,DTMEL,
+		STTP,FRGRD,
+		BGFRYM,ADMAUTH,
+		STBK,DRNA,
+		PHCD,DTPR,
+		EDFRYM,ESSTYM,
+		ATCUNIT,LOCALITY,
+		STAZT,DSTRVM,
+		USFL,COMMENTS,
+		MODITIME,LGTD,
+		IMGURL,_MASK_FROM_V2,
+		PP_AlarmValue,ZZ_AlarmValue
+		)
+		values
+		(
+		#{info.STCD},
+		#{info.STNM},
+		#{info.RVNM},
+		#{info.HNNM},
+		#{info.BSNM},
+		#{info.STLC},
+		#{info.ADCD},
+		#{info.MDPR},
+		#{info.DTMNM},
+		#{info.DTMEL},
+		#{info.STTP},
+		#{info.FRGRD},
+		#{info.BGFRYM},
+		#{info.ADMAUTH},
+		#{info.STBK},
+		#{info.DRNA},
+		#{info.PHCD},
+		#{info.DTPR},
+		#{info.EDFRYM},
+		#{info.ESSTYM},
+		#{info.ATCUNIT},
+		#{info.LOCALITY},
+		#{info.STAZT},
+		#{info.DSTRVM},
+		#{info.USFL},
+		#{info.COMMENTS},
+		#{info.MODITIME},
+		#{info.LGTD},
+		#{info.IMGURL},
+		#{info._MASK_FROM_V2},
+		#{info.PP_AlarmValue},
+		#{info.ZZ_AlarmValue}
+		)
+	</insert>
+
+	<select id="checkAlarmStationInTwoMinutes" resultType="com.hotcomm.prevention.bean.mysql.common.vo.AlarmStationInTwoMinutes">
+<!-- 		SELECT  -->
+<!-- 		  STCD, -->
+<!-- 		  STNM, -->
+<!-- 		  CASE -->
+<!-- 		    WHEN STTP = 'PZ'  -->
+<!-- 		    THEN '一体站'  -->
+<!-- 		    WHEN STTP = 'PP'  -->
+<!-- 		    THEN '雨量站'  -->
+<!-- 		    WHEN STTP = 'ZZ'  -->
+<!-- 		    THEN '水位站'  -->
+<!-- 		  END AS STTP, -->
+<!-- 		  CASE -->
+<!-- 		    WHEN DRP IS NOT NULL  -->
+<!-- 		    THEN DRP  -->
+<!-- 		    ELSE 0  -->
+<!-- 		  END AS DRP, -->
+<!-- 		  CASE -->
+<!-- 		    WHEN Z IS NOT NULL  -->
+<!-- 		    THEN Z  -->
+<!-- 		    ELSE 0  -->
+<!-- 		  END AS Z  -->
+<!-- 		FROM -->
+<!-- 		  (SELECT  -->
+<!-- 		    s.`STCD`, -->
+<!-- 		    s.`STNM`, -->
+<!-- 		    p.`DRP`, -->
+<!-- 		    r.`Z`, -->
+<!-- 		    s.`PP_AlarmValue`, -->
+<!-- 		    s.`ZZ_AlarmValue`, -->
+<!-- 		    s.`STTP`  -->
+<!-- 		  FROM -->
+<!-- 		    ST_STBPRP_B s  -->
+<!-- 		    LEFT JOIN ST_PPTN_R p  -->
+<!-- 		      ON s.`STCD` = p.`STCD`  -->
+<!-- 		      AND p.`TM` > '2018-09-26 10:01:54' - INTERVAL 2 MINUTE  -->
+<!-- 		    LEFT JOIN ST_RIVER_R r  -->
+<!-- 		      ON r.`STCD` = s.`STCD`  -->
+<!-- 		      AND r.`TM` > '2018-09-25 18:01:00' - INTERVAL 2 MINUTE  -->
+<!-- 		  WHERE p.`DRP` > s.`PP_AlarmValue`  -->
+<!-- 		    OR r.`Z` > s.`ZZ_AlarmValue`  -->
+<!-- 		  GROUP BY s.`STCD`) q1  -->
+SELECT 
+  v.stcd,stnm,sttp,drp,z,devnum
+FROM
+  (SELECT 
+    STCD,
+    STNM,
+    CASE
+      WHEN STTP = 'PZ' 
+      THEN '一体站' 
+      WHEN STTP = 'PP' 
+      THEN '雨量站' 
+      WHEN STTP = 'ZZ' 
+      THEN '水位站' 
+    END AS STTP,
+    CASE
+      WHEN DRP IS NOT NULL 
+      THEN DRP 
+      ELSE 0 
+    END AS DRP,
+    CASE
+      WHEN Z IS NOT NULL 
+      THEN Z 
+      ELSE 0 
+    END AS Z,
+    LGTD,
+    LTTD,
+    v.lng,
+    v.lat,
+    v.devnum,
+    v.code,
+    ROUND(
+      6378.138 * 2 * ASIN(
+        SQRT(
+          POW(
+            SIN((v.lat * PI() / 180 - LTTD * PI() / 180) / 2),
+            2
+          ) + COS(v.lat * PI() / 180) * COS(LTTD * PI() / 180) * POW(
+            SIN((v.lng * PI() / 180 - LGTD * PI() / 180) / 2),
+            2
+          )
+        )
+      ) * 1000
+    ) AS juli 
+  FROM
+    (SELECT 
+      s.`STCD`,
+      s.`STNM`,
+      p.`DRP`,
+      r.`Z`,
+      s.`PP_AlarmValue`,
+      s.`ZZ_AlarmValue`,
+      s.`STTP`,
+      s.`LGTD`,
+      s.`LTTD` 
+    FROM
+      ST_STBPRP_B s 
+      LEFT JOIN ST_PPTN_R p 
+        ON s.`STCD` = p.`STCD` 
+        AND p.`TM` > NOW() - INTERVAL 2 MINUTE 
+      LEFT JOIN ST_RIVER_R r 
+        ON r.`STCD` = s.`STCD` 
+        AND r.`TM` > NOW() - INTERVAL 2 MINUTE 
+    WHERE p.`DRP` > s.`PP_AlarmValue` 
+      OR r.`Z` > s.`ZZ_AlarmValue` 
+    GROUP BY s.`STCD`) q1 
+    JOIN t_device_video v 
+  ORDER BY stcd,
+    juli) v 
+RIGHT JOIN (
+SELECT 
+  MIN(
+    ROUND(
+      6378.138 * 2 * ASIN(
+        SQRT(
+          POW(
+            SIN((v.lat * PI() / 180 - LTTD * PI() / 180) / 2),
+            2
+          ) + COS(v.lat * PI() / 180) * COS(LTTD * PI() / 180) * POW(
+            SIN((v.lng * PI() / 180 - LGTD * PI() / 180) / 2),
+            2
+          )
+        )
+      ) * 1000
+    )
+  ) AS testjuli,
+  STCD 
+FROM
+  (SELECT 
+    s.`STCD`,
+    s.`STNM`,
+    p.`DRP`,
+    r.`Z`,
+    s.`PP_AlarmValue`,
+    s.`ZZ_AlarmValue`,
+    s.`STTP`,
+    s.`LGTD`,
+    s.`LTTD` 
+  FROM
+    ST_STBPRP_B s 
+    LEFT JOIN ST_PPTN_R p 
+      ON s.`STCD` = p.`STCD` 
+      AND p.`TM` > NOW() - INTERVAL 2 MINUTE 
+    LEFT JOIN ST_RIVER_R r 
+      ON r.`STCD` = s.`STCD` 
+      AND r.`TM` > NOW() - INTERVAL 2 MINUTE 
+  WHERE p.`DRP` > s.`PP_AlarmValue` 
+    OR r.`Z` > s.`ZZ_AlarmValue` 
+  GROUP BY s.`STCD`) q1 
+  JOIN t_device_video v 
+GROUP BY stcd 
+) o ON v.stcd=o.stcd AND v.juli=o.testjuli
+	</select>
+
+</mapper>

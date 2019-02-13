@@ -1,0 +1,38 @@
+<form class="app-form" id="device-update-form">
+	<input type="hidden" id="deviceId" name="deviceId" />
+	<div class="field">
+		<input class="easyui-textbox" id="code" name="code" style="width: 100%"
+			data-options="label:'DevAddr：',required:true,validType:['deviceCode','length[1,16]']" />
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" id="appSKey" name="appSKey" style="width: 100%"
+			data-options="label:'AppSKey：',validType:['appSKey','length[1,32]']" />
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" id="nwkSKey" name="nwkSKey" style="width: 100%"
+			data-options="label:'NwkSKey：',validType:['nwkSKey','length[1,32]']" />
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" id="groupId" name="groupId" style="width: 100%" data-options="label:'关联设备组：',required:true" />
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" id="type" name="type" style="width: 100%" data-options="label:'设备类型：',required:true" />
+	</div>
+	<div class="field">
+		<select id="protocol" name="protocol" class="easyui-combobox" label="接入协议：" labelWidth="84" style="width: 100%" 
+			editable="false" data-options="required:true, valueField:'value', textField:'label', panelHeight:'auto'">
+			<option value="1">AMQP</option>
+			<option value="2">MQTT</option>
+			<option value="3">TCP/IP</option>
+			<option value="3">HTTP</option>
+		</select>
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" id="desc" name="desc" style="width: 100%"
+			data-options="label:'设备备注：',validType:['notSpecial','length[1,150]']" />
+	</div>
+	<div class="field">
+		<label class="textbox-label textbox-label-before">设备状态：</label>
+		<input class="easyui-switchbutton" id="status" name="status" data-options="onText:'启用',offText:'禁用',checked:true" value="1" />
+	</div>
+</form>

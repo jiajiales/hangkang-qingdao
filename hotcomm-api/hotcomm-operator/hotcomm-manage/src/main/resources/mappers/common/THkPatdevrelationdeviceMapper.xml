@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.common.patrol.THkPatdevrelationdeviceMapper">
+	<select id="selectRelation" resultType="com.hot.manage.entity.common.patrol.THkPatdevrelationdeviceVo">
+		SELECT u.userid,d.signdeviceid as deviceid FROM t_hk_userpatrelation u
+		LEFT JOIN t_hk_patdevrelationdevice d ON d.userpatid=u.id AND d.isdelete=0
+		WHERE u.userid=#{userid} 
+		AND u.isdelete=0
+	</select>
+</mapper>

@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.data.db.MemberMapper">
+
+	<resultMap type="MemberVO" id="MemberMap">
+		<id property="id" column="member_id" />
+		<result property="memberName" column="member_name" />
+		<result property="realName" column="real_name" />
+		<result property="email" column="email" />
+		<result property="telephone" column="telephone" />
+		<result property="customerIds" column="customerIds" />
+		<result property="createUser" column="create_user" />
+		<result property="createTime" column="create_time" />
+		<result property="userType" column="user_type" />
+		<result property="status" column="status" />
+	</resultMap>
+
+	<resultMap type="Customer" id="CustomerMap">
+		<id property="id" column="member_id" />
+		<result property="memberName" column="member_name" />
+		<result property="realName" column="real_name" />
+		<result property="telephone" column="telephone" />
+		<result property="email" column="email" />
+		<result property="vhost" column="vhost" />
+		<result property="vhostAccount" column="vhost_account" />
+		<result property="vhostPassword" column="vhost_password" />
+		<result property="vhostStatus" column="vhost_status" />
+		<result property="createUser" column="create_user" />
+		<result property="createTime" column="create_time" />
+		<result property="status" column="status" />
+	</resultMap>
+
+	<sql id="MemberPageQuery">
+		<where>
+			<if test="params.memberName != null and params.memberName != ''">
+				AND v1.member_name LIKE CONCAT('%', #{params.memberName}, '%')
+			</if>
+			<if test="params.telephone != null and params.telephone != ''">
+				AND v1.telephone LIKE CONCAT('%', #{params.telephone}, '%')
+			</if>
+			<if test="params.status != null">
+				AND v1.status = #{params.status}
+			</if>
+			<if test="params.userType != null">
+				AND v1.user_type = #{params.userType}
+			</if>
+			AND v1.is_delete = 1
+		</where>
+	</sql>
+
+	<select id="queryPageMember" resultMap="MemberMap" parameterType="com.hotcomm.data.bean.params.sys.MemberPageParams">
+		SELECT v1.member_id, v1.member_name, v1.real_name, v1.email, v1.telephone, 
+			v1.create_user, v1.create_time, v1.user_type, v1.status,
+			(SELECT IFNULL(GROUP_CONCAT(v2.customer_id SEPARATOR ','), '') 
+				FROM hk_customer_member v2 
+				WHERE v2.member_id = v1.member_id 
+				GROUP BY v2.member_id) customerIds
+		FROM sys_member v1
+		<include refid="MemberPageQuery"/>
+		ORDER BY v1.create_time DESC
+		LIMIT #{params.startIndex}, #{params.endIndex}
+	</select>
+
+	<select id="queryPageMemberCount" resultType="java.lang.Long" parameterType="com.hotcomm.data.bean.params.sys.MemberPageParams">
+		select count(0) 
+		FROM sys_member v1
+		<include refid="MemberPageQuery"/>
+	</select>
+
+	<select id="queryPageCustomer" resultMap="CustomerMap" parameterType="com.hotcomm.data.bean.params.sys.CustomerPageParams">
+		SELECT f1.member_id, f1.member_name, f1.real_name, f1.telephone, f1.email, IFNULL(f2.vhost, '') vhost, 
+			f2.vhost_account, f2.vhost_password, f2.vhost_status, f1.create_user, f1.create_time, f1.status
+		FROM sys_member f1 LEFT JOIN hk_member_vhost f2 ON f1.member_id = f2.member_id
+		<where>
+			1 = 1
+			<if test="params.loginUserType != null and params.loginUserType == 1">
+				AND f1.member_id IN (SELECT f3.customer_id FROM hk_customer_member f3 WHERE f3.member_id = #{params.loginMemberId})
+			</if>
+			<if test="params.memberName != null and params.memberName != ''">
+				AND f1.member_name LIKE CONCAT('%', #{params.memberName}, '%')
+			</if>
+			<if test="params.telephone != null and params.telephone != ''">
+				AND f1.telephone LIKE CONCAT('%', #{params.telephone}, '%')
+			</if>
+			<if test="params.vhostStatus != null">
+				AND f2.vhost_status = #{params.vhostStatus}
+			</if>
+			<if test="params.status != null">
+				AND f1.status = #{params.status}
+			</if>
+			AND f1.user_type = 2 AND f1.is_delete = 1
+		</where>
+		ORDER BY f1.create_time DESC
+	</select>
+
+	<resultMap type="MemberVO" id="CustomerListMap">
+		<id property="id" column="member_id" />
+		<result property="memberName" column="member_name" />
+		<result property="realName" column="real_name" />
+	</resultMap>
+
+	<select id="queryCustomerList" resultMap="CustomerListMap" parameterType="com.hotcomm.data.bean.params.sys.MemberParams">
+		SELECT f1.member_id, f1.member_name, f1.real_name 
+		FROM sys_member f1
+		<where>
+			f1.user_type = #{params.userType}
+			<if test="params.source == null">
+				AND f1.member_id in (select f2.customer_id from hk_customer_member f2 where f2.member_id = #{params.id})
+			</if>
+			AND f1.status = 1 AND f1.is_delete = 1
+			<if test="params.queueType != null">
+				AND f1.member_id IN (SELECT f2.member_id FROM hk_member_vhost f2 WHERE f2.vhost_status = 3)
+				AND f1.member_id NOT IN (SELECT f3.member_id FROM hk_queue f3 WHERE f3.type = #{params.queueType})
+			</if>
+			<if test="params.memberName != null and params.memberName != ''">
+				AND f1.member_name LIKE CONCAT('%', #{params.memberName}, '%')
+			</if>
+		</where>
+	</select>
+
+	<insert id="batchAddMemberRole">
+		insert into sys_member_role(member_id,role_id) values
+		<foreach collection="roles" item="roleId" index="index" separator=",">
+			(#{memberId}, #{roleId})
+		</foreach>
+	</insert>
+
+	<delete id="delMemberRoleByMemberId" parameterType="java.lang.Integer">
+		delete from sys_member_role where member_id = #{memberId}
+	</delete>
+
+	<select id="getRoles" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+		select role_id roleId from sys_member_role where member_id = #{memberId}
+	</select>
+
+	<select id="getRoleNames" parameterType="java.lang.Integer" resultType="java.lang.String">
+		select f2.role_name 
+		from sys_member_role f1 
+		inner join sys_role f2 on f1.role_id = f2.id 
+		where f1.member_id = #{memberId}
+	</select>
+
+	<select id="checkDeviceGroupRelation" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+		SELECT 1 FROM hk_device_group_member WHERE member_id = #{memberId}
+	</select>
+
+	<insert id="addCustomerMember" parameterType="java.lang.Integer">
+		INSERT INTO hk_customer_member(customer_id, member_id) VALUES
+		<foreach collection="customerIds" item="customerId" index="index" separator=",">
+			(#{customerId}, #{memberId})
+		</foreach>
+	</insert>
+
+	<delete id="delCustomerMemberByMemberId" parameterType="java.lang.Integer">
+		DELETE FROM hk_customer_member WHERE member_id = #{memberId}
+	</delete>
+
+	<delete id="delCustomerMemberByCustomerId" parameterType="java.lang.Integer">
+		DELETE FROM hk_customer_member WHERE customer_id = #{customerId}
+	</delete>
+
+</mapper>

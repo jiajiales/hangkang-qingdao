@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.mysql.common.TOperationLogMapper">
+	<select id="selectPageInfo" resultType="com.hotcomm.prevention.bean.mysql.common.vo.TOperationLogVo">
+		SELECT u.loginname,u.realname,l.* FROM t_operation_log l
+		LEFT JOIN
+		t_user u ON u.id=l.userid
+		WHERE l.userid in
+		<foreach collection="params.list" item="item" open="("
+			separator="," close=")">
+			#{item}
+		</foreach>
+		<if test="params.starttime!=null and params.starttime!=''">
+			AND l.addtime &gt;=#{params.starttime}
+		</if>
+		<if test="params.endtime!=null and params.endtime!=''">
+			AND l.addtime &lt;=#{params.endtime}
+		</if>
+		<if test="params.loginname!=null and params.loginname!=''">
+			AND u.loginname LIKE CONCAT('%',#{params.loginname},'%')
+		</if>
+		ORDER BY l.addtime desc
+	</select>
+</mapper>

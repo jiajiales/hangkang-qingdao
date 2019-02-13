@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+
+<head th:include="common">
+    <meta content="text/html;charset=UTF-8" />
+    <meta http-equiv="Access-Control-Allow-Origin" content="*" />
+    <link rel="stylesheet" href="/css/system/member.css" />
+</head>
+<script type="text/javascript" src="/static/js/system/resource.js"></script>
+
+<body style="height: 100%; margin:0;">
+    <div class="easyui-layout">
+        <div>
+            <table class="easyui-datagrid" style="" id="resource_dg"></table>
+        </div>
+    </div>
+    <script type="text/javascript">
+        $(function () {
+            $(".layout-panel").css("position", "static");
+        });
+    </script>
+    <script th:inline="javascript">
+        window.onload = function () {
+            var keys = [[${keys}]];
+            setKeys(keys);
+        }
+    </script>
+</body>
+
+</html>

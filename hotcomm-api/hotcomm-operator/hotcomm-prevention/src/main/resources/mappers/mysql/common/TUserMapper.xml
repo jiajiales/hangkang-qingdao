@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.mysql.common.TUserMapper">
+	<select id="selectPageInfo" resultType="com.hotcomm.prevention.bean.mysql.common.entity.TUser">
+		select * FROM t_user WHERE
+			<if test="id!=null">
+				fatherid=#{id}
+			</if>
+			<if test="userNum!=null">
+				AND userNum LIKE CONCAT('%',#{userNum},'%')
+			</if>
+			<if test="telephone!=null">
+				AND telephone LIKE CONCAT('%',#{telephone},'%')
+			</if>
+			<if test="status!=null">
+				AND `isenable`=#{status}
+			</if>
+			And isdelete=0
+			ORDER BY fatherid ASC
+	</select>
+</mapper>

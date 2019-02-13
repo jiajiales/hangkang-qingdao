@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.data.db.DataQueueMapper">
+
+	<select id="queryWaitSendDatas"  resultType="com.hotcomm.data.bean.vo.data.DataQueueSendVO">
+		SELECT 
+			v1.ucode ucode,
+			v2.data message,
+			v2.`source_data` sourceData,
+			v3.`queue_name` queueName,
+			v2.`device_code` deviceCode,
+			v1.member_id memberId,
+			(SELECT v5.code FROM hk_device_type v5 WHERE v5.`type_id` = (SELECT v4.device_type_id FROM hk_device v4 WHERE v4.device_code=v2.device_code) ) deviceTypeCode
+		FROM hk_data_queue v1  
+		INNER JOIN hk_data v2 ON v2.data_id = v1.`data_id`
+		INNER JOIN hk_queue v3 ON v3.`queue_id`=v1.`queue_id`
+		WHERE v1.`send_status`= 2 AND v1.`queue_id`=#{queueId}
+		LIMIT #{limit}
+	</select>
+
+	<update id="updateDataQueueSendStatus">
+		UPDATE hk_data_queue SET send_status = #{sendStatus} WHERE ucode = #{ucode}
+	</update>
+
+</mapper>

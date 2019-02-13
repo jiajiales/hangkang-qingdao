@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+
+<head th:include="common">
+    <meta content="text/html;charset=UTF-8" />
+    <meta http-equiv="Access-Control-Allow-Origin" content="*" />
+</head>
+<script type="text/javascript" src="/static/js/service/queue.js"></script>
+
+<body style="height: 100%;">
+    <div class="easyui-layout">
+        <div id="queue_search" data-options="region:'north',border:false" style="padding: 10px; overflow: hidden;">
+            <form id="queue_search_form" class="searcher-form">
+                <div>
+                    <input name="queueName" class="easyui-textbox field" label="队列名称：" labelWidth="65" style="width:275px" />
+                    <select name="type" class="easyui-combobox field" label="队列类型：" labelWidth="65" editable="false" style="width:175px" data-options="valueField:'value', textField:'label', panelHeight:'auto'">
+                        <option value="">全部</option>
+                        <option value="1" selected = "selected">上行</option>
+                        <option value="2">下行</option>
+                    </select>
+                    <select name="queueStatus" class="easyui-combobox field" label="队列状态：" labelWidth="65" editable="false" style="width:175px" data-options="valueField:'value', textField:'label', panelHeight:'auto'">
+                        <option value="">全部</option>
+                        <option value="1">队列运行</option>
+                        <option value="2">队列暂停</option>
+                    </select>
+                    <input id="MemberIdList" name="memberId" class="easyui-textbox field" label="关联账号:" labelWidth="60" />
+                    <a id="queue_search_button" class="easyui-linkbutton searcher" data-options="iconCls:'fa fa-search'">检索</a>
+                    <a id="queue_reset_button" class="easyui-linkbutton reset" data-options="iconCls:'fa fa-repeat'">重置</a>
+                </div>
+            </form>
+        </div>
+        <div>
+            <table class="easyui-datagrid" style="" id="queue_datagrid"></table>
+        </div>
+    </div>
+    <script type="text/javascript">
+        $(function () {
+            $(".layout-panel").css("position", "static");
+        });
+    </script>
+    <script th:inline="javascript">
+		$(function () {
+	     	var b = [[${buttons}]];
+	     	setButtons(b);
+	        generateButtons(buttons);
+		});
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.yg.YGDeviceInfoMapper">
+	<select id="selectDeviceInfo" resultType="com.hot.manage.entity.yg.vo.YG_DeviceInfo">
+		CALL
+		Get_YGDeviceInfo(#{ygalarmid});
+	</select>
+	<select id="selectDevInfoDispose" resultType="com.hot.manage.entity.yg.vo.YGDeviceInfoDispose">
+		CALL
+		Get_YGDeviceInfoToDispose(#{ygalarmid});
+	</select>
+	<select id="selectDevInfoFinish" resultType="com.hot.manage.entity.yg.vo.YGDeviceInfoFinish">
+		CALL
+		Get_YGDeviceInfoToFinish(#{ygalarmid});
+	</select>
+	<update id="updateDevInfo">
+		UPDATE t_yg_alarm SET
+		alarmStateId=#{alarmstateid},isdispatch=#{isdispatch},handlestate=#{handlestate},handler=#{handler}
+		<if test="remark!=null">
+			, remark = #{remark}
+		</if>
+		WHERE id = #{ygalarmid}
+	</update>
+	<insert id="insertDevResource">
+		INSERT INTO t_hk_evresrelation
+		(eventid,resourcestype,type,url,moduleid) VALUES
+		(#{eventid},#{resourcestype},#{type},#{url},2)
+	</insert>
+</mapper>

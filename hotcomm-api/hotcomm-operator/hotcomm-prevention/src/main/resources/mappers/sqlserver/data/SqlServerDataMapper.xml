@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.sqlserver.data.SqlServerDataMapper">
+
+	<select id="selectTStStbprpBAll"
+		resultType="com.hotcomm.prevention.bean.mysql.common.entity.TStStbprpB">
+		SELECT * from ST_STBPRP_B
+	</select>
+
+	<select id="selectTStPptnRByTime"
+		resultType="com.hotcomm.prevention.bean.mysql.common.entity.TStPptnR">
+		<!-- SELECT * from ST_PPTN_R WHERE TM >= #{time} -->
+		SELECT TOP
+		10000 *
+		FROM
+		ST_PPTN_R
+		WHERE
+		TM >= #{time}
+		ORDER BY
+		TM
+	</select>
+
+	<select id="selectTStRiverRByTime"
+		resultType="com.hotcomm.prevention.bean.mysql.common.entity.TStRiverR">
+		<!-- SELECT * from ST_RIVER_R WHERE TM >= #{time} -->
+		SELECT
+		TOP 10000 *
+		FROM
+		ST_RIVER_R
+		WHERE
+		TM >= #{time}
+		ORDER BY
+		TM
+	</select>
+
+</mapper>

@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.common.event.EventMapper">
+	<sql id="moduleidtable">
+		<if test="moduleid==1">t_device_dc</if>
+		<if test="moduleid==2">t_device_yg</if>
+		<if test="moduleid==3">t_device_jg</if>
+		<if test="moduleid==4">t_device_pm</if>
+		<if test="moduleid==5">t_device_wt</if>
+		<if test="moduleid==6">t_device_et</if>
+		<if test="moduleid==7">t_device_sl</if>
+		<if test="moduleid==8">t_device_hw</if>
+		<if test="moduleid==9">t_device_ljt</if>
+		<if test="moduleid==10">t_device_sj</if>
+		<if test="moduleid==11">t_device_mc</if>
+		<if test="moduleid==12">t_device_krq</if>
+		<if test="moduleid==13">t_device_ywj</if>
+		<if test="moduleid==14">t_device_sxdl</if>
+		<if test="moduleid==15">t_device_sxdy</if>
+		<if test="moduleid==16">t_device_sy</if>
+		<if test="moduleid==17">t_device_sydl</if>
+	</sql>
+	
+	<select id="selectEventCount"  resultType="int">
+		select count(event.id)
+		from t_hk_event event
+		LEFT JOIN t_hk_evdevrelation he on he.eventid = event.id
+		LEFT JOIN t_device_group_relation g ON g.deviceid = he.devid AND g.moduleid = #{moduleid} AND g.isenable=1
+		LEFT JOIN t_device_group p ON p.id =g.groupid AND p.isenable=1
+		RIGHT JOIN t_user_dgroup_relation udr ON udr.userid=#{userid} AND udr.devicegroupid=p.id AND udr.isenable=1
+		where event.moduleid=#{moduleid} AND event.state !=3
+	</select>
+	
+	
+	<update id="closeEvent">
+		update t_hk_event
+		set state=3
+		where id=#{eventid} and moduleid = #{moduleid}
+	</update>
+	<select id="selectWorkInstruction" resultType="com.hot.manage.entity.common.event.EventInstructRele">
+		SELECT u.contacts,e.content
+		FROM t_hk_event t
+		left JOIN t_hk_evinsrelation e ON e.eventid=t.id AND e.moduleid=t.moduleid
+		LEFT JOIN t_user u ON u.id = e.adduserid
+		WHERE t.id=#{eventid}
+		AND t.moduleid=#{moduleid}
+		AND e.type=#{type}
+	</select>
+
+	<select id="selectEventDeviceRe" resultType="com.hot.manage.entity.common.event.EventDeviceRele">
+		SELECT
+		y.id,m.`name`,y.devnum,u.contacts,u.telephone,y.`code`,y.mac
+		FROM t_hk_event	e
+		LEFT JOIN t_hk_evdevrelation t ON e.id = t.eventid
+		LEFT JOIN <include refid="moduleidtable"></include> y ON y.id = t.devid AND y.isdelete=0
+		LEFT JOIN t_device_group_relation r ON r.deviceid = y.id AND r.moduleid=#{moduleid} AND r.isdelete=0
+		LEFT JOIN t_device_group g ON g.id = r.groupid AND g.isdelete=0
+		LEFT JOIN t_module m ON	m.id=#{moduleid} AND m.isdelete=0
+		LEFT JOIN t_user u ON u.id = g.managerid AND u.isdelete=0
+		WHERE e.id = #{eventid} AND e.moduleid=#{moduleid}
+	</select>
+	<select id="getVoiceUrl" resultType="com.hot.manage.entity.common.alarm.VoiceUrlVo">
+		SELECT a.url as voiceUrl,a.eventid as id
+		FROM t_hk_evresrelation a
+		WHERE a.moduleid=#{moduleid} AND a.resourcestype=2 AND a.eventid=#{eventid} AND a.type=1
+	</select>
+	<select id="getPictureUrl" resultType="com.hot.manage.entity.common.alarm.PictureUrlVo">
+		SELECT a.url as pictureUrl,a.eventid as id
+		FROM t_hk_evresrelation a
+		WHERE a.moduleid=#{moduleid} AND a.resourcestype=1 AND a.eventid=#{eventid} AND a.type=1
+	</select>
+	<select id="selectEventInfo" resultType="com.hot.manage.entity.common.event.EventInfoVo">
+		select the.`code`,tas.state_name,the.`level`,the.instructions,the.state,the.isdispatch,tu.contacts,the.addtime
+		FROM t_hk_event the
+		LEFT JOIN t_event_state tas ON tas.id = the.`describe` AND tas.isdelete=0 AND tas.module_id=#{moduleid}
+		LEFT JOIN t_user tu ON tu.id = the.adduserid AND tu.isdelete=0
+		WHERE the.moduleid=#{moduleid} AND the.id=#{eventid}
+	</select>
+	<select id="selectEveintHanding" resultType="com.hot.manage.entity.common.event.EventHandling">
+		select the.state,hw.`code`,tu.contacts,tu.telephone,hw.addtime,hw.complete_time
+		FROM t_hk_event the
+		LEFT JOIN t_hk_woevrelation thw ON thw.relationid = the.id AND thw.relationtype=1 AND thw.moduleid=#{moduleid} 
+		LEFT JOIN t_hk_wo hw ON hw.id=thw.woid AND hw.moduleid=#{moduleid} AND	hw.isdelete=0
+		LEFT JOIN t_hk_wodevrelation wdr ON wdr.woid = hw.id AND wdr.moduleid=#{moduleid}
+		LEFT JOIN t_hk_evdevrelation edr ON edr.eventid=the.id
+		LEFT JOIN t_user tu ON tu.id=hw.assignid and tu.isdelete=0
+		where the.id=#{eventid} AND the.state in(1,2) AND	the.moduleid=#{moduleid}
+	</select>
+	<select id="getishander" resultType="int">
+		SELECT COUNT(*) 
+		from t_hk_woevrelation 
+		WHERE relationtype=1 and relationid=#{eventid} AND moduleid=#{moduleid}
+	</select>
+	<select id="eventFinishToWo" resultType="com.hot.manage.entity.common.event.EventFinishVo">
+		SELECT e.state,hw.problemdesc,u.contacts,u.telephone,hw.id as woid
+		FROM t_hk_event e
+		LEFT JOIN t_hk_woevrelation wer ON wer.relationid=e.id AND wer.relationtype=1 AND wer.moduleid=#{moduleid}
+		LEFT JOIN t_hk_wo hw ON	hw.id = wer.woid AND hw.isdelete=0 AND hw.moduleid=#{moduleid}
+		LEFT JOIN t_hk_wodevrelation wdr ON wdr.woid= hw.id AND wdr.moduleid=#{moduleid}
+		LEFT JOIN t_hk_evdevrelation edr ON edr.eventid = e.id
+		LEFT JOIN t_user u ON u.id=hw.assignid AND u.isdelete=0
+		WHERE e.id=#{eventid} AND e.state=3 AND wdr.devid = edr.devid AND e.moduleid=#{moduleid}
+	</select>
+	<select id="getFinishWoPictureUrl" resultType="com.hot.manage.entity.common.alarm.PictureUrlVo">
+		SELECT a.id,w.url as pictureUrl
+		FROM t_hk_wo a 
+		LEFT JOIN t_hk_woresrelation w ON w.woid = a.id AND w.resourcetype=1
+		WHERE a.moduleid=#{moduleid} AND a.id=#{woid} AND a.isdelete=0
+	</select>
+	<select id="eventFinishToEvent" resultType="com.hot.manage.entity.common.event.EventFinishVo">
+		SELECT e.state,e.instructions as problemdesc,u.contacts,u.telephone
+		FROM t_hk_event e
+		LEFT JOIN t_user u ON u.id=e.adduserid AND u.isdelete=0
+		WHERE e.id=#{eventid} AND e.moduleid=#{moduleid} AND e.state=3
+	</select>
+	<select id="getFinishEventPictureUrl" resultType="com.hot.manage.entity.common.alarm.PictureUrlVo">
+		select e.id,er.url as pictureUrl
+		from t_hk_event e
+		LEFT JOIN t_hk_evresrelation er ON er.eventid=e.id AND er.type = 1 AND er.moduleid=2
+		WHERE er.resourcestype=1 AND e.moduleid=#{moduleid} AND e.id=#{eventid}
+	</select>
+	<select id="selectEventList" resultType="com.hot.manage.entity.common.event.EventListVo" parameterType="com.hot.manage.entity.common.event.EventListParam">
+		SELECT
+			e.id,
+			s.state_name,
+			e.`level`,
+			u.contacts AS addusername,
+			u.telephone AS addusertelephone,
+			e.addtime,
+			y.devnum,
+			y.`code`,
+			e.state,
+			u1.contacts AS assignname,
+			y.lat,
+			y.lng,
+			e.moduleid
+		FROM
+			t_hk_event e
+		LEFT JOIN t_event_state s ON e.`describe` = s.id AND s.isdelete=0 AND s.module_id=#{moduleid}
+		LEFT JOIN t_hk_evdevrelation t ON t.eventid = e.id
+		LEFT JOIN <include refid="moduleidtable"></include> y ON y.id = t.devid AND y.isdelete=0
+		LEFT JOIN t_hk_woevrelation v ON v.relationid = e.id AND v.relationtype = 1 AND v.moduleid = #{moduleid}
+		LEFT JOIN t_hk_wo w ON w.id = v.woid AND w.isdelete=0 AND w.moduleid = #{moduleid}
+		LEFT JOIN t_user u1 ON u1.id = w.assignid AND u1.isdelete=0
+		LEFT JOIN t_user u ON u.id = e.adduserid AND u.isdelete=0
+		LEFT JOIN t_device_group_relation dgr ON dgr.deviceid = y.id AND dgr.isdelete=0 AND dgr.moduleid=#{moduleid}
+		<!-- LEFT JOIN t_device_group dg on dg.id=dgr.groupid AND dg.moduleid=#{moduleid} AND dg.isenable=1 -->
+		RIGHT JOIN t_user_dgroup_relation udr ON udr.devicegroupid = dgr.groupid AND udr.userid=#{userid} AND udr.isdelete=0
+		<where>
+			e.moduleid=#{moduleid}
+			<if test="eventListParam.handlestate!=null ">
+				<choose>
+					<when test="eventListParam.handlestate==0">
+						and e.state=0
+					</when>
+					<when test="eventListParam.handlestate==1">
+						and e.state in(1,2)
+					</when>
+					<when test="eventListParam.handlestate==3">
+						and e.state=3
+					</when>
+				</choose>
+			</if>
+			<if test="eventListParam.stateid!=null">
+				and e.`describe`=#{eventListParam.stateid}
+			</if>
+			<if test="eventListParam.startTime!=null and eventListParam.startTime!=''">
+				and e.addtime &gt;= #{eventListParam.startTime}
+			</if>
+			<if test="eventListParam.endTime!=null and eventListParam.endTime!=''">
+				and e.addtime &lt;=	#{eventListParam.endTime}
+			</if>
+			<if test="eventListParam.message!=null and eventListParam.message!=''">
+				AND
+				CONCAT_WS(&apos;/&apos;,s.state_name,u.contacts,y.devnum,y.`code`,u1.contacts)
+				LIKE CONCAT(&apos;%&apos;,#{eventListParam.message},&apos;%&apos;) COLLATE
+				utf8_unicode_ci
+			</if>
+		</where>
+		ORDER BY e.addtime desc,e.state asc
+	</select>
+	
+	<select id="selectEventListMaps" resultType="com.hot.manage.entity.common.event.EventListVo">
+		SELECT
+			e.id,
+			s.state_name,
+			e.`level`,
+			u.contacts AS addusername,
+			u.telephone AS addusertelephone,
+			e.addtime,
+			y.devnum,
+			y.`code`,
+			e.state,
+			u1.contacts AS assignname,
+			y.lat,
+			y.lng
+		FROM
+			t_hk_event e
+		LEFT JOIN t_event_state s ON e.`describe` = s.id AND s.isdelete=0 AND s.module_id=#{moduleid}
+		LEFT JOIN t_hk_evdevrelation t ON t.eventid = e.id
+		LEFT JOIN <include refid="moduleidtable"></include> y ON y.id = t.devid AND y.isdelete=0
+		LEFT JOIN t_hk_woevrelation v ON v.relationid = e.id AND v.relationtype = 1 AND v.moduleid = #{moduleid}
+		LEFT JOIN t_hk_wo w ON w.id = v.woid AND w.isdelete=0 AND w.moduleid = #{moduleid}
+		LEFT JOIN t_user u1 ON u1.id = w.assignid AND u1.isdelete=0
+		LEFT JOIN t_user u ON u.id = e.adduserid AND u.isdelete=0
+		LEFT JOIN t_device_group_relation dgr ON dgr.deviceid = y.id AND dgr.isdelete=0 AND dgr.moduleid=#{moduleid}
+		<!-- LEFT JOIN t_device_group dg on dg.id=dgr.groupid AND dg.moduleid=#{moduleid} AND dg.isenable=1 -->
+		RIGHT JOIN t_user_dgroup_relation udr ON udr.devicegroupid = dgr.groupid AND udr.userid=#{userid} AND udr.isdelete=0
+		<where>
+			e.moduleid=#{moduleid} and e.state!=3
+		</where>
+	</select>
+	
+	
+	<update id="updateDeviceState">
+		update <include refid="moduleidtable"></include> dev set dev.state=#{type} where dev.id=#{devid}
+	</update>
+	
+	<select id="selectAPPEventInfo" resultType="com.hot.manage.entity.common.event.AppEventInfo">
+		select the.`state`,es.state_name,the.state,the.`level`,the.addtime,the.isdispatch,dev.id as devid,dev.devnum,dev.`code`,dev.lat,dev.lng,GROUP_CONCAT(err.url) AS pictureUrl,the.instructions,GROUP_CONCAT(err2.url) as voiceUrl
+		FROM t_hk_event the 
+		LEFT JOIN t_event_state es on es.id = the.`describe` AND es.module_id=#{moduleid} AND es.isdelete=0
+		LEFT JOIN t_hk_evdevrelation edr ON edr.eventid = the.id
+		LEFT JOIN t_hk_evresrelation err ON err.eventid = the.id AND err.moduleid = #{moduleid} AND err.resourcestype=1 AND err.type=1
+		LEFT JOIN t_hk_evresrelation err2 on err2.eventid =the.id AND err2.moduleid= #{moduleid} AND err2.resourcestype=2 AND err2.type=1
+		LEFT JOIN <include refid="moduleidtable"></include> dev ON dev.id = edr.devid AND dev.isdelete=0
+		where the.moduleid=#{moduleid} and the.id=#{eventid}
+		GROUP BY the.id
+	</select>
+	<select id="selectAPPEventInfoToWo" resultType="com.hot.manage.entity.common.event.AppEventInfo">
+		select he.state,es.state_name,he.`level` ,he.addtime,he.isdispatch,edr.devid,he.addtime,dev.devnum,dev.`code`,dev.lat,dev.lng,GROUP_CONCAT(wrr.url) AS pictureUrl,he.instructions,GROUP_CONCAT(wrr1.url) as voiceUrl
+		FROM t_hk_event he 
+		LEFT JOIN t_event_state es ON es.id = he.`describe` AND es.isdelete= 0 AND es.module_id=#{moduleid}
+		LEFT JOIN t_hk_evdevrelation edr ON edr.eventid = he.id
+		LEFT JOIN <include refid="moduleidtable"></include> dev ON dev.id=edr.devid AND dev.isdelete=0
+		LEFT JOIN t_hk_woevrelation wer ON wer.relationtype=1 AND wer.relationid = he.id AND wer.moduleid = #{moduleid}
+		LEFT JOIN t_hk_wo hw ON hw.id = wer.woid AND hw.isdelete=0 AND hw.moduleid=#{moduleid}
+		LEFT JOIN t_hk_woresrelation wrr ON wrr.woid = hw.id AND wrr.resourcetype=1
+		LEFT JOIN t_hk_woresrelation wrr1 ON wrr1.woid= hw.id AND wrr1.resourcetype=2
+		WHERE he.moduleid=#{moduleid} AND he.id=#{eventid}
+		GROUP BY he.id
+	</select>
+	<select id="selectAPPModule" resultType="com.hot.manage.entity.common.event.T_module">
+		select tm.id as moduleid,tm.`name` as modulename
+		from t_module tm
+		WHERE tm.isenable = 1
+	</select>
+	<update id="createTemporaryTable">
+		CREATE TEMPORARY TABLE IF NOT EXISTS t_getAppEvent ENGINE = InnoDB (
+		select * from (
+			(select 1 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.mac
+			from t_device_dc aa
+			where aa.isdelete=0)
+			UNION ALL
+			(select 2 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.mac
+			from t_device_yg aa
+			where aa.isdelete=0)
+			UNION ALL
+			(select 3 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.mac
+			from t_device_jg aa
+			where aa.isdelete=0)
+			UNION ALL
+			(select 4 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.mac
+			from t_device_pm aa
+			where aa.isdelete=0)
+			UNION ALL
+			(select 5 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.mac
+			from t_device_wt aa
+			where aa.isdelete=0)
+			UNION ALL
+			(select 6 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.mac
+			from t_device_et aa
+			where aa.isdelete=0)
+			UNION ALL
+			(select 7 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.mac
+			from t_device_sl aa
+			where aa.isdelete=0)
+			UNION ALL
+			(select 8 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.mac
+			from t_device_hw aa
+			where aa.isdelete=0)
+			UNION ALL
+			(select 9 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.mac
+			from t_device_ljt aa
+			where aa.isdelete=0)
+			UNION ALL
+			(select 10 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.mac
+			from t_device_sj aa
+			where aa.isdelete=0)
+			UNION ALL
+			(select 11 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.mac
+			from t_device_mc aa
+			where aa.isdelete=0)
+			UNION ALL
+			(select 12 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.mac
+			from t_device_krq aa
+			where aa.isdelete=0)
+			UNION ALL
+			(select 13 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.mac
+			from t_device_ywj aa
+			where aa.isdelete=0)
+			UNION ALL
+			(select 14 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.mac
+			from t_device_sxdl aa
+			where aa.isdelete=0)
+			UNION ALL
+			(select 15 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.mac
+			from t_device_sxdy aa
+			where aa.isdelete=0)
+			UNION ALL
+			(select 16 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.mac
+			from t_device_sy aa
+			where aa.isdelete=0)
+			UNION ALL
+			(select 17 as moduleid ,aa.id,aa.devnum,aa.`code`,aa.lat,aa.lng,aa.mac
+			from t_device_sydl aa
+			where aa.isdelete=0)
+			) as a
+		)
+	</update>
+	<select id="getAppEventList" resultType="com.hot.manage.entity.common.event.AppEventList">
+		select the.id as eventid ,tes.state_name,the.state,the.addtime,gae.devnum,gae.`code`,gae.lat,gae.lng,the.moduleid,tm.`name` as modulename
+		FROM t_hk_event the
+		LEFT JOIN t_event_state tes ON tes.id=the.`describe` AND tes.isdelete=0 AND tes.module_id = the.moduleid
+		LEFT JOIN t_hk_evdevrelation edr ON edr.eventid =the.id 
+		LEFT JOIN t_module tm ON tm.id = the.moduleid AND tm.isdelete=0
+		LEFT JOIN t_getAppEvent gae ON gae.id = edr.devid AND gae.moduleid = the.moduleid
+		<where>
+			<if test="moduleid!=null and moduleid!= '' and moduleid !=0">
+				the.moduleid=#{moduleid}
+			</if>
+			<if test="timeout==1">
+				and the.addtime &gt;=SUBDATE(CURDATE(),INTERVAL 1 month)
+			</if>
+			<if test="timeout == 2">
+				and the.addtime &gt;=SUBDATE(CURDATE(),INTERVAL 3 month)
+			</if>
+			<if test="message !=null and message !=''">
+				and	 CONCAT_WS(&apos;/&apos;,gae.devnum,gae.`code`)
+				LIKE CONCAT(&apos;%&apos;,#{message},&apos;%&apos;) COLLATE
+				utf8_unicode_ci
+			</if>
+		</where>
+		ORDER BY the.state asc,the.addtime desc
+	</select>
+	<update id="dropTemporaryTable">
+		DROP TEMPORARY TABLE IF EXISTS t_getAppEvent
+	</update>
+	<select id="selectEventCountByDevid" resultType="int">
+		select COUNT(*)
+		from t_hk_evdevrelation edr
+		LEFT JOIN t_hk_event the ON the.id = edr.eventid AND the.moduleid=#{moduleid}
+		WHERE edr.devid=#{devid} AND the.state!=3
+	</select>
+</mapper>

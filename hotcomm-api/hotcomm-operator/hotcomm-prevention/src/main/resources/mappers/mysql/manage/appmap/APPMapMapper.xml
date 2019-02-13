@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.mysql.manage.appmap.APPMapMapper">
+	<!-- app地图页面-用户下的项目 -->
+	<select id="AppMapGroupList" resultType="com.hotcomm.prevention.bean.mysql.manage.appmap.AppMapGroupList">
+	SELECT dg.id as groupid , dg.groupname as groupname , dg.moduleid as moduleid , m.`name` as `name` ,
+	dg.x as x , dg.y as y
+	FROM t_device_group dg
+	RIGHT JOIN t_user_dgroup_relation ug on ug.userid=#{userid} and ug.isenable = 1 and ug.devicegroupid = dg.id
+	LEFT JOIN t_module m on m.isdelete = 0 and m.isenable = 1 and m.id = dg.moduleid
+	WHERE dg.isdelete = 0 and dg.isenable = 1
+	</select>
+	
+	<!-- app地图页面-根据项目组查询展示设备 -->
+	<select id="AppMapDevList" resultType="com.hotcomm.prevention.bean.mysql.manage.appmap.AppMapDevList">
+	SELECT y.id as id , y.state as state , y.lat as lat , y.lng as lng , COUNT(w.id) as wonum , dg.moduleid as moduleid ,
+	tm.name as modulename , y.devnum as devnum , tu.contacts as contacts
+	FROM t_device_group_relation dg
+	LEFT JOIN 
+		t_device_all
+	 y on y.moduleid = #{moduleid} and y.isdelete = 0 and y.id = dg.deviceid
+	RIGHT JOIN t_user_dgroup_relation ug on ug.userid=#{userid} and ug.isenable = 1 and ug.devicegroupid = dg.groupid
+	LEFT JOIN t_hk_wodevrelation wd on wd.moduleid = dg.moduleid and wd.devid = y.id
+	LEFT JOIN t_hk_wo w on w.isdelete = 0 and w.state != 2 and w.id = wd.woid
+	LEFT JOIN t_module tm on tm.id = y.moduleid
+	LEFT JOIN t_user tu on tu.id = y.own_id
+	WHERE dg.isdelete = 0 and dg.moduleid = #{moduleid}
+	<if test="groupid != null and groupid != ''">
+	 and dg.groupid = #{groupid}
+	</if>
+	<if test="devnumorcode != null and devnumorcode != ''">
+	 and (y.devnum LIKE CONCAT('%',#{devnumorcode},'%') or y.code LIKE CONCAT('%',#{devnumorcode},'%'))
+	</if>
+	GROUP BY y.id
+	</select>
+
+	<select id="AppMapDevnum" resultType="com.hotcomm.prevention.bean.mysql.manage.appmap.AppMapDevnum">
+	SELECT y.devnum as devnum
+	FROM t_device_all
+	 y
+	 LEFT JOIN t_device_group_relation dg on dg.isdelete = 0 and dg.isenable = 1<!--  and dg.moduleid = #{moduleid} --> and dg.deviceid = y.id
+	 RIGHT JOIN t_user_dgroup_relation ug on ug.userid=#{userid} and ug.isenable = 1 and ug.devicegroupid = dg.groupid
+	WHERE y.isdelete = 0 and y.isenable = 1 and (y.devnum LIKE CONCAT(lower(#{devnum}),'%') or y.devnum LIKE CONCAT(upper(#{devnum}),'%'))
+	<if test="moduleid!=null and moduleid!=''"> and y.moduleid = #{moduleid}</if>
+	</select>
+	<select id="queryApkUrl" resultType="com.hotcomm.prevention.bean.mysql.manage.appmap.THKApp">
+		SELECT id,version as vsersion,url,versionname FROM t_hk_app WHERE version &gt; #{version}
+		ORDER BY id DESC
+		LIMIT 1
+	</select>
+</mapper>

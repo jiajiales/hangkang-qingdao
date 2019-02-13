@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.data.db.MemberVhostMapper">
+
+	<resultMap type="MemberVhost" id="VhostMap">
+		<result property="memberId" column="member_id" />
+		<result property="vhost" column="vhost" />
+		<result property="vhostStatus" column="vhost_status" />
+		<result property="vhostCode" column="vhost_code" />
+		<result property="vhostAccount" column="vhost_account" />
+		<result property="vhostPassword" column="vhost_password" />
+	</resultMap>
+
+	<select id="listActive" parameterType="java.lang.Integer" resultMap="VhostMap">
+		SELECT * FROM hk_member_vhost v1 
+		INNER JOIN sys_member v2 ON v1.`member_id` = v2.`member_id`
+		<where>
+			v1.`vhost_status` = 3 AND v2.`is_delete` = 1 AND v2.`status` = 1
+		</where>
+	</select>
+
+	<select id="getVhostByMemberId" parameterType="java.lang.Integer" resultMap="VhostMap">
+		SELECT * 
+		FROM hk_member_vhost v1 
+		<where>
+			v1.member_id = #{memberId}
+		</where>
+	</select>
+
+	<select id="getVhostCodeByMemberId" parameterType="java.lang.Integer" resultType="java.lang.String">
+		SELECT vhost_code 
+		FROM hk_member_vhost v1 
+		<where>
+			v1.member_id = #{memberId}
+		</where>
+	</select>
+
+	<insert id="batchAddMemberVhost">
+		INSERT INTO hk_member_vhost(member_id, vhost_status)
+		VALUES(#{memberId}, #{vhostStatus})
+	</insert>
+
+	<update id="updateVhost" parameterType="com.hotcomm.data.bean.params.sys.MemberVhostParams">
+		UPDATE hk_member_vhost
+		<trim prefix="set" suffixOverrides=",">
+			<if test="params.vhost != null and params.vhost != ''">
+				vhost = #{params.vhost},
+			</if>
+			<if test="params.vhostStatus != null">
+				vhost_status = #{params.vhostStatus},
+			</if>
+			<if test="params.vhostCode != null and params.vhostCode != ''">
+				vhost_code = #{params.vhostCode},
+			</if>
+			<if test="params.vhostAccount != null and params.vhostAccount != ''">
+				vhost_account = #{params.vhostAccount},
+			</if>
+			<if test="params.vhostPassword != null and params.vhostPassword != ''">
+				vhost_password = #{params.vhostPassword},
+			</if>
+		</trim>
+		WHERE member_id = #{params.memberId}
+	</update>
+
+</mapper>

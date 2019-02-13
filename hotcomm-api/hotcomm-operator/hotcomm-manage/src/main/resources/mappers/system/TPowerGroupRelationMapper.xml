@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.system.TPowerGroupRelationMapper">
+	<insert id="insertBatch">
+		insert into t_power_group_relation
+		(powerid,groupid)
+		values
+		<foreach collection="params" item="item">
+			(#{item.powerid},#{item.groupid})
+		</foreach>
+	</insert>
+
+	<delete id="delBatch">
+		DELETE FROM t_power_group_relation
+		WHERE groupid=#{params.groupid} and
+		powerid in
+		<foreach collection="params.list" item="item" open="(" close=")"
+			separator=",">
+			#{item}
+		</foreach>
+	</delete>
+	<select id="selectByResouceId" resultType="com.hot.manage.entity.system.TPowerGroupRelation">
+		SELECT * FROM
+		t_power_group_relation WHERE powerid=#{id}
+	</select>
+	<select id="selectResByRole" resultType="java.lang.Integer">
+		SELECT p.id FROM t_power p
+		LEFT JOIN t_power_group_relation r ON p.id=r.powerid 
+		WHERE r.groupid=#{roleid} 
+		AND p.isenable=1    
+	</select>
+<!-- 	selectResFatherId -->
+	<select id="selectResFatherId" resultType="java.lang.String">
+		SELECT GROUP_CONCAT(p.id) FROM t_power p
+		LEFT JOIN t_power_group_relation r ON p.id=r.powerid 
+		WHERE r.groupid=#{roleid} 
+		AND p.isenable=1  and p.fatherid=#{fatherId}   
+	</select>
+</mapper>

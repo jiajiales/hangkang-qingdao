@@ -1,0 +1,15 @@
+<form class="app-form" id="role-form">
+	<input type="hidden" name="id" />
+	<div class="field">
+		<input class="easyui-textbox" id="roleName" name="roleName" style="width: 95%"
+			data-options="label:'角色名称：',validType:['notSpecial','length[2,50]'],required:true" />
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" id="desc" name="desc" style="width: 95%"
+			data-options="label:'角色说明：',validType:['notSpecial','length[5,200]'],required:true" />
+	</div>
+	<div class="field">
+		<label class="textbox-label textbox-label-before">状态：</label>
+		<input class="easyui-switchbutton" id="status" name="status" data-options="onText:'启用',offText:'禁用',checked:true" value="1" />
+	</div>
+</form>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.sqlserver.StPptnRMapper">
+	<select id="selectAll" resultType="com.hotcomm.prevention.bean.sqlserver.StPptnR">
+		SELECT top 100 STCD,TM,DRP,INTV,PDR,DYP,WTH,syn,convert(varchar(18),CONVERT(binary(8),_MASK_FROM_V2,1),1) as _MASK_FROM_V2  from ST_PPTN_R
+	</select>
+</mapper>

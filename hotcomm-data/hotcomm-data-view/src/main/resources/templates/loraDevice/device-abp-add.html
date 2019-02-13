@@ -1,0 +1,33 @@
+<form class="app-form" id="device-form">
+	<div class="field">
+		<input class="easyui-textbox" name="code" style="width: 100%"
+			data-options="label:'DevAddr：',required:true,validType:['deviceCode','length[1,16]']" />
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" name="appSKey" style="width: 100%"
+			data-options="label:'AppSKey：',validType:['appSKey','length[1,32]']" />
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" name="nwkSKey" style="width: 100%"
+			data-options="label:'NwkSKey：',validType:['nwkSKey','length[1,32]']" />
+	</div>
+	<div class="field">
+		<input id="groupId" name="groupId" style="width: 100%" data-options="required:true" />
+	</div>
+	<div class="field">
+		<input id="type" name="type" style="width: 100%" data-options="required:true" />
+	</div>
+	<div class="field">
+		<select name="protocol" class="easyui-combobox" label="接入协议：" labelWidth="84" style="width: 100%" 
+			editable="false" data-options="required:true, valueField:'value', textField:'label', panelHeight:'auto'">
+			<option value="1">AMQP</option>
+			<option value="2">MQTT</option>
+			<option value="3">TCP/IP</option>
+			<option value="3">HTTP</option>
+		</select>
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" name="desc" style="width: 100%"
+			data-options="label:'设备备注：',validType:['notSpecial','length[1,150]']" />
+	</div>
+</form>

@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.common.HomeMapper">
+	<select id="selectTotalData" resultType="com.hot.manage.entity.common.home.HomeTotalData">
+		SELECT SUM(devTotal) as devTotal,SUM(devAddCount) as
+		devAddCount,SUM(alarmTotal) as alarmTotal,SUM(alarmAddCount) as
+		alarmAddCount,
+		SUM(woTotal) as woTotal,SUM(woAddCount) as
+		woAddCount,SUM(checkPointTotal) as
+		checkPointTotal,SUM(checkCount) as
+		checkCount
+		FROM (
+		<!-- #当前用户下总设备注册数及昨天新增设备数量 -->
+		SELECT COUNT(r.id) as devTotal,SUM(CASE WHEN
+		(TO_DAYS(NOW())-TO_DAYS(r.addtime))=1 THEN 1 ELSE 0 END) as
+		devAddCount,
+		0 as alarmTotal,0 as alarmAddCount,0 as woTotal,0 as
+		woAddCount,0 as checkPointTotal,0 as checkCount
+		FROM
+		t_device_group_relation r
+		INNER JOIN t_user_dgroup_relation d ON
+		d.devicegroupid=r.groupid AND d.isenable=1
+		WHERE d.userid=1 AND
+		r.isenable=1
+		UNION ALL
+		<!-- #报警统计，总报警数量，昨天新增报警数量 -->
+		SELECT 0 as devTotal,0 as devAddCount,COUNT(a.id) as
+		alarmTotal,SUM(CASE WHEN (TO_DAYS(NOW())-TO_DAYS(a.addtime))=1 THEN 1
+		ELSE 0 END) as alarmAddCount,
+		0 as woTotal,0 as woAddCount,0 as
+		checkPointTotal,0 as checkCount
+		from
+		t_dev_alarm a
+		INNER JOIN
+		t_device_group_relation r ON
+		a.deviceid=r.deviceid AND
+		a.moduleid=r.moduleid AND r.isenable=1
+		INNER
+		JOIN t_user_dgroup_relation
+		d ON d.devicegroupid=r.groupid AND
+		d.isenable=1
+		WHERE d.userid=1
+		UNION
+		ALL
+		<!-- #工单数量统计,工单总数，昨日新增数量 -->
+		SELECT 0 as devTotal,0 as devAddCount,0 as alarmTotal,0 as
+		alarmAddCount,COUNT(w.id) as woTotal,
+		SUM(CASE WHEN
+		(TO_DAYS(NOW())-TO_DAYS(w.addtime))=1 THEN 1 ELSE 0 END) as woAddCount
+		,0 as checkPointTotal,0 as checkCount
+		FROM t_hk_wo w
+		INNER JOIN
+		t_hk_wodevrelation wd ON w.id=wd.woid AND w.moduleid=wd.moduleid
+		INNER
+		JOIN t_device_group_relation r ON r.deviceid=wd.devid AND
+		wd.moduleid=r.moduleid AND r.isenable=1
+		INNER JOIN
+		t_user_dgroup_relation u ON u.devicegroupid=r.groupid AND u.isenable=1
+		WHERE u.userid=1
+		UNION ALL
+		<!-- #巡检统计 -->
+		SELECT 0 as devTotal,0 as devAddCount,0 as alarmTotal,0 as
+		alarmAddCount,0 as woTotal,0 as woAddCount ,
+		COUNT(s.id) as
+		checkPointTotal,COUNT(g.id) as checkCount FROM t_hk_signdevice s
+		LEFT
+		JOIN t_hk_signlog g ON g.signid=s.id
+		INNER JOIN
+		t_hk_patdevrelationdevice p ON p.signdeviceid=s.id AND p.isdelete=0
+		INNER JOIN t_device_group_relation r ON s.deviceid=r.deviceid AND
+		r.moduleid=s.moduleid AND r.isenable=1
+		INNER JOIN
+		t_user_dgroup_relation u ON u.devicegroupid=r.groupid AND u.isenable=1
+		WHERE u.userid=1 AND s.isdelete=0
+		) T
+	</select>
+	<select id="selectAlarmTrend" resultType="com.hot.manage.entity.common.home.HomeAlarmTrend">
+		SELECT m.id as moduleid,m.`name` as
+		modulename,DATE_FORMAT(a.addtime,'%c-%d') as addtime,COUNT(a.id) as
+		alarmcount
+		FROM t_dev_alarm a
+		LEFT JOIN t_device_group_relation r ON
+		a.deviceid=r.deviceid AND
+		a.moduleid=r.moduleid AND r.isenable=1
+		LEFT
+		JOIN t_user_dgroup_relation
+		s ON s.devicegroupid=r.groupid AND
+		s.isenable=1
+		LEFT JOIN t_module m ON a.moduleid=m.id AND m.isenable=1
+		WHERE
+		s.userid=#{userid}
+		<if test="type==1">
+			AND DATE_SUB(NOW(), INTERVAL 7 DAY) &lt;=DATE(a.addtime)
+		</if>
+		<if test="type==2">
+			AND DATE_SUB(NOW(), INTERVAL 30 DAY) &lt;=DATE(a.addtime)
+		</if>
+		GROUP BY a.moduleid,DATE_FORMAT(a.addtime,'%c-%d')
+		ORDER BY addtime
+	</select>
+	<select id="selectWoTrend" resultType="com.hot.manage.entity.common.home.HomeWoTrend">
+		SELECT DATE_FORMAT(w.addtime,'%c-%d') as datetime,COUNT(w.id) as
+		total,SUM(CASE WHEN w.state=0 THEN 1 ELSE 0 END) as unhandlewocount,
+		SUM(CASE WHEN w.state=1 THEN 1 ELSE 0 END) as hangupwocount,SUM(CASE WHEN
+		w.state=2 THEN 1 ELSE 0 END) as handlecount
+		FROM t_hk_wo w
+		INNER JOIN
+		t_hk_wodevrelation r ON w.id=r.woid AND
+		w.moduleid=r.moduleid
+		INNER JOIN
+		t_device_group_relation d ON d.deviceid=r.devid AND
+		d.moduleid=r.moduleid AND d.isenable=1
+		INNER JOIN
+		t_user_dgroup_relation u ON u.devicegroupid=d.groupid AND u.isenable=1
+		WHERE u.userid=#{userid}
+		<if test="type==1">
+			AND DATE_SUB(NOW(), INTERVAL 7 DAY) &lt;=DATE(w.addtime)
+		</if>
+		<if test="type==2">
+			AND DATE_SUB(NOW(), INTERVAL 30 DAY) &lt;=DATE(w.addtime)
+		</if>
+		GROUP BY DATE_FORMAT(w.addtime,'%c-%d')
+		ORDER BY datetime
+	</select>
+	<select id="selectDataForDay" resultType="com.hot.manage.entity.common.home.HomeDataForDay">
+		SELECT
+		moduleid,m.`name` as modulename,
+		SUM(alarmcount) AS alarmcount,
+		SUM(wocount) AS wocount
+		FROM
+		(
+		(
+		SELECT
+		a.moduleid AS moduleid,
+		COUNT(a.id) AS alarmcount,
+		0 AS wocount
+		FROM
+		t_dev_alarm a
+		INNER JOIN t_device_group_relation r ON a.deviceid = r.deviceid
+		AND r.moduleid = a.moduleid
+		AND r.isenable = 1
+		INNER JOIN t_user_dgroup_relation u ON u.devicegroupid = r.groupid
+		AND u.isenable = 1
+		WHERE
+		u.userid = #{userid} AND DATE(a.addtime)=DATE(NOW())
+		GROUP BY moduleid
+		)
+		UNION
+		(
+		SELECT
+		w.moduleid AS moduleid,
+		0 AS alarmcount,
+		COUNT(w.id) AS wocount
+		FROM
+		t_hk_wodevrelation w
+		INNER JOIN t_hk_wo o ON w.woid=o.id AND o.isdelete=0
+		INNER JOIN t_device_group_relation r ON w.devid = r.deviceid
+		AND r.moduleid = w.moduleid
+		AND r.isenable = 1
+		INNER JOIN t_user_dgroup_relation u ON u.devicegroupid = r.groupid
+		AND u.isenable = 1
+		WHERE
+		u.userid = #{userid} AND DATE(o.addtime)=DATE(NOW())
+		GROUP BY moduleid
+		)
+		) T
+		INNER JOIN t_module m ON m.id=moduleid AND m.isenable=1
+		GROUP BY moduleid;
+	</select>
+</mapper>

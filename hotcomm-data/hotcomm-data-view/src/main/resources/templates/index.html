@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+xmlns:th="http://www.thymeleaf.org">
+<head th:include="common">
+  <meta content="text/html;charset=UTF-8" />
+  <title>航康-数据接入中心-系统</title>
+</head>
+<body class="easyui-layout">
+<div data-options="region:'north'" style="height: 70px;overflow: hidden;padding: 0 10px;">
+  <div class="user-info">
+    <span class="item" id="public_change_info"><i class="fa fa-user"></i> <span  data-lang="string_admin">管理员</span></span>
+    <span class="item" id="public_change_password"><i class="fa fa-user"></i> <span  data-lang="string_editpwd">修改密码</span></span>
+    <a class="item"   id="public_logout" href="javascript:void(0);"><i class="fa fa-sign-out"></i> <span data-lang="string_loginout">注销</span></a>
+   <input id='test' type="hidden" th:value="${memberId}"/>
+    <input id='memberId_hidden' type="hidden" th:value="${memberId}"/>
+  </div>
+  <h1 data-lang="string_title">航康-数据接入中心-系统</h1>
+</div>
+<div title="菜单" data-options="region:'west',iconCls:'fa fa-list'" style="width: 200px" id="caidan">
+  <div class="easyui-accordion" data-options="fit:true,border:false">
+        <div class="cls_menus" th:each="m : ${menus}" th:title="${m.name}"  data-options="iconCls:'fa fa-cogs'">
+          <ul class="crm-menu">
+          	  <li class="li_btn"   th:each=" r: ${m.childrens}"  th:href="${r.path}" th:text="${r.name}" ></li>	
+          </ul>
+        </div>
+  </div>
+</div>
+<div data-options="region:'center',href:''"  id="region-key" >
+	<div class="easyui-tabs" style="height: 100%;"  id="regin-innder" ></div>
+</div>
+</body>
+<script src="/static/js/index.js" charset="utf-8"></script>
+</html>

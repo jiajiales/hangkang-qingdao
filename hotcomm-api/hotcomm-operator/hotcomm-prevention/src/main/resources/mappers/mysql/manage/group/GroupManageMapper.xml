@@ -1,0 +1,875 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.mysql.manage.group.GroupManageMapper">
+	<!-- 通过id查询项目信息 -->
+	<select id="selectgroupById"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.group.GroupInfoVO">
+		select
+		id,groupname,x,y,groupcode,itemnum,managerid,imgpath,areaid from
+		t_device_group where id=#{groupId}
+	</select>
+	<!-- 查询是否存在相同的项目名称和项目编号 -->
+	<select id="countdg" resultType="java.lang.Integer">
+		SELECT
+		count(t0.id) AS dgcount
+		FROM
+		t_device_group AS t0
+		WHERE(
+		 t0.itemnum=#{itemnum} OR
+		t0.groupname=#{groupname} )
+		and t0.isdelete=0 and moduleid=#{moduleid}
+		<if test="id!=null and id!='' "> 
+		and t0.id !=#{id}
+</if>
+	</select>
+	<select id="countdgs" resultType="java.lang.Integer">
+		SELECT
+		count(t0.id) AS dgcount
+		FROM
+		t_device_group AS t0
+		WHERE
+		 t0.itemnum=#{itemnum} OR
+		t0.groupname=#{groupname} 
+		and t0.isdelete=0 and moduleid=#{moduleid}
+	
+	</select>
+
+
+	<!--增加项目 -->
+	<insert id="insertGroup" keyProperty="id" useGeneratedKeys="true">
+		INSERT INTO
+		t_device_group(`moduleid`,`groupname`,`groupcode`,`x`,`y`,`adduserid`,`imgpath`,`addtime`,`itemnum`,`managerid`,`areaid`)
+		VALUES(#{moduleid},#{groupname},#{groupcode},#{x},#{y},#{userid},#{imgpath},now(),#{itemnum},#{managerid},#{areaid})
+	</insert>
+	<insert id="insertGroupImg">
+		INSERT INTO
+		t_item_pic(picnum,picpath,site,itemid,addtime)
+		VALUES(#{picnum},#{picpath},#{site},#{id},now())
+	</insert>
+
+	<insert id="insertGroupUserRelation">
+		INSERT INTO
+		t_user_dgroup_relation(userid,devicegroupid,adduserid,addtime)
+		VALUES(#{userid},#{id},#{userid},now())
+	</insert>
+	<!-- 修改项目信息 -->
+	<update id="updateGroup">
+		UPDATE t_device_group SET
+		id=#{id},imgpath=#{imgpath},itemnum=#{itemnum},groupname=#{groupname},groupcode=#{groupcode},x=#{x},y=#{y},areaid=#{areaid}
+		WHERE t_device_group.id = #{id}
+	</update>
+	<!--修改的删除项目的设备坐标图片 -->
+	<update id="removeGroupImg">
+		UPDATE t_item_pic SET isdelete =1,isenable = 0 WHERE
+		itemid = #{groupid}
+	</update>
+
+	<!-- 查询项目下是否有关联设备 -->
+	<select id="selectGroupDev" resultType="java.lang.Integer">
+		SELECT count(id) as
+		dgcount FROM t_device_group_relation WHERE isdelete=0 and groupid =
+		#{groupid}
+	</select>
+	<!-- 查询项目关联的用户 -->
+	<select id="selectGroupUser" resultType="java.lang.Integer">
+		select COUNT(id) from
+		t_user_dgroup_relation WHERE devicegroupid=#{groupid}
+
+	</select>
+
+	<!-- 删除项目用户关联 -->
+	<update id="deleteGroupUser">
+		UPDATE t_user_dgroup_relation u
+		SET
+		u.isdelete =
+		1,u.isenable = 0
+		WHERE u.devicegroupid=#{groupid}
+	</update>
+	<!-- 删除项目 -->
+	<update id="deleteGroup">
+		UPDATE t_device_group g
+		SET g.isdelete =
+		1,g.isenable =
+		0
+		WHERE g.id = #{groupid}
+	</update>
+
+
+	<!-- 查询项目列表 -->
+
+	<select id="selectGroupList"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.group.GroupListVO">
+		SELECT
+		t0.id,
+		t0.groupname,
+		t0.groupcode,
+		t0.x,
+		t0.y,
+		t0.itemnum,
+		t0.addtime,
+		t0.imgpath,
+		t0.areaid,
+		t4.contacts,
+		COUNT(CASE WHEN
+		dev.isdelete =0 AND dev.isenable = 1 AND dgr.deviceid is not
+		null THEN
+		dev.id END) AS devcount
+		FROM
+		t_device_group t0
+		LEFT JOIN
+		t_user_dgroup_relation t1 ON t1.devicegroupid = t0.id
+		LEFT JOIN t_user
+		t4 ON t4.id = t0.managerid
+		LEFT JOIN t_device_group_relation dgr ON
+		dgr.groupid = t0.id
+		LEFT JOIN t_device_all dev ON dev.id = dgr.deviceid
+		WHERE
+		t1.userid =#{userid}
+		AND t0.moduleid =#{moduleid} AND t4.isenable
+		= 1 AND t0.isdelete != 1
+		<if test="starttime!=null and starttime!='' ">
+			and t0.addtime &gt;=#{starttime}
+		</if>
+		<if test="endtime!=null and endtime!=''">
+			and t0.addtime &lt;=#{endtime}
+		</if>
+
+		<if test="keywords != null and keywords != ''">
+			AND (t0.groupname LIKE CONCAT('%', #{keywords}, '%')
+			or
+			t0.itemnum LIKE CONCAT('%', #{keywords}, '%'))
+		</if>
+
+		GROUP BY t0.id
+		ORDER BY t0.addtime
+	</select>
+
+	<!-- 设备坐标图片添加 -->
+	<insert id="insertDevMapImg">
+		INSERT INTO t_item_pic(picnum,picpath,site,itemid)
+		VALUES(#{picnum},#{picpath},#{site},#{itemid})
+	</insert>
+
+	<!-- 查询 项目下是否有设备 -->
+	<select id="selectExistRelationImg" resultType="java.lang.Integer">
+		SELECT count(1)
+		as dgcount from t_dev_item_pic where item_pic_id=#{mapimgid} and
+		moduleid=#{moduleid} and isdelete=0
+	</select>
+
+	<!--删除项目的设备坐标图片 -->
+	<update id="deleteImg">
+		UPDATE t_item_pic SET isdelete =1,isenable = 0 WHERE
+		id = #{id}
+	</update>
+	<!-- 项目详情-(地图弹框) -->
+
+	<select id="groupInfo"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.group.GroupInfo">
+		SELECT
+		gdevid.groupid AS id,
+		gdevid.x,
+		gdevid.y,
+		gdevid.groupname,
+		t_user.contacts,
+		count(d.id) AS devcount,
+		count(d.state = 1 OR NULL) AS armcount,
+		count(d.state = 2 OR NULL) AS
+		faultcount
+		FROM
+		(
+		SELECT
+		g.groupname,
+		groupcode,
+		g.x,
+		g.y,
+		g.addtime,
+		g.managerid,
+		dg.deviceid,
+		dg.groupid
+		FROM
+		t_device_group g
+		LEFT JOIN
+		t_device_group_relation dg ON g.id = dg.groupid
+		RIGHT JOIN
+		t_user_dgroup_relation ug ON ug.userid = #{userid}
+		and ug.devicegroupid
+		= dg.groupid and ug.isdelete!=1
+		WHERE
+		g.id = #{groupid}
+		and
+		dg.moduleid=#{moduleid}
+		and
+		dg.isdelete != 1
+		AND dg.isenable = 1
+		AND
+		g.isdelete != 1
+		) AS gdevid
+		LEFT JOIN t_device_all d ON gdevid.deviceid
+		= d.id AND
+		d.moduleid=#{moduleid}
+		LEFT JOIN t_user ON t_user.id =
+		gdevid.managerid
+		WHERE
+		d.isdelete != 1
+		GROUP BY
+		gdevid.groupid
+	</select>
+
+
+	<!--项目下设备状态个数 -->
+	<select id="selectGroupDevState"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.group.GroupDevState">
+		SELECT
+		dg.groupname,
+		dg.id AS groupid,
+		dg.x AS lng,
+		dg.y AS lat,
+		tu.contacts AS contact,
+	    tu.telephone AS telephone,
+		COUNT(
+		CASE
+		WHEN dev.isdelete = 0
+		AND dev.isenable = 1 THEN
+		dev.id
+		END
+		) AS devcount,
+		COUNT(
+		CASE
+		WHEN dev.isdelete = 0
+		AND dev.isenable = 1
+		AND dgr.isenable=1
+		AND ugr.isenable=1
+		AND dev.state = 0 THEN
+		dev.id
+		END
+		) AS devcount0,
+		COUNT(
+		CASE
+		WHEN dev.isdelete = 0
+		AND dev.isenable = 1
+		AND dgr.isenable=1
+		AND ugr.isenable=1
+		AND dev.state = 1
+		AND tda.deviceid IS NOT NULL THEN
+		dev.id
+		END
+		) AS devcount1,
+		COUNT(
+		CASE
+		WHEN dev.isdelete = 0
+		AND dev.isenable = 1
+		AND dgr.isenable=1
+		AND ugr.isenable=1
+		AND dev.state = 2
+		AND tda.deviceid IS NOT NULL THEN
+		dev.id
+		END
+		) AS devcount2
+		FROM
+		t_device_group dg
+		LEFT JOIN t_device_group_relation dgr ON dgr.groupid = dg.id and dgr.isenable=1  and dgr.isenable=1 AND dgr.moduleid =#{moduleid}
+		LEFT JOIN t_user tu ON tu.id = dg.managerid
+		LEFT JOIN t_device_all dev ON dev.id = dgr.deviceid
+		LEFT JOIN t_user_dgroup_relation ugr ON ugr.devicegroupid = dg.id
+		LEFT JOIN (
+		SELECT
+		tda.deviceid,
+		tda.moduleid
+		FROM
+		t_dev_alarm tda
+		WHERE
+		tda.handlestate != 2 
+		GROUP BY
+		tda.moduleid,
+		tda.deviceid
+		) tda ON tda.deviceid = dev.id
+		AND tda.moduleid =#{moduleid}
+		WHERE
+		dg.isdelete != 1 
+		AND dg.moduleid =#{moduleid}
+		AND ugr.userid =#{userid}
+		<if test="groupid != null and groupid != ''">
+		and dg.id=#{groupid}
+		</if>
+		GROUP BY
+		dg.id
+		ORDER BY
+		dg.addtime DESC
+
+
+	</select>
+	<!--项目设备个数 -->
+	<select id="groupDevCount" resultType="java.lang.Integer">
+		select
+		count(gdevid.deviceid)as groupdevcount
+		from (select
+		g.groupname,groupcode,g.x,g.y,g.addtime,g.managerid,dg.deviceid,dg.groupid
+		from t_device_group g
+		left join t_device_group_relation dg on
+		g.id=dg.groupid
+		RIGHT JOIN t_user_dgroup_relation ug on ug.userid =
+		#{userid} and
+		ug.devicegroupid = dg.groupid and ug.isdelete!=1
+		where
+		g.id=#{groupid} and dg.moduleid=#{moduleid} and
+		dg.isdelete!=1 and
+		dg.isenable=1 and g.isdelete!=1) as gdevid
+	</select>
+	<!--根据组查找设备地图 -->
+	<select id="selectGroupImgByid"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.group.GroupMapImg">
+		select picpath,site,itemid from t_item_pic where
+		itemid=#{groupid} and isdelete=0
+	</select>
+
+	<!--根据组id查找项目下所有楼层和地图 -->
+	<select id="groupSiteImgPath"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.group.GroupSiteImgpath">
+		select p.picpath,p.site,p.itemid as groupid,p.id as
+		itemPicId,count(dp.dev_id)as devcount from t_item_pic p left join
+		t_dev_item_pic dp on (p.id=dp.item_pic_id and dp.isdelete!=1 and
+		dp.moduleid=#{moduleid}) where itemid=#{groupid} and p.isdelete!=1
+		group by p.id;
+	</select>
+	<!--查询楼层id对应的设备 -->
+	<select id="selectDevbySiteid"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.group.SiteDevVO">
+		select
+		d.id,d.x,d.y,d.state,d.code,d.battery,d.devnum,t_user.contacts
+		from
+		t_dev_item_pic as dp
+		LEFT JOIN t_device_all AS d ON dp.dev_id = d.id
+		and d.moduleid=#{moduleid}
+		left join t_user on d.own_id=t_user.id
+		where
+		dp.item_pic_id=#{mapimgid}
+		and dp.moduleid=#{moduleid} and
+		dp.isdelete!=1 and d.isdelete!=1
+	</select>
+
+	<!--修改项目位置 -->
+	<update id="updateGroupPosition">
+		UPDATE t_device_group SET
+		x=#{x},y=#{y},groupcode=#{groupcode} WHERE t_device_group.id =
+		#{groupid}
+	</update>
+
+
+	<select id="selectAllItem"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.group.GroupListVO">
+		SELECT g.*
+		FROM t_device_group g
+		LEFT JOIN t_user_dgroup_relation u ON
+		u.devicegroupid=g.id AND u.isenable=1
+		WHERE u.userid=#{userid}
+		<if test="moduleid!=null and moduleid!='' ">
+			AND g.moduleid=#{moduleid}
+		</if>
+		AND g.isenable=1
+		GROUP BY g.id
+		order by g.addtime desc
+	</select>
+
+	<!--修改设备位置 -->
+	<update id="updateDevPosition">
+		UPDATE t_device_all SET x = #{x} ,y=#{y},
+		code=#{code} WHERE moduleid=#{moduleid} and id = #{id}
+	</update>
+	<!--项目分布 -->
+	<select id="selectGroupMap"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.group.GroupMap">
+		SELECT
+		dg.id,
+		dg.groupname,
+		dg.x,
+		dg.y,
+		tu.contacts,
+		tu.telephone,
+		COUNT(dgr.deviceid) AS devcount ,
+		SUM( CASE WHEN
+		dev.state=0 THEN 1 ELSE 0 END ) AS devcount0,
+		SUM( CASE WHEN
+		dev.state=1 THEN 1 ELSE 0 END ) AS devcount1,
+		SUM( CASE WHEN
+		dev.state=2 THEN 1 ELSE 0 END ) AS devcount2
+		FROM
+		t_device_group_relation dgr
+		LEFT JOIN t_device_group dg ON
+		dgr.groupid=dg.id
+		LEFT JOIN t_user tu ON tu.id = dg.managerid
+		AND
+		tu.isenable = 1
+		LEFT JOIN t_device_all dev ON dev.id = dgr.deviceid
+		AND
+		dev.isdelete != 1
+		LEFT JOIN t_user_dgroup_relation udr ON udr.isenable
+		= 1
+		AND udr.devicegroupid = dg.id
+
+		WHERE dgr.moduleid=#{moduleid} AND
+		dev.moduleid =#{moduleid} AND udr.userid
+		=#{userid}
+		GROUP BY dgr.groupid
+
+	</select>
+	<!-- 根据项目ID查询项目下所有设备 -->
+	<select id="selectDevByGroupID"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.group.AllDevByGroupID">
+		SELECT
+		t1.`id`,
+		t1.`x`,
+		t1.`y`,
+		t1.`state`,
+		t1.`code`,
+		t1.`devnum`,
+		t1.`battery`,
+		t1.`lng`,
+		t1.`lat`,
+		t3.`contacts`
+		FROM
+		t_device_all
+		t1
+		INNER
+		JOIN t_device_group_relation t2
+		ON t1.`id` = t2.`deviceid`
+		AND
+		t2.`moduleid` = #{moduleid}
+		<if test="groupid!=null  and groupid!=''">
+			AND t2.`groupid` = #{groupid}
+		</if>
+		AND
+		t2.`isdelete` = 0
+		AND t2.`isenable` = 1
+		LEFT JOIN t_user t3
+		ON t3.`id`
+		= t1.`own_id`
+		AND t3.`isdelete` = 0
+		AND t3.`isenable` = 1
+		WHERE
+		t1.`isdelete` = 0 AND t1.moduleid=#{moduleid}
+		AND
+		t1.`isenable` = 1
+	</select>
+	<!-- 修改楼层图片 -->
+	<update id="updateItemPic">
+		UPDATE `t_item_pic` SET `picpath`
+		=#{picurl},`updatetime` = #{updateTime} WHERE `id` =#{itemid};
+	</update>
+
+
+
+	<!--根据项目id查询旗下设备信息 -->
+	<select id="selectGroupInfo"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.group.DevGroupInfoVO">
+
+		SELECT
+		contact,
+		telephone,
+		num,
+		groupname,
+		ifnull(alarmcount,0)
+		AS alarmcount,
+		ifnull(faultcount,0) AS faultcount
+		FROM
+		(
+		SELECT
+		SUM( CASE
+		WHEN t1.state = 1 THEN
+		1
+		ELSE
+		0
+		END
+		) AS alarmcount,
+		SUM(
+		CASE
+		WHEN t1.state =
+		2 THEN
+		1
+		ELSE
+		0
+		END
+		) AS faultcount
+		FROM
+		(SELECT *
+		FROM(SELECT DISTINCT * FROM
+		t_dev_alarm t6 WHERE t6.moduleid =2
+		ORDER BY t6.addtime DESC) t7
+		GROUP
+		BY t7.deviceid )
+		t0
+		INNER JOIN
+		t_device_all
+		t1
+		ON t1.`isdelete` = 0 AND
+		t1.`isenable` = 1 AND t0.`deviceid` = t1.`id`
+		INNER JOIN
+		t_device_group_relation t2 ON t2.`deviceid` = t1.`id` AND
+		t2.`isdelete` = 0 AND t1.`isenable` = 1 AND t2.`moduleid` =
+		#{moduleid}
+		INNER JOIN t_device_group t3 ON t3.`id` = t2.`groupid` AND
+		t3.`moduleid` = t2.`moduleid` AND t3.`isdelete` = 0
+		AND t3.`isenable` =
+		1
+		AND t3.`id` = #{groupid}
+		WHERE t0.handlestate !=2 AND
+		t1.moduleid=#{moduleid}
+		) AS a,
+		(
+		SELECT
+		COUNT(t1.`id`) AS num
+		FROM
+		t_device_all
+
+		t1
+		INNER JOIN t_device_group_relation t2 ON t2.`deviceid` =
+		t1.`id`
+		AND t2.`isdelete` = 0
+		AND t1.`isenable` = 1
+		AND t2.`moduleid`
+		=#{moduleid}
+		INNER JOIN t_device_group t3 ON t3.`id` = t2.`groupid`
+		AND
+		t3.`moduleid` = t2.`moduleid`
+		AND t3.`isdelete` = 0
+		AND t3.`isenable` =
+		1
+		AND t3.`id` = 1
+		WHERE
+		t1.`isdelete` = 0 AND t1.moduleid=#{moduleid}
+		AND
+		t1.`isenable` = 1
+		) AS b,
+		(
+		SELECT
+		t2.`groupname`,
+		t1.`contacts` AS
+		contact,
+		t1.`telephone`
+		FROM
+		t_user t1
+		LEFT JOIN t_device_group t2 ON
+		t2.managerid = t1.id
+		WHERE
+		t2.`id` =1
+		) AS c
+	</select>
+
+
+	<select id="selectGroupAlarmHandleNums"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.group.AlarmHandleNums">
+		SELECT M.*,ifnull(handlingcount,0) as
+		handlingcount,ifnull(unhandlecount,0) as unhandlecount,
+		ifnull(handlecount,0) as handlecount,ifnull(num,0) as num FROM
+		<if test="queryType==1">
+			( SELECT
+			ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate,
+			@d
+			:= @d - 1 DAY
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp
+			WHERE ADDDATE(CURDATE(),
+			INTERVAL @d
+			DAY) >= DATE_ADD(CURDATE(), INTERVAL
+			-
+			1 MONTH)
+			) AS M
+		</if>
+		<if test="queryType==2">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 6) AS M
+		</if>
+		<if test="queryType==3">
+			( SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 12) AS M
+		</if>
+		<if test="queryType==4">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 36) AS M
+		</if>
+
+		LEFT JOIN ( SELECT DATE_FORMAT(A.addtime, '%Y-%m-%d') as alarmtime ,
+		SUM( CASE WHEN A.handlestate=0 THEN 1 ELSE 0 END) AS unhandlecount,
+		SUM( CASE WHEN A.handlestate=1 THEN 1 ELSE 0 END) AS handlingcount,
+		SUM( CASE WHEN A.handlestate=2 THEN 1 ELSE 0 END) AS handlecount,
+		COUNT(A.id) as num,
+		dg.groupid as groupid
+		FROM t_dev_alarm as A
+		LEFT JOIN
+		t_device_group_relation dg on dg.moduleid =#{moduleID}
+		and dg.deviceid
+		=A.deviceid and dg.isenable = 1
+		LEFT JOIN t_user_dgroup_relation ug on
+		ug.userid =#{userid}
+		and ug.isenable = 1 AND
+		ug.devicegroupid=#{groupid}
+
+		WHERE A.moduleid=#{moduleID} and
+		ug.devicegroupid = dg.groupid
+		<if test="queryType==1">
+			GROUP BY DATE_FORMAT(A.addtime, '%Y-%m-%d')
+		</if>
+		<if test="queryType!=1">
+			GROUP BY DATE_FORMAT(A.addtime, '%Y-%m')
+		</if>
+		) AS Y
+
+		<if test="queryType==1">
+			ON M.TheDate = Y.alarmtime
+
+		</if>
+		<if test="queryType==2">
+			ON M.TheDate = DATE_FORMAT( Y.alarmtime, '%Y-%m')
+		</if>
+		<if test="queryType==3">
+			ON M.TheDate = DATE_FORMAT( Y.alarmtime, '%Y-%m')
+		</if>
+
+
+		<if test="queryType==4">
+			ON M.TheDate = DATE_FORMAT( Y.alarmtime, '%Y-%m')
+		</if>
+		ORDER BY TheDate desc
+	</select>
+
+	<!-- 组报警处理类型统计 -->
+	<select id="selectGroupAlarmNums"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.group.AlarmNums">
+		SELECT s.state_name as stateName ,DATE_FORMAT(N.addtime, '%Y-%m-%d'),
+		COUNT(N.handleresult) as Num
+		FROM t_dev_handle_state s
+		LEFT JOIN (
+		SELECT * FROM (
+		<if test="queryType==1">
+			SELECT
+			ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate,
+			@d
+			:=
+			@d - 1 DAY
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp
+			WHERE ADDDATE(CURDATE(),
+			INTERVAL @d DAY)
+			>= DATE_ADD(CURDATE(), INTERVAL
+			-
+			1 MONTH)
+			)AS M
+		</if>
+		<if test="queryType==2">
+			SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 6) AS M
+		</if>
+		<if test="queryType==3">
+			SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 12) AS M
+		</if>
+		<if test="queryType==4">
+			SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 36) AS M
+		</if>
+
+		LEFT JOIN(
+		SELECT DATE_FORMAT(A.addtime, '%Y-%m-%d') as addtime
+		,dg.groupid,A.moduleid,handleresult FROM t_dev_alarm A
+		LEFT JOIN
+		t_device_group_relation dg on dg.moduleid = A.moduleid and
+		dg.deviceid
+		=A.deviceid and dg.isenable = 1
+		LEFT JOIN t_user_dgroup_relation ug on
+		ug.userid =#{userid}
+		WHERE A.moduleid=#{moduleID} and
+		ug.devicegroupid=dg.groupid
+		GROUP BY A.addtime) AS Y
+		<if test="queryType==1">
+			ON Y.addtime=M.TheDate
+		</if>
+		<if test="queryType==2">
+			ON M.TheDate = DATE_FORMAT( Y.addtime, '%Y-%m')
+		</if>
+		<if test="queryType==3">
+			ON M.TheDate = DATE_FORMAT( Y.addtime, '%Y-%m')
+		</if>
+
+		<if test="queryType==4">
+			ON M.TheDate = DATE_FORMAT( Y.addtime, '%Y-%m')
+		</if>
+		AND Y.groupid=#{groupid}
+		) AS N ON s.id = N.handleresult WHERE
+		s.module_id = #{moduleID} AND
+		s.isdelete = 0
+		GROUP BY s.id
+
+	</select>
+
+	<insert id="insertSelectives" useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO
+		t_device_all(devnum,mac,`code`,lat,lng,coordinate,installtime,addtime,adduserid,battery,x,y,devtype,state,alarmstate,lastvalue,max_alarmvalue,min_alarmvalue,jg_coverName,jg_manu,jg_material,jg_purpose,jg_loadbear,ljt_height,ljt_alarmvalue,pm,pm_one,pm_noiseval,pm_temval,pm_humval,pm_light,sl_voltage,sl_ampere,sl_watt,sl_lighteness,sl_electricity,sl_offtime,sl_ontime,alarmset,wt_electricity,ywj_lastvalue1,ywj_lastvalue2,ywj_lastvalue3,ywj_lastvalue4,ywj_lastvalue5,ywj_lastvalue6,ywj_plusminus,moduleid)
+		VALUES
+		(#{devnum},#{mac},#{code},#{lat},#{lng},#{coordinate},#{installtime},NOW(),#{adduserid},#{battery},#{x},#{y},#{devtype},#{state},#{alarmstate},#{lastvalue},#{maxAlarmvalue},#{minAlarmvalue},#{jgCoverName},#{jgManu},#{jgMaterial},#{jgPurpose},#{jgLoadbear},#{ljtHeight},#{ljtAlarmvalue},#{pm},#{pmOne},#{pmNoiseval},#{pmTemval},#{pmTemval},#{pmLight},#{slVoltage},#{slAmpere},#{slWatt},#{slLighteness},#{slElectricity},#{slOfftime},#{slOntime},#{alarmset},#{wtElectricity},#{ywjLastvalue1},#{ywjLastvalue2},#{ywjLastvalue3},#{ywjLastvalue4},#{ywjLastvalue5},#{ywjLastvalue6},#{ywjLlusminus},#{moduleid})
+
+
+	</insert>
+	<insert id="addGroup">
+
+      INSERT INTO   t_device_group_relation( groupid,deviceid,addtime,adduserid,moduleid)  VALUES(#{groupid},#{id},NOW(),#{adduserid},#{moduleid})
+	</insert>
+
+	<select id="selectCode" resultType="java.lang.Integer">
+		SELECT COUNT(id) AS num from
+		t_device_all WHERE mac=#{mac}
+	</select>
+	
+		<select id="selectDevnum" resultType="java.lang.Integer">
+		SELECT COUNT(id) AS num from
+		t_device_all WHERE devnum=#{devnum}
+	</select>
+
+	<select id="selectGrouplist"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.group.GroupVO">
+
+		SELECT moduleid, groupname,groupcode from t_device_group
+
+	</select>
+
+	<select id="selectGroupDevInfo"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.group.GroupDevInfo">
+
+		SELECT dg.groupname,tu.contacts as
+		contact,tu.telephone,COUNT(dev.id) as
+		num,
+		COUNT(CASE WHEN dev.state = 1
+		AND tda.deviceid is not null THEN dev.id END ) as
+		alarmcount,
+		COUNT(CASE WHEN dev.state = 2 AND tda.deviceid is not null THEN dev.id
+		END ) as
+		faultcount
+		from t_device_group dg
+		LEFT JOIN
+		t_device_group_relation dgr ON dgr.groupid = dg.id AND
+		dgr.isdelete!=1
+		and dgr.isenable=1 AND dgr.moduleid=#{moduleid}
+		left
+		JOIN t_user tu ON
+		tu.id=dg.managerid and tu.isenable = 1
+		LEFT JOIN t_device_all dev on
+		dev.id = dgr.deviceid AND dev.isdelete!=1
+		AND dev.isenable=1
+
+		LEFT JOIN(
+		select tda.deviceid,tda.moduleid
+		from t_dev_alarm tda
+		WHERE
+		tda.handlestate!=2
+		GROUP BY tda.moduleid,tda.deviceid
+		) tda ON
+		tda.deviceid=dev.id AND tda.moduleid=#{moduleid}
+		WHERE
+		dg.isdelete!=1
+		AND dg.moduleid=#{moduleid} and dg.id=#{groupid} AND
+		dev.moduleid=#{moduleid}
+		GROUP BY dg.id
+		ORDER BY dg.addtime desc
+	</select>
+
+	<select id="AppMapDevnum"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.group.entity.AppSum">
+		SELECT * FROM (
+		SELECT COUNT(e.id) AS eventSum FROM
+		t_hk_event e
+		LEFT JOIN t_hk_evdevrelation erd ON erd.eventid=e.id
+		LEFT
+		JOIN t_device_group_relation dgr ON dgr.deviceid=erd.devid
+		INNER JOIN
+		t_device_all dev ON dev.id=dgr.deviceid AND dev.isdelete=0 AND
+		dev.isenable=1
+		LEFT JOIN t_user_dgroup_relation udr ON
+		udr.devicegroupid=dgr.groupid
+		WHERE e.state!=3 AND
+		udr.userid=#{userid}) e,
+		(SELECT COUNT(wo.id) AS workSum FROM t_hk_wo
+		wo WHERE wo.state !=3 AND
+		wo.assignid=#{userid}) wo,
+		(select COUNT(a.id)
+		AS alarmSum FROM t_dev_alarm a
+		INNER JOIN t_device_all dev on
+		a.deviceid=dev.id AND dev.isdelete=0 AND
+		dev.isenable=1
+		LEFT JOIN
+		t_device_group_relation dgr ON dgr.deviceid=a.deviceid
+		LEFT JOIN
+		t_user_dgroup_relation udr ON udr.devicegroupid=dgr.groupid
+		WHERE
+		udr.userid=#{userid} AND a.handlestate!=2
+		) a
+	</select>
+	
+	<select id="selectAreaInfo" resultType="com.hotcomm.prevention.bean.mysql.manage.group.AreaInfo">
+	
+	SELECT id as areaid,areaname  FROM  t_area WHERE fatherid!=0
+	
+	</select>
+</mapper>

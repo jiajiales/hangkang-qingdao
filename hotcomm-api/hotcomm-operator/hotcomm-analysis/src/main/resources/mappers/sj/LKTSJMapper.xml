@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.analysis.db.sj.LKTSJMapper">
+
+<!-- 报警类型统计 -->
+	<select id="LKTSJDevState" resultType="com.hot.analysis.bean.sj.LKTSJDevState">
+	SELECT dg.moduleid as moduleID , YEAR(s.addtime) as yaer , MONTH(s.addtime) as mth , COUNT(MONTH(s.addtime)) as add_devcount , 
+	SUM(CASE WHEN als.type = 1 THEN 1 ELSE 0 END) AS AlarmCount,
+	SUM(CASE WHEN als.type = 2 THEN 1 ELSE 0 END) AS FalseCount
+	FROM t_device_sj s
+	LEFT JOIN t_device_group_relation dg on dg.moduleid = #{moduleID} and dg.deviceid = s.id and dg.isenable = 1
+	RIGHT JOIN t_user_dgroup_relation ug on ug.userid = #{userID} and ug.devicegroupid = dg.groupid and ug.isenable = 1
+	LEFT JOIN t_dev_alarm al on al.moduleid = dg.moduleid and al.deviceid = s.id and YEAR(al.addtime) = YEAR(s.addtime)
+	LEFT JOIN t_dev_alarm_state als on als.isdelete = 0 and als.module_id = dg.moduleid and als.id = al.alarmstateid
+	WHERE YEAR(s.addtime) = #{Time} and s.isdelete = 0 and s.isenable = 1
+	GROUP BY MONTH(s.addtime)
+	</select>
+	<select id="LKTSJAlarmList" resultType="com.hot.analysis.bean.sj.LKTSJAlarmList">
+	SELECT s.state_name as statename , COUNT(a.alarmstateid) as num
+	FROM t_dev_alarm_state s
+	LEFT JOIN t_dev_alarm a on a.moduleid = s.module_id and s.id = a.alarmstateid and YEAR(a.addtime) = #{Time}
+	LEFT JOIN t_device_group_relation dg on dg.moduleid = s.module_id and dg.deviceid = a.deviceid and dg.isenable = 1
+	LEFT JOIN t_user_dgroup_relation ug on ug.userid = #{userID} and ug.devicegroupid = dg.groupid and ug.isenable = 1
+	WHERE s.module_id = #{moduleID} and s.isdelete = 0
+	GROUP BY s.state_name
+	</select>
+
+</mapper>

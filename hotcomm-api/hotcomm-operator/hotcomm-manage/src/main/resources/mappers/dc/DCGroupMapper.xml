@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.dc.DCGroupMapper">
+	<select id="selectGroupList" resultType="com.hot.manage.entity.dc.vo.DCGroupList">
+		SELECT
+		tg.id,
+		tg.imgpath AS pictureUrl,
+		tg.itemnum,
+		tg.groupname,
+		tg.groupcode,
+		COUNT(tg.id) AS devCount,
+		u.contacts,
+		tg.addtime,
+		tg.x AS
+		lat,
+		tg.y AS lng
+		FROM t_device_group tg
+		LEFT JOIN t_device_group_relation
+		dgr ON
+		dgr.groupid = tg.id
+		LEFT JOIN t_user u ON u.id = tg.managerid
+		RIGHT JOIN t_user_dgroup_relation udr ON udr.devicegroupid = tg.id AND
+		udr.userid =#{userid}
+		AND udr.isdelete !=1 AND udr.isenable !=0
+		<where>
+			tg.moduleid = 1
+			AND tg.isdelete != 1
+			AND dgr.isdelete != 1
+			<if test="startTime!=null">
+				AND
+				tg.addtime &gt;= #{startTime}
+			</if>
+			<if test="endTime!=null">
+				AND tg.addtime &lt;=
+				#{endTime}
+			</if>
+			<if test="message!=null">
+				AND
+				CONCAT_WS(&apos;/&apos;,tg.itemnum,tg.groupname,tg.groupcode,u.contacts)
+				LIKE CONCAT(&apos;%&apos;,#{message},&apos;%&apos;)
+			</if>
+		</where>
+		GROUP BY tg.id
+	</select>
+
+	<select id="selectAllDevice" resultType="int">
+		select COUNT(*) from
+		t_device_dc dc
+		LEFT JOIN t_device_group_relation dgr ON dgr.deviceid =
+		dc.id
+		LEFT JOIN t_device_group dg ON dgr.groupid = dg.id
+		RIGHT JOIN
+		t_user_dgroup_relation udr ON udr.devicegroupid = dg.id AND
+		udr.userid=#{userid}
+		AND udr.isdelete !=1 AND udr.isenable !=0
+		WHERE
+		dgr.moduleid = 1 AND dc.isdelete!=1
+	</select>
+	<select id="selectMygroupList" resultType="com.hot.manage.entity.dc.vo.DCMyGroupList">
+		SELECT
+		tg.groupname,
+		COUNT(dc.id) AS normaldev,
+		COUNT(CASE WHEN dc.state = 2 THEN dc.id END ) AS alarmdev,
+		COUNT(CASE
+		WHEN dc.state = 3 THEN dc.id END ) AS faultdev
+		FROM t_device_group tg
+		LEFT JOIN
+		t_device_group_relation tgr ON tgr.groupid = tg.id
+		LEFT JOIN
+		t_device_dc dc ON dc.id = tgr.deviceid
+		RIGHT JOIN
+		t_user_dgroup_relation udr ON udr.devicegroupid = tg.id AND
+		udr.userid=1
+		AND udr.isdelete !=1 AND udr.isenable !=0
+		WHERE
+		tg.moduleid
+		= 1
+		AND
+		tg.isdelete != 1
+		AND tgr.isdelete != 1
+		AND dc.isdelete != 1 AND
+		tg.managerid = #{userid}
+		GROUP BY
+		tg.id
+	</select>
+	<select id="selectGroupAddress" resultType="com.hot.manage.entity.dc.vo.DCGroupAddress">
+		select
+		tg.id,tg.groupname,tg.coordinate,
+		tg.x as lat,tg.y as lng
+		from
+		t_device_group tg
+		RIGHT JOIN t_user_dgroup_relation udr ON
+		udr.devicegroupid = tg.id AND
+		udr.userid=#{userid}
+		AND udr.isdelete !=1
+		AND udr.isenable !=0
+		where
+		tg.moduleid=1
+		and
+		tg.isdelete !=1
+	</select>
+
+	<select id="SelectManager" resultType="com.hot.manage.entity.yg.LKTSelectHandle">
+		SELECT id , contacts
+		FROM
+		t_user
+		WHERE id = #{userid} or fatherid = #{userid}
+	</select>
+
+	<select id="selectPictoDevice" resultType="int">
+		select COUNT(dc.id)
+		FROM t_dev_item_pic dip
+		LEFT JOIN t_device_dc dc ON dc.id=dip.dev_id
+		AND dip.moduleid=#{moduleid}
+		AND dc.isdelete !=1
+		WHERE
+		dip.item_pic_id=#{picid} AND dip.isdelete !=1
+	</select>
+</mapper>
+

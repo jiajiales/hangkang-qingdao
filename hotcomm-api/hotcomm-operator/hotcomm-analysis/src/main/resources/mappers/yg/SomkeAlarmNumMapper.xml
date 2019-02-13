@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.analysis.db.yg.SomkeAlarmNumMapper">
+
+	<select id="selectSomkeAlarmNums" resultType="com.hot.analysis.bean.yg.SomkeAlarmNum">
+ 
+
+	      SELECT s.state_name as stateName , COUNT(a.alarmstateid) as Num
+	      FROM t_dev_alarm_state s
+	      LEFT JOIN  t_dev_alarm a on a.moduleid = s.module_id and s.id = a.alarmstateid and YEAR(a.addtime) =#{Time}
+	      LEFT JOIN t_device_group_relation dg on dg.moduleid = s.module_id and dg.deviceid = a.deviceid and dg.isenable = 1
+	      LEFT JOIN t_user_dgroup_relation ug on ug.userid =#{userID}  and ug.devicegroupid = dg.groupid and ug.isenable = 1
+	      WHERE s.module_id = #{moduleID}  and s.isdelete = 0 
+	      GROUP BY s.id
+	</select>
+	
+<select id="selectDevById" resultType="com.hot.analysis.bean.common.TDeviceYg">
+		SELECT * FROM t_device_yg y
+		LEFT JOIN t_device_group_relation r ON
+		y.id=r.deviceid AND r.moduleid=2
+		WHERE r.isdelete=0 
+		AND y.id=#{id}
+	
+     </select>
+
+<!-- 地图设备位置 -->
+   <select id="selectYgList" resultType="com.hot.analysis.bean.common.TDeviceYg">
+		SELECT y.* ,r.groupid as groupid
+		FROM 
+		<if test="moduleid == 1">t_device_dc</if>
+		<if test="moduleid == 2">t_device_yg</if>
+		<if test="moduleid == 3">t_device_jg</if>
+		<if test="moduleid == 8">t_device_hw</if>
+		<if test="moduleid == 9">t_device_ljt</if>
+		<if test="moduleid == 10">t_device_sj</if>
+		<if test="moduleid == 11">t_device_mc</if>
+		<if test="moduleid == 12">t_device_krq</if>
+		<if test="moduleid == 13">t_device_ywj</if>
+		 y
+		LEFT JOIN t_device_group_relation r ON y.id=r.deviceid
+		RIGHT JOIN t_user_dgroup_relation u ON r.groupid=u.devicegroupid
+		WHERE u.userid=#{userid}
+		AND u.isdelete=0 
+		AND r.isdelete=0 
+		AND r.moduleid=#{moduleid}
+		<if test="code != null and code != ''">
+		AND (y.code	LIKE CONCAT('%', #{code}, '%')
+		or
+		y.devnum LIKE CONCAT('%', #{code}, '%'))
+		</if>
+	</select>
+	
+	<select id="selectYgListByGroupId" resultType="com.hot.analysis.bean.common.TDeviceYg">
+		SELECT d.* FROM t_device_dc d 
+		LEFT JOIN t_device_group_relation r ON d.id=r.deviceid AND r.moduleid=#{moduleid}
+		WHERE r.isdelete=0 AND r.groupid=#{groupid};
+	</select>
+	
+	<select id="selectGroupInfoByName" resultType="com.hot.analysis.bean.yg.GroupInfo">
+
+		SELECT t.id,t.moduleid,t.groupname,t.x,t.y,t.managerid,us.telephone,COUNT(1) as devCount,
+		SUM(CASE WHEN d.state = 1 THEN 1 ELSE 0 end) as alarmCount,
+		SUM(CASE WHEN d.state=0 THEN 1 ELSE 0 END) as freeCount, 
+		SUM(CASE WHEN d.state = 2 THEN 1 ELSE 0 end) as faultCount 
+		FROM (t_device_dc d,t_device_group t)
+		LEFT JOIN t_device_group_relation r ON d.id=r.deviceid AND r.moduleid=t.moduleid AND t.id=r.groupid AND t.moduleid=#{moduleid}
+		LEFT JOIN t_user_dgroup_relation u ON t.id=u.devicegroupid 
+        LEFT JOIN t_user us ON us.id=d.own_id
+		WHERE r.isdelete=0
+		AND u.isdelete=0
+		AND u.userid=#{userid}
+		AND t.groupname 
+		LIKE #{name}
+		GROUP BY t.id;
+		</select>
+		
+		<select id="selectGroupInfoList" resultType="com.hot.analysis.bean.yg.GroupInfo">
+
+		SELECT t.id,t.moduleid,t.groupname,t.x,t.y,t.managerid,us.telephone,COUNT(1) as devCount,
+		SUM(CASE WHEN d.state = 1 THEN 1 ELSE 0 end) as alarmCount,#alarmCount 
+		SUM(CASE WHEN d.state=0 THEN 1 ELSE 0 END) as freeCount,
+		SUM(CASE WHEN d.state = 2 THEN 1 ELSE 0 end) as faultCount 
+		FROM (t_device_dc d,t_device_group t)
+		LEFT JOIN t_device_group_relation r ON d.id=r.deviceid AND r.moduleid=t.moduleid AND t.id=r.groupid AND t.moduleid=#{moduleid}
+		LEFT JOIN t_user_dgroup_relation u ON t.id=u.devicegroupid 
+        LEFT JOIN t_user us ON us.id=d.own_id
+		WHERE r.isdelete=0
+		AND u.isdelete=0  
+		AND u.userid=#{userid}
+		GROUP BY t.id;
+		</select>
+		
+</mapper>

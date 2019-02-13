@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.common.LoginMapper">
+	<select id="GetPowerList" parameterType="int" resultType="com.hot.manage.entity.common.user.PowerModel">
+		SELECT a.id,a.description,a.moduleid,a.type,a.url,a.fatherid,a.order,a.annotation,a.ico FROM t_power a
+		left join t_power_group_relation b on b.powerid = a.id
+		left join t_user_pgrou_relationp c on c.groupid = b.groupid
+		WHERE c.userid = #{0} 
+		AND description not LIKE '%(app)%'
+	</select>
+	
+	<select id="LoginFun" resultType="com.hot.manage.entity.system.TUser">
+		SELECT a.* FROM t_user a
+		WHERE (a.loginname = #{username} OR a.telephone =#{username})
+	</select>
+	
+	<insert id="insertToken">
+         insert into  t_user_token(userid,token,logintype,ip,state,logintime)
+         values
+         (#{userid},#{token},#{logintype},#{ipStr},0,now())
+     </insert>
+     <!--查最后第二条token记录  -->
+     <select id="queryToken" resultType="java.lang.String">
+		SELECT token FROM t_user_token
+		WHERE userid=#{userid}
+		ORDER BY
+		t_user_token.id DESC
+		LIMIT 1,1;
+     </select>
+     <select id="queryLastToken" resultType="java.lang.String">
+     	SELECT token FROM t_user_token WHERE userid=#{userid}
+		ORDER BY id DESC
+		LIMIT 1
+     </select>
+     <update id="updateUser">
+     	UPDATE t_user set lastloginIP=#{ip},lastlogintime=#{date} WHERE id=#{id}
+     </update>
+</mapper> 

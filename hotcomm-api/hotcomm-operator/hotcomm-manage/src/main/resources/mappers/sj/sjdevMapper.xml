@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.sj.SJDevMapper">
+	<!--用户下的设备id -->
+	<sql id="udevid">
+		select
+		g.id,g.groupname,g.groupcode,g.x,g.y,g.managerid,g.itemnum,g.addtime,g.imgpath,dg.deviceid
+		from t_user_dgroup_relation ug left join t_device_group g on
+		ug.devicegroupid=g.id left join t_device_group_relation dg on
+		g.id=dg.groupid
+		where ug.isdelete=0 and ug.userid=#{userid} and
+		g.isdelete=0 and g.moduleid=10 and dg.moduleid=10 and dg.isdelete=0
+		<if test="groupid > 0">and dg.groupid=#{groupid}</if>
+	</sql>
+	<sql id="dev_videocount">
+		select dv.deviceid,count(deviceid)dvcount from
+		t_dev_video_relation dv where moduleid=10 and isdelete=0 group by
+		deviceid
+	</sql>
+	<sql id="dev_mapimg">
+		select dp.dev_id,dp.item_pic_id,p.site,p.picpath from
+		t_dev_item_pic dp left join t_item_pic p on dp.item_pic_id=p.id where
+		dp.moduleid=10 and dp.isdelete=0 and p.isdelete=0
+	</sql>
+	<!--===================================================================================== -->
+
+	<!--设备查找 -->
+	<select id="selectdevlist" resultType="com.hot.manage.entity.sj.SJDev">
+		select
+		d.id,newdev.groupname,d.devnum,d.mac,d.code,d.addtime,d.lng,d.lat,d.x,d.y,d.battery,d.own_id,t_user.contacts,newdv.dvcount,newpic.item_pic_id
+		as mapimgid,newpic.site,newpic.picpath
+		from (
+		<include refid="udevid"></include>
+		)as newdev
+		left join t_device_sj d on d.id=newdev.deviceid and d.isdelete = 0 and d.isenable = 1
+		left join
+		t_user on d.own_id=t_user.id
+		left join (
+		<include refid="dev_videocount"></include>
+		)as newdv on newdv.deviceid=d.id
+		left join (
+		<include refid="dev_mapimg"></include>
+		)as newpic on newpic.dev_id=d.id
+		where d.isdelete=0
+		<if test="starttime!='' and starttime!=null">and d.addtime &gt;= #{starttime}</if>
+		<if test="endtime!='' and endtime!=null">and d.addtime &lt;= #{endtime}</if>
+		<if test="keywords!='' and  keywords!=null">and (d.mac LIKE CONCAT('%',#{keywords},'%')or d.devnum
+			LIKE CONCAT('%',#{keywords},'%'))</if>
+		<if test="batterytype==0">and d.battery > 0</if>
+		<if test="batterytype==1">and d.battery &lt; 20</if>
+		<if test="batterytype==2">and d.battery &gt;= 20</if>
+	</select>
+
+	<!--根据id查设备 -->
+	<select id="selectdevbyid" resultType="com.hot.manage.entity.sj.SJDevone">
+		select
+		d.id,d.devnum,d.mac,d.code,d.lng,d.lat,d.x,d.y,d.own_id,dg.groupid,dp.item_pic_id,p.picpath,t_user.contacts,GROUP_CONCAT(t666.`videoid`)
+		AS videos
+		from t_device_sj d
+		left join t_device_group_relation dg on
+		d.id=dg.deviceid
+		left join t_device_group g on g.id=dg.groupid
+		left join
+		t_user on t_user.id=d.own_id
+		left join t_dev_item_pic dp on
+		d.id=dp.dev_id and dp.moduleid =
+		dg.moduleid and dp.isdelete=0
+		left join
+		t_item_pic p on dp.item_pic_id=p.id and dp.moduleid=dg.moduleid
+		LEFT
+		JOIN t_dev_video_relation t666
+		ON d.`id`=t666.`deviceid`
+		AND t666.`moduleid`=10
+		LEFT JOIN t_device_video t888
+		ON t666.`videoid`=t888.`id`
+		AND t888.`isdelete`=0
+		where
+		d.id=#{devid} and dg.moduleid=10
+	</select>
+
+	<!--修改设备mac -->
+	<update id="updatedevmac">
+		UPDATE t_device_sj SET mac = #{mac} WHERE id =
+		#{devid}
+	</update>
+
+	<!--修改设备 -->
+	<update id="updatedev">
+		UPDATE t_device_sj d,t_device_group_relation dg SET
+		d.id = #{devid}
+		<if test="devnum != null and devnum != ''">,d.devnum = #{devnum}</if>
+		<if test="mac != null and mac != ''">,d.mac = #{mac}</if>
+		<if test="code != null and code != ''">,d.code = #{code}</if>
+		<if test="lng != null and lng != ''">,d.lng = #{lng}</if>
+		<if test="lat != null and lat != ''">,d.lat = #{lat}</if>
+		<if test="own_id != null and own_id != ''">,d.own_id = #{own_id}</if>
+		<if test="groupid != null and groupid != ''">,dg.groupid = #{groupid}</if>
+		WHERE d.id = #{devid} and dg.deviceid = #{devid} and dg.moduleid = 10
+	</update>
+	<insert id="insertsiterelation">
+		INSERT INTO
+		t_dev_item_pic(`item_pic_id`,`dev_id`,`moduleid`)VALUES(#{mapimgid},#{devid},10)
+	</insert>
+	<update id="updatesiterelation">
+		UPDATE t_dev_item_pic SET item_pic_id = #{mapimgid}
+		WHERE dev_id=#{devid} and moduleid=10
+	</update>
+
+	<!--增加设备 -->
+	<insert id="insertdev" keyProperty="id" useGeneratedKeys="true">
+		INSERT
+		INTO
+		t_device_sj(`devnum`,`mac`,`code`,`lat`,`lng`,
+		<if test="x != null and x != ''">`x`,</if>
+		<if test="y != null and y != ''">`y`,</if>
+		`adduserid`,`own_id`,`addtime`)VALUES(#{devnum},#{mac},#{code},#{lat},#{lng},
+		<if test="x != null and x != ''">#{x},</if>
+		<if test="y != null and y != ''">#{y},</if>
+		#{userid},#{own_id},now())
+	</insert>
+	<insert id="insertgroup">
+		INSERT INTO
+		t_device_group_relation(`deviceid`,`addtime`,`moduleid`,`groupid`)VALUES(#{id},now(),10,#{groupid})
+	</insert>
+	<insert id="insertimggroup">
+		INSERT INTO
+		t_dev_item_pic(`item_pic_id`,`dev_id`,`moduleid`,`addtime`)VALUES(#{mapimgid},#{id},10,now())
+	</insert>
+
+	<!--修改责任人 -->
+	<update id="updateownid">
+		UPDATE t_device_sj SET own_id=#{own_id} where id in
+		<foreach collection="devids" item="item" open="(" separator=","
+			close=")"> #{item}</foreach>
+	</update>
+
+	<!--删除设备 -->
+	<update id="deldevice">
+		UPDATE t_device_group_relation SET isdelete =1 WHERE
+		deviceid = #{deviceid} and moduleid=10
+	</update>
+<!-- 	selectSJAlarmNums -->
+	<select id="selectSJAlarmNums" resultType="com.hot.manage.entity.sj.SJAlarmNum">
+ 
+	      SELECT s.state_name as stateName , COUNT(a.alarmstateid) as Num
+	      FROM t_dev_alarm_state s
+	      LEFT JOIN  t_dev_alarm a on a.moduleid = s.module_id and s.id = a.alarmstateid and YEAR(a.addtime) =#{Time}
+	      LEFT JOIN t_device_group_relation dg on dg.moduleid = s.module_id and dg.deviceid = a.deviceid and dg.isenable = 1
+	      LEFT JOIN t_user_dgroup_relation ug on ug.userid =#{userid}  and ug.devicegroupid = dg.groupid and ug.isenable = 1
+	      WHERE s.module_id = #{moduleID}  and s.isdelete = 0 
+	      GROUP BY s.id
+	</select>
+
+	
+</mapper>

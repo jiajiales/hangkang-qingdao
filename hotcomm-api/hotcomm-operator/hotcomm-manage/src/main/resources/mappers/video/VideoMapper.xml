@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.video.VideoMapper">
+	<select id="selectOnId" resultType="com.hot.manage.entity.video.DeviceRelationVideoVo">
+
+	</select>
+	<select id="getDeviceRelationVideoPage" resultType="com.hot.manage.entity.video.DeviceRelationVideoVo">
+		SELECT
+		t1.`id`,
+		t1.`devnum` videoNum,
+		t1.`factory`,
+		t1.`code`,
+		t1.`lng`,
+		t1.`lat`,
+		t1.`x`,
+		t1.`y`,
+		t1.`addtime`,
+		t1.`state`,
+		IF(COUNT(t2.`deviceid`),COUNT(t2.`deviceid`),0) AS relationDevCount,
+		GROUP_CONCAT(t2.`deviceid`) AS relationDev,
+		t1.`videoPath`
+		<if test="param.lat!=null and param.lng!=null">
+			,
+			ROUND(
+			6378.138 * 2 * ASIN(
+			SQRT(
+			POW(
+			SIN(
+			(
+			${param.lat} *
+			PI() / 180 - t1.`lat` * PI() / 180
+			) / 2
+			),
+			2
+			) + COS(${param.lat} * PI()
+			/ 180) * COS(t1.`lat` * PI() / 180) * POW(
+			SIN(
+			(
+			${param.lng} * PI() /
+			180 - t1.`lng` * PI() / 180
+			) / 2
+			),
+			2
+			)
+			)
+			) * 1000
+			) AS distance
+		</if>
+		FROM
+		t_device_video t1
+		LEFT JOIN t_dev_video_relation t2
+		ON t1.`id` =
+		t2.`videoid`
+		AND t2.`isdelete` = 0
+		<if test="param.moduleid!=null">
+			AND t2.`moduleid`=#{param.moduleid}
+			INNER JOIN
+			<if test="param.moduleid == 1">t_device_dc</if>
+			<if test="param.moduleid == 2">t_device_yg</if>
+			<if test="param.moduleid == 3">t_device_jg</if>
+			<if test="param.moduleid == 8">t_device_hw</if>
+			<if test="param.moduleid == 9">t_device_ljt</if>
+			<if test="param.moduleid == 10">t_device_sj</if>
+			<if test="param.moduleid == 11">t_device_mc</if>
+			<if test="param.moduleid == 12">t_device_krq</if>
+			<if test="param.moduleid == 13">t_device_ywj</if>
+			<if test="param.moduleid == 14">t_device_sxdl</if>
+			<if test="param.moduleid == 15">t_device_sxdy</if>
+			<if test="param.moduleid == 16">t_device_sy</if>
+			<if test="param.moduleid == 17">t_device_sydl</if>
+			t3
+			ON t3.`isdelete` = 0
+			AND t2.`deviceid`=t3.`id`
+			<if test="param.devId!=null and param.devId.size()>0">
+				AND t3.`id` IN
+				<foreach collection="param.devId" index="index" item="item"
+					open="(" separator="," close=")">
+					#{item}
+				</foreach>
+			</if>
+			INNER JOIN t_device_group_relation t4
+			ON
+			1=1
+			AND t4.`deviceid` = t3.`id`
+			AND t4.`moduleid` = #{param.moduleid}
+			INNER JOIN t_device_group t5
+			ON
+			t5.`id` = t4.`groupid`
+			AND t5.`isdelete` = 0
+		</if>
+		INNER JOIN t_user t6
+		ON t6.`id` = #{param.userid}
+		WHERE
+		1=1
+		<if test="param.address!=null">
+			AND t1.`code` like
+			concat(concat('%',#{param.address}),'%')
+		</if>
+		<if test="param.devNum!=null">
+			AND t1.`devnum` like
+			concat(concat('%',#{param.devNum}),'%')
+		</if>
+		<if test="param.state!=null">
+			AND t1.`state` = #{param.state}
+		</if>
+		GROUP BY t1.`id`
+		<if test="param.lat!=null and param.lng!=null">
+			ORDER BY distance ASC
+		</if>
+	</select>
+	<select id="getVideoList" resultType="com.hot.manage.entity.video.TDeviceVideo">
+		SELECT
+		t1.*
+		FROM
+		t_device_video t1
+		<if test="groupid != null">
+			INNER JOIN t_device_group_relation t2
+			ON t2.`deviceid` =
+			t1.`id`
+			AND t2.`moduleid` = 14
+			INNER JOIN
+			t_device_group t3
+			ON
+			t3.`id`=t2.`groupid`
+			AND t3.`isdelete`=0
+			AND t3.`id`=#{groupid}
+		</if>
+		WHERE t1.`isdelete` = 0
+	</select>
+	<update id="changeOwn" parameterType="java.util.List">
+		UPDATE t_device_video SET
+		ownId=#{param.ownid} WHERE id in
+		<foreach collection="param.videoId" index="index" item="item"
+			open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</update>
+	<select id="getRelationDevList" resultType="com.hot.manage.entity.video.RelationDevListVo">
+		SELECT
+		t1.`id` AS devId,
+		t1.`devnum`,
+		t5.`groupname` AS devGroupName,
+		t5.`groupcode`,
+		t1.`own_id` AS ownId,
+		t1.`lat` AS devLat,
+		t1.`lng` AS
+		devLng,
+		t1.`battery` AS devBattery,
+		GROUP_CONCAT(t3.`devnum`) AS
+		videoNum,
+		GROUP_CONCAT(t3.`mac`) AS videoMac,
+		COUNT(t2.`deviceid`) AS
+		videoCount
+		FROM
+		<if test="param.moduleid == 1">t_device_dc</if>
+		<if test="param.moduleid == 2">t_device_yg</if>
+		<if test="param.moduleid == 3">t_device_jg</if>
+		<if test="param.moduleid == 8">t_device_hw</if>
+		<if test="param.moduleid == 9">t_device_ljt</if>
+		<if test="param.moduleid == 10">t_device_sj</if>
+		<if test="param.moduleid == 11">t_device_mc</if>
+		<if test="param.moduleid == 12">t_device_krq</if>
+		<if test="param.moduleid == 13">t_device_ywj</if>
+		<if test="param.moduleid == 14">t_device_sxdl</if>
+		<if test="param.moduleid == 15">t_device_sxdy</if>
+		<if test="param.moduleid == 16">t_device_sy</if>
+		<if test="param.moduleid == 17">t_device_sydl</if>
+		t1
+		INNER JOIN t_dev_video_relation t2
+		ON t2.`deviceid` = t1.`id`
+		AND
+		t2.`moduleid` = #{param.moduleid}
+		INNER JOIN t_device_video t3
+		ON
+		t2.`videoid` = t3.`id`
+		AND t3.`id` IN
+		<foreach collection="param.videoId" index="index" item="item"
+			open="(" separator="," close=")">
+			#{item}
+		</foreach>
+		INNER JOIN t_device_group_relation t4
+		ON t4.`deviceid`=t1.`id` AND
+		t4.`moduleid`= #{param.moduleid}
+		INNER JOIN t_device_group t5
+		ON
+		t5.`id`=t4.`groupid`
+		GROUP BY t1.`id`
+	</select>
+	<select id="getDevRelationList" resultType="java.lang.String">
+		SELECT
+		GROUP_CONCAT(DISTINCT t2.videoid) AS relationVideo
+		FROM
+		<if test="moduleid == 1">t_device_dc</if>
+		<if test="moduleid == 2">t_device_yg</if>
+		<if test="moduleid == 3">t_device_jg</if>
+		<if test="moduleid == 8">t_device_hw</if>
+		<if test="moduleid == 9">t_device_ljt</if>
+		<if test="moduleid == 10">t_device_sj</if>
+		<if test="moduleid == 11">t_device_mc</if>
+		<if test="moduleid == 12">t_device_krq</if>
+		<if test="moduleid == 13">t_device_ywj</if>
+		<if test="moduleid == 14">t_device_sxdl</if>
+		<if test="moduleid == 15">t_device_sxdy</if>
+		<if test="moduleid == 14">t_device_sy</if>
+		<if test="moduleid == 15">t_device_sydl</if>
+		t1
+		INNER JOIN t_dev_video_relation t2
+		ON t1.id = t2.deviceid
+		AND
+		t2.moduleid = #{moduleid}
+		AND t2.isdelete = 0
+		WHERE t2.deviceid=#{devid}
+	</select>
+
+	<select id="selectDevByVideoAndModuleid" resultType="com.hot.manage.entity.video.DevByVideoidVo">
+		SELECT
+		t1.`id`,
+		t1.`devnum`,
+		t1.`mac`,
+		t1.`code`,
+		t1.`addtime`,
+		t1.`lat`,
+		t1.`lng`,
+		t1.`x`,
+		t1.`y`,
+		t1.`own_id`,
+		t1.`devtype`
+		FROM
+		<if test="moduleid==1">t_device_dc</if>
+		<if test="moduleid==2">t_device_yg</if>
+		<if test="moduleid==3">t_device_jg</if>
+		<if test="moduleid==4">t_device_pm</if>
+		<if test="moduleid==5">t_device_wt</if>
+		<if test="moduleid==6">t_device_et</if>
+		<if test="moduleid==7">t_device_sl</if>
+		<if test="moduleid==8">t_device_hw</if>
+		<if test="moduleid==9">t_device_ljt</if>
+		<if test="moduleid==10">t_device_sj</if>
+		<if test="moduleid==11">t_device_mc</if>
+		<if test="moduleid==12">t_device_krq</if>
+		<if test="moduleid==13">t_device_ywj</if>
+		<if test="moduleid==14">t_device_sxdl</if>
+		<if test="moduleid==15">t_device_sxdy</if>
+		<if test="moduleid==16">t_device_sy</if>
+		<if test="moduleid==17">t_device_sydl</if>
+		t1
+		INNER JOIN t_device_group_relation t2
+		ON t1.`id` = t2.`deviceid`
+		AND
+		t2.`moduleid` = #{moduleid}
+		AND t2.`isdelete` = 0
+		INNER JOIN
+		t_device_group t3
+		ON
+		t3.`moduleid` = t2.`moduleid`
+		AND t3.`id` =
+		t2.`groupid`
+		AND
+		t3.`isdelete` = 0
+		INNER JOIN t_user_dgroup_relation t4
+		ON
+		t4.`devicegroupid` = t3.`id`
+		AND t4.`isdelete` = 0
+		INNER JOIN t_user
+		t5
+		ON t5.`id` = t4.`userid`
+		AND t5.`isdelete` = 0
+		AND t5.`id` = #{userid}
+		INNER JOIN
+		t_dev_video_relation t6
+		ON t6.`deviceid` = t1.`id`
+		AND
+		t6.`moduleid` = #{moduleid}
+		AND t6.`isdelete` = 0
+		INNER JOIN
+		t_device_video t7
+		ON t7.`id` =
+		t6.`videoid`
+		AND t7.`isdelete` = 0
+		AND
+		t7.`id` = #{videoid}
+	</select>
+
+	<select id="selectVideoByModuleid" resultType="com.hot.manage.entity.video.VideoByModuleid">
+		SELECT DISTINCT
+		t1.`id`,
+		t1.`devnum`,
+		t1.`mac`,
+		t1.`code`,
+		t1.`lng`,
+		t1.`lat`,
+		t1.`x`,
+		t1.`y`,
+		t1.`addtime`,
+		t1.`adduserid`,
+		t1.`ownId`,
+		t1.`videoPath`,
+		t1.`factory`
+		FROM
+		t_device_video t1
+		INNER JOIN t_dev_video_relation t2
+		ON t1.`id` = t2.`videoid`
+		AND t1.`isdelete` = 0
+		AND t2.`isdelete` = 0
+		AND t2.`moduleid` = #{moduleid}
+	</select>
+
+</mapper>

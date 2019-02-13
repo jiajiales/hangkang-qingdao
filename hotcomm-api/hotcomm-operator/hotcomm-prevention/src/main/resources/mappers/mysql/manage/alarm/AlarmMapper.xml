@@ -1,0 +1,623 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.mysql.manage.alarm.AlarmMapper">
+
+	<select id="selectAlarmList"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.alarm.VO.AlarmListVo"
+		parameterType="com.hotcomm.prevention.bean.mysql.manage.alarm.param.AlarmListParam">
+		SELECT
+		b.id AS alarmid,
+		p.groupname,
+		b.deviceid,
+		h.devnum,
+		h.`code`,
+		e.contacts,
+		b.addtime,
+		h.lat,
+		h.lng,
+		e1.contacts as`handler`,
+		c.`level`,
+		b.handlestate,
+		c.state_name,
+		b.isdispatch,
+		(
+		select tm.`name`
+		FROM t_module
+		tm
+		WHERE tm.id=#{moduleid}
+		) as module,
+		b.moduleid
+		FROM t_dev_alarm b
+		LEFT
+		JOIN
+		t_device_all h ON h.id = b.deviceid AND h.isenable=1
+		LEFT JOIN
+		t_dev_handle_state c ON c.id = b.handleresult AND c.isdelete!=1 AND
+		c.module_id=#{moduleid}
+		LEFT JOIN t_device_group_relation g ON
+		g.deviceid = b.deviceid AND g.moduleid = #{moduleid} AND g.isenable=1
+		LEFT JOIN t_device_group p ON p.id =g.groupid AND p.isenable=1
+		LEFT
+		JOIN t_user e ON e.id =h.own_id AND e.isenable=1
+		LEFT JOIN t_user e1 ON
+		e1.id = b.`handler` AND e1.isenable = 1
+		RIGHT JOIN
+		t_user_dgroup_relation udr ON udr.userid=#{userid} AND
+		udr.devicegroupid=p.id AND udr.isenable=1
+		<where>
+			b.moduleid=#{moduleid} and h.moduleid=#{moduleid}
+			<if
+				test="alarmListParam.handlestate!=null and alarmListParam.handlestate!=''">
+				AND b.handlestate in (${alarmListParam.handlestate})
+			</if>
+			<if test="alarmListParam.stateid!=null and alarmListParam.stateid!=''">
+				and b.handleresult in (${alarmListParam.stateid})
+			</if>
+			<if
+				test="alarmListParam.startTime!=null and  alarmListParam.startTime!=''">
+				AND DATE(b.addtime) &gt;= #{alarmListParam.startTime}
+			</if>
+			<if test="alarmListParam.endTime!=null and  alarmListParam.endTime!=''">
+				AND DATE(b.addtime) &lt;=
+				#{alarmListParam.endTime}
+			</if>
+			<if test="alarmListParam.message!=null and alarmListParam.message!=''">
+				and
+				(h.devnum LIKE
+				CONCAT('%',#{alarmListParam.message},'%') or
+				h.`code` LIKE
+				CONCAT('%',#{alarmListParam.message},'%') or
+				e.contacts LIKE
+				CONCAT('%',#{alarmListParam.message},'%') or
+				b.`handler` LIKE
+				CONCAT('%',#{alarmListParam.message},'%'))
+			</if>
+		</where>
+		order by b.addtime desc, b.handlestate asc
+	</select>
+
+	<update id="closealarmById">
+		update t_dev_alarm
+		set handlestate=2 ,
+		handleTime=#{handleTime}
+		where id=#{alarmid} and moduleid = #{moduleid}
+	</update>
+
+	<!-- 查询所有报警信息 -->
+
+	<select id="selectAlarmMaps"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.alarm.VO.AlarmListVo">
+		SELECT
+		b.id AS alarmid,
+		p.groupname,
+		b.deviceid,
+		h.devnum,
+		h.`code`,
+		e.contacts,
+		b.addtime,
+		h.lat,
+		h.lng,
+		b.`handler`,
+		c.`level`,
+		b.handlestate,
+		c.state_name,
+		(
+		select tm.`name`
+		FROM t_module tm
+		WHERE tm.id=#{moduleid}
+		) as module
+		FROM t_dev_alarm b
+		LEFT JOIN t_device_all
+		h ON h.id =
+		b.deviceid AND h.isenable=1
+		LEFT JOIN t_dev_handle_state c
+		ON c.id =
+		b.handleresult AND c.isdelete!=1 AND c.module_id=#{moduleid}
+		LEFT JOIN
+		t_device_group_relation g ON g.deviceid = b.deviceid AND
+		g.moduleid =
+		#{moduleid} AND g.isenable=1
+		LEFT JOIN t_device_group p ON
+		p.id
+		=g.groupid AND p.isenable=1
+		LEFT JOIN t_user e ON e.id =h.own_id
+		AND
+		e.isenable=1
+		RIGHT JOIN t_user_dgroup_relation udr ON
+		udr.userid=#{userid} AND udr.devicegroupid=p.id AND udr.isenable=1
+		<where>
+			b.moduleid=#{moduleid} AND b.handlestate!=2 and
+			h.moduleid=#{moduleid}
+		</where>
+
+
+	</select>
+
+	<!-- 报警终端总数 -->
+	<select id="selectAlarmCount" resultType="java.lang.Integer">
+		select count(alarm.id)
+		from t_dev_alarm alarm
+		LEFT JOIN t_device_group_relation g ON
+		g.deviceid = alarm.deviceid AND g.moduleid = #{moduleid} AND
+		g.isenable=1
+		LEFT JOIN t_device_group p ON p.id =g.groupid AND
+		p.isenable=1
+		RIGHT JOIN t_user_dgroup_relation udr ON
+		udr.userid=#{userid} AND udr.devicegroupid=p.id AND udr.isenable=1
+		where alarm.moduleid=#{moduleid} AND alarm.handlestate !=2
+	</select>
+	<!-- 报警设备详情 -->
+	<select id="selectByAlarmid"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.alarm.VO.AlarmDeviceInfoVo">
+		select tda.id as alarmid,dy.id as
+		devid,dy.mac,tda.addtime,dy.`code`,tas.state_name,dy.devnum,tu.contacts,dg.groupname,dy.lat,dy.lng,tu.telephone,GROUP_CONCAT(tdv.videoPath)
+		as videoPath,tda.handlestate as state,tda.isdispatch
+		FROM t_dev_alarm
+		tda
+		LEFT JOIN t_dev_alarm_state tas ON tda.alarmStateId =tas.id AND
+		tas.module_id=#{moduleid}
+		LEFT JOIN t_dev_video_relation dvr ON
+		dvr.deviceid= tda.deviceid AND dvr.moduleid=#{moduleid} AND
+		dvr.isdelete = 0
+		LEFT JOIN t_device_video tdv ON tdv.id=dvr.videoid AND
+		tdv.isenable=1
+		LEFT JOIN t_device_group_relation dgr ON dgr.deviceid =
+		tda.deviceid AND dgr.moduleid=#{moduleid} AND dgr.isdelete!=1
+		LEFT JOIN
+		t_device_group dg ON dg.id = dgr.groupid AND dg.moduleid=#{moduleid}
+		AND dg.isdelete!=1
+		LEFT JOIN t_device_all dy ON dy.id = tda.deviceid
+		AND dy.isdelete!=1
+		LEFT JOIN t_user tu ON tu.id=dy.own_id AND
+		tu.isdelete!=1
+		WHERE tda.id=#{alarmid} AND tda.moduleid=#{moduleid} and
+		dy.moduleid=#{moduleid}
+	</select>
+
+	<select id="selectHistoricalDate"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.alarm.VO.HistoricalDateVO">
+		select YEAR(y.addtime) as theyear,MONTH(y.addtime) as Mon,
+		COUNT(MONTH(y.addtime))as AlarmCount,
+		(select COUNT(*) from
+		t_dev_alarm
+		b where b.deviceid=#{deviceid})as DeviceAlarmCount,
+		(
+		select tm.`name`
+		FROM t_module tm
+		WHERE tm.id=#{moduleid}
+
+		) as module
+		from t_dev_alarm
+		y
+		WHERE
+		y.deviceid=#{deviceid} AND
+		YEAR(y.addtime)=#{Theyear} AND
+		moduleid=#{moduleid}
+		GROUP BY
+		MONTH(y.addtime);
+	</select>
+	<select id="selectHistoricalStateDate"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.alarm.VO.HistoricalStateDateVo">
+		select #{Theyear} as theyear,s.state_name as
+		statename,COUNT(y.handleresult) as alarmcount,(
+		select tm.`name`
+		FROM
+		t_module tm
+		WHERE tm.id=#{moduleid}
+
+		) as module
+		FROM t_dev_handle_state s
+		LEFT JOIN
+		t_dev_alarm y ON y.handleresult = s.id AND
+		y.deviceid=#{deviceid} AND
+		y.moduleid=#{moduleid} AND
+		YEAR(y.addtime)=#{Theyear}
+		where
+		s.module_id=#{moduleid}
+		GROUP BY
+		s.state_name
+	</select>
+
+	<select id="getVoice"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.alarm.VO.VoiceUrlVo">
+		SELECT b.id,b.url AS
+		voiceUrl FROM t_dev_alarm a
+		LEFT JOIN
+		t_hk_evresrelation b ON b.eventid = a.id AND b.type=2 AND
+		b.resourcestype = 2
+		where a.id=#{id} and a.moduleid=#{moduleid} AND
+		b.moduleid=#{moduleid}
+	</select>
+
+	<select id="getpicture"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.alarm.VO.PictureUrlVo">
+		SELECT b.id,b.url AS
+		pictureUrl FROM t_dev_alarm a
+		LEFT JOIN
+		t_hk_evresrelation b ON b.eventid = a.id AND b.type=2 AND
+		b.resourcestype = 1
+		where a.id=#{id} and a.moduleid=#{moduleid} AND
+		b.moduleid=#{moduleid}
+	</select>
+
+	<select id="selectAlarmDevicHanding"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.alarm.VO.AlarmDeviceHandingVo">
+		SELECT
+		da.isdispatch,
+		tas.`level`,
+		da.handlestate,
+		tu.contacts,
+		(case when hw.id is not null then hwo.addtime else
+		da.addtime end)as addtime,
+		tas.state_name,
+		da.remark
+		FROM t_dev_alarm da
+		LEFT JOIN t_dev_alarm_state tas ON tas.id = da.alarmStateId AND
+		tas.module_id = #{moduleid} AND tas.isdelete!=1
+		LEFT JOIN t_user tu ON
+		tu.id = da.`handler` AND tu.isdelete!=1
+		LEFT JOIN t_hk_woevrelation hw
+		ON hw.relationtype = 2 AND hw.moduleid = #{moduleid} AND hw.relationid
+		= da.id
+		LEFT JOIN t_hk_wo hwo ON hwo.id = hw.woid AND hwo.moduleid =
+		#{moduleid}
+		AND hwo.isdelete!=1
+		WHERE
+		da.moduleid=#{moduleid} AND
+		da.id=#{alarmid}
+	</select>
+
+
+	<select id="selectAlarmDeviceFinish"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.alarm.VO.AlarmDeviceFinishVo">
+		select da.isdispatch,da.handlestate,tu.contacts,(case when
+		thw.id is not null then hw.endtime else da.handletime end)as endtime
+		FROM t_dev_alarm da
+		LEFT JOIN t_hk_woevrelation thw ON
+		thw.relationtype=2 AND thw.relationid = da.id AND
+		thw.moduleid=#{moduleid}
+		LEFT JOIN t_hk_wo hw ON hw.id=thw.woid AND
+		hw.isdelete!=1 AND hw.moduleid=#{moduleid}
+		LEFT JOIN t_user tu ON
+		tu.id=da.`handler` AND tu.isdelete!=1
+		WHERE da.handlestate=2 AND
+		da.moduleid=#{moduleid} AND da.id=#{alarmid}
+	</select>
+
+	<select id="getFinishWoPictureUrl"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.alarm.VO.PictureUrlVo">
+		SELECT a.id,w.url as pictureUrl
+		FROM t_hk_wo a
+		LEFT JOIN
+		t_hk_woresrelation w ON w.woid = a.id AND w.resourcetype=1
+		WHERE
+		a.moduleid=#{moduleid} AND a.id=#{woid} AND a.isdelete!=1
+	</select>
+
+	<select id="getFinishEventPictureUrl"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.alarm.VO.PictureUrlVo">
+		select e.id,er.url as pictureUrl
+		from t_hk_event e
+		LEFT JOIN
+		t_hk_evresrelation er ON er.eventid=e.id AND er.type = 1 AND
+		er.moduleid=2
+		WHERE er.resourcestype=1 AND e.moduleid=#{moduleid} AND
+		e.id=#{eventid}
+	</select>
+
+	<select id="queryAlarmCount"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.alarm.ModuleAlarmCount">
+		SELECT * FROM (SELECT m.id,m.`name` as modulename,SUM(CASE
+		WHEN
+		T.handlestate=0 THEN 1 ELSE 0 END) as alarmcount
+		FROM (SELECT
+		a.moduleid,a.handlestate FROM t_dev_alarm a
+		INNER JOIN
+		t_device_group_relation r ON a.deviceid=r.deviceid AND
+		a.moduleid=r.moduleid AND r.isenable=1 and r.isdelete!=1
+		INNER JOIN
+		t_user_dgroup_relation n ON n.devicegroupid=r.groupid AND n.isenable=1
+		WHERE n.userid=#{userid} AND a.handlestate=0
+		GROUP BY a.id) as T
+		RIGHT JOIN
+		t_module m ON m.id=T.moduleid AND m.isenable=1
+		WHERE m.id in (SELECT
+		p.moduleid FROM t_power p
+		INNER JOIN t_power_group_relation o ON
+		o.powerid=p.id
+		INNER JOIN t_user_pgrou_relationp k ON
+		k.groupid=o.groupid AND k.isenable=1
+		WHERE k.userid=#{userid} AND p.fatherid in
+		(1,2,3,4,5,7,8) AND p.isenable=1)
+		GROUP BY
+		m.id) t
+		INNER JOIN
+		(SELECT p.moduleid FROM t_power p WHERE p.fatherid=#{fatherid} ) pw ON pw.moduleid=t.id
+
+	</select>
+	<select id="queryUnhandleAlarm"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.alarm.VO.AlarmDeviceInfoVo">
+		SELECT a.id as alarmid,a.deviceid as
+		devid,a.addtime,t.state_name,a.moduleid
+		FROM t_dev_alarm a
+		LEFT JOIN
+		t_dev_alarm_state t ON a.alarmstateid=t.id AND a.moduleid=t.module_id
+		AND t.isdelete!=1
+		LEFT JOIN t_hk_signdevice s ON s.deviceid=a.deviceid
+		AND s.moduleid=a.moduleid AND s.isdelete!=1
+		LEFT JOIN
+		t_hk_patdevrelationdevice p ON p.signdeviceid=s.id AND p.isdelete!=1
+		LEFT JOIN t_hk_userpatrelation u ON p.userpatid=u.id AND u.isenable=1
+		WHERE u.userid=#{userid}
+		AND a.handlestate=0
+	</select>
+
+	<select id="queryDevByAlarm"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.alarm.VO.AlarmDeviceInfoVo">
+		SELECT
+		y.devnum,y.`code`,g.groupname,y.lat,y.lng,us.contacts,us.telephone
+		FROM t_device_all y
+		LEFT JOIN t_device_group_relation r ON
+		r.deviceid=y.id AND r.isenable=1
+		and r.isdelete!=1
+		LEFT JOIN
+		t_device_group g ON g.id=r.groupid AND
+		r.moduleid=g.moduleid AND
+		g.isenable=1
+		LEFT JOIN t_user us ON
+		us.id=y.own_id AND us.isenable=1
+		WHERE y.id=#{deviceid} and
+		y.moduleid=#{moduleid}
+		AND
+		g.moduleid=#{moduleid}
+	</select>
+
+	<select id="selectAppAlarmFinish"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.alarm.VO.AppAlarmFinish">
+		select dhs.state_name,tda.remark as
+		problemdesc,tda.handleTime as endTime,GROUP_CONCAT(err.url) as
+		pictureUrl
+		FROM t_dev_alarm tda
+		LEFT JOIN t_dev_handle_state dhs ON
+		dhs.module_id=#{moduleid} AND dhs.id =
+		tda.handleresult
+		LEFT JOIN
+		t_hk_evresrelation err ON
+		err.resourcestype=1 AND err.type=2 AND
+		err.eventid = tda.id
+		WHERE
+		tda.handlestate=2 AND
+		tda.moduleid=#{moduleid} AND tda.isdispatch=0
+		AND tda.id=#{alarmid}
+		GROUP BY tda.id
+	</select>
+	<select id="getishandler" resultType="int">
+		SELECT tda.isdispatch
+		from
+		t_dev_alarm tda
+		WHERE tda.moduleid=#{moduleid} AND tda.id=#{alarmid}
+	</select>
+
+
+	<select id="selectAppAlarmFinishToWo"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.alarm.VO.AppAlarmFinish">
+		SELECT
+		dhs.state_name,hw.problemdesc,hw.endtime,hw.id,GROUP_CONCAT(wrr.url)
+		as pictureUrl
+		FROM
+		t_dev_alarm tda
+		LEFT JOIN t_dev_handle_state dhs ON
+		dhs.id=tda.handleresult AND
+		dhs.module_id=#{moduleid} AND
+		dhs.isdelete!=1
+		LEFT JOIN
+		t_hk_woevrelation wer ON wer.relationtype=2
+		AND wer.relationid=tda.id
+		AND wer.moduleid=#{moduleid}
+		LEFT JOIN t_hk_wo
+		hw ON hw.id=wer.woid AND hw.moduleid=#{moduleid} AND
+		hw.isdelete!=1
+		LEFT JOIN t_hk_woresrelation wrr ON wrr.woid=hw.id AND
+		wrr.resourcetype=1
+		WHERE tda.handlestate=2 AND tda.moduleid=#{moduleid}
+		AND
+		tda.isdispatch=1 AND tda.id=#{alarmid}
+		GROUP BY tda.id
+	</select>
+
+
+	<select id="getAppAlarmList"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.alarm.AppAlarmList">
+		select tda.id as alarmid,tda.handlestate,gaa.devnum,tm.`name` as
+		modulename,tda.addtime,gaa.`code`,gaa.lat,gaa.lng,tda.moduleid,tda.isdispatch
+		<if test="state==1">
+			,t_handleTime.handleTime
+		</if>
+		from t_dev_alarm tda
+		LEFT JOIN t_device_all gaa on gaa.moduleid =
+		tda.moduleid AND gaa.id =
+		tda.deviceid
+		LEFT JOIN t_module tm ON tm.id =
+		tda.moduleid AND
+		tm.isdelete!=1
+		<if test="state==1">
+			LEFT JOIN (
+			(
+			SELECT da.id,da.handleTime
+			FROM t_dev_alarm da
+			WHERE da.isdispatch = 0 AND da.handlestate = 2
+			)
+			UNION ALL
+			(
+			SELECT
+			da.id,hw.endtime AS handleTime
+			FROM t_dev_alarm da
+			LEFT JOIN
+			t_hk_woevrelation wer ON wer.relationtype = 2 AND
+			wer.relationid =
+			da.id AND wer.moduleid = da.moduleid
+			LEFT JOIN t_hk_wo hw ON wer.woid
+			= hw.id AND hw.moduleid = da.moduleid
+			WHERE da.isdispatch = 1 AND
+			da.handlestate = 2
+			)
+			ORDER BY id
+			) AS t_handleTime ON t_handleTime.id =
+			tda.id
+		</if>
+		<where>
+
+			gaa.own_id in(
+			select tu.id
+			from t_user tu
+			where tu.id=#{userid} or
+			tu.fatherid =#{userid}
+			)
+
+
+			<if test="state ==0">
+				AND (tda.isdispatch is null or tda.isdispatch=1) AND
+				tda.handlestate in (0,1)
+			</if>
+			<if test="state !=0">
+				AND tda.isdispatch is NOT NULL AND tda.handlestate =2
+			</if>
+			<if test=" moduleid!=null and moduleid!= '' and moduleid !=0">
+				AND tda.moduleid=#{moduleid}
+			</if>
+			<if test="timeout==1">
+				and tda.addtime &gt;=SUBDATE(CURDATE(),INTERVAL 1 month)
+			</if>
+			<if test="timeout == 2">
+				and tda.addtime &gt;=SUBDATE(CURDATE(),INTERVAL 3 month)
+			</if>
+			<if test="message !=null and message !=''">
+				and CONCAT_WS(&apos;/&apos;,gaa.devnum,gaa.`code`)
+				LIKE
+				CONCAT(&apos;%&apos;,#{message},&apos;%&apos;)
+			</if>
+		</where>
+		order by tda.handlestate desc, tda.addtime desc
+	</select>
+
+
+	<select id="checkState" resultType="java.lang.Integer">
+		select SUM(id) as `sum` FROM
+		(
+		select count(ya.id) as
+		id FROM t_dev_alarm ya WHERE
+		ya.alarmStateId=#{stateid})a
+	</select>
+
+	<select id="appIndexInfoAboutAlarmAndEvent" resultType="java.util.HashMap">
+		SELECT 
+		  * 
+		FROM
+		  (
+		  
+<!-- 		  SELECT  -->
+<!-- 		    COUNT(1) AS unHandleAlarmCount  -->
+<!-- 		  FROM -->
+<!-- 		    t_dev_alarm t1  -->
+<!-- 		  WHERE t1.`handlestate` = 0 -->
+
+<!-- 				select count(tda.id) as unHandleAlarmCount -->
+<!-- 				from t_dev_alarm tda -->
+<!-- 				LEFT JOIN t_device_all gaa on gaa.moduleid = -->
+<!-- 				tda.moduleid AND gaa.id = -->
+<!-- 				tda.deviceid -->
+<!-- 				LEFT JOIN t_module tm ON tm.id = -->
+<!-- 				tda.moduleid AND -->
+<!-- 				tm.isdelete!=1 -->
+<!-- 				<where> -->
+<!-- 					gaa.own_id in( -->
+<!-- 					select tu.id -->
+<!-- 					from t_user tu -->
+<!-- 					where tu.id=#{userid} or -->
+<!-- 					tu.fatherid =#{userid} -->
+<!-- 					) -->
+<!-- 					AND (tda.isdispatch is null or tda.isdispatch=1) AND -->
+<!-- 					tda.handlestate in (0,1) -->
+<!-- 					AND tda.moduleid=#{moduleid} -->
+<!-- 					and tda.addtime &gt;=SUBDATE(CURDATE(),INTERVAL 1 month) -->
+<!-- 				</where> -->
+
+				SELECT 
+				  count(tda.id) as unHandleAlarmCount
+				FROM
+				  t_dev_alarm tda 
+				  LEFT JOIN t_device_all gaa 
+				    ON gaa.moduleid = tda.moduleid 
+				    AND gaa.id = tda.deviceid 
+				  LEFT JOIN t_module tm 
+				    ON tm.id = tda.moduleid 
+				    AND tm.isdelete != 1 
+				WHERE gaa.own_id IN 
+				  (SELECT 
+				    tu.id 
+				  FROM
+				    t_user tu 
+				  WHERE tu.id = #{userid} 
+				    OR tu.fatherid = #{userid}
+				    ) 
+				  AND (
+				    tda.isdispatch IS NULL 
+				    OR tda.isdispatch = 1
+				  ) 
+				  AND tda.handlestate IN (0, 1) 
+				ORDER BY tda.handlestate DESC,
+				  tda.addtime DESC
+		  
+		  ) t1 
+		  JOIN 
+		    (
+		    
+<!-- 		    SELECT  -->
+<!-- 		      COUNT(1) AS unHandleEvent  -->
+<!-- 		    FROM -->
+<!-- 		      t_hk_event t2  -->
+<!-- 		    WHERE t2.`state` = 0 -->
+
+		SELECT count(w.id) as unHandleEvent
+		FROM t_hk_wo w
+		LEFT JOIN t_hk_wodevrelation d on d.woid = w.id
+		LEFT JOIN 
+		t_device_all y on 
+		y.id = d.devid
+		LEFT JOIN t_user u on u.id = w.adduserid
+		LEFT JOIN t_module tm on tm.id = y.moduleid
+		WHERE w.moduleid = y.moduleid and (w.state = 0 or w.state = 1) and w.assignid = #{userid} and w.isdelete = 0
+			 and DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(w.addtime)
+		    
+		    ) t2 
+		  JOIN 
+		    (SELECT 
+		      t4.`state_name` AS newAlarmName,
+		      t3.addtime AS newAlarmTime,
+		      t3.moduleid AS moduleid,
+     		  t3.id AS alarmid,
+		      CONCAT(
+		        t5.`name`,
+		        '设备',
+		        t3.mac,
+		        t4.`state_name`,
+		        '  ',
+		        t6.`code`
+		      ) AS alarmContent 
+		    FROM
+		      (SELECT 
+		        * 
+		      FROM
+		        t_dev_alarm t1 
+		      WHERE t1.`handlestate` = 0 
+		      ORDER BY t1.`addtime` DESC 
+		      LIMIT 1) t3 
+		      LEFT JOIN t_dev_alarm_state t4 
+		        ON t3.alarmstateid = t4.`id` 
+		      LEFT JOIN t_module t5 
+		        ON t5.`id` = t3.moduleid 
+		      LEFT JOIN t_device_all t6 
+		        ON t6.`id` = t3.deviceid) t3 
+	</select>
+
+</mapper>

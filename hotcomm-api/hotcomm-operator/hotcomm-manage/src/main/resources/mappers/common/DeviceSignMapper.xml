@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.common.patrol.DeviceSignMapper">
+	<sql id="tables">
+		<if test="moduleid==1">t_device_dc</if>
+		<if test="moduleid==2">t_device_yg</if>
+		<if test="moduleid==3">t_device_jg</if>
+		<if test="moduleid==4">t_device_pm</if>
+		<if test="moduleid==5">t_device_wt</if>
+		<if test="moduleid==6">t_device_et</if>
+		<if test="moduleid==7">t_device_sl</if>
+		<if test="moduleid==8">t_device_hw</if>
+		<if test="moduleid==9">t_device_ljt</if>
+		<if test="moduleid==10">t_device_sj</if>
+		<if test="moduleid==11">t_device_mc</if>
+		<if test="moduleid==12">t_device_krq</if>
+		<if test="moduleid==13">t_device_ywj</if>
+		<if test="moduleid==14">t_device_sxdl</if>
+		<if test="moduleid==15">t_device_sxdy</if>
+		<if test="moduleid==16">t_device_sy</if>
+		<if test="moduleid==17">t_device_sydl</if>
+	</sql>
+	<select id="selectPageInfo" resultType="com.hot.manage.entity.common.patrol.DeviceSignVo">
+		SELECT y.id,y.devnum,y.`code`,y.lng,y.lat,g.id as
+		groupid,g.groupname,s.lastsigntime,s.moduleid,
+		GROUP_CONCAT(n.id)
+		as userid,
+		GROUP_CONCAT(u.contacts) as username
+		FROM t_hk_signdevice s
+		LEFT JOIN
+		<include refid="tables" />
+		y ON y.id=s.deviceid AND y.isenable=1
+		LEFT JOIN t_device_group_relation
+		r ON r.deviceid=y.id AND r.moduleid=s.moduleid AND r.isenable=1
+		LEFT
+		JOIN t_device_group g ON g.id=r.groupid AND g.moduleid=r.moduleid AND
+		g.isenable=1
+		LEFT JOIN t_user_dgroup_relation d ON d.devicegroupid=g.id
+		AND d.isenable=1
+		LEFT JOIN t_hk_patdevrelationdevice p ON
+		p.signdeviceid=s.id AND p.isdelete=0
+		LEFT JOIN t_hk_userpatrelation n
+		ON n.id=p.userpatid AND n.isdelete=0
+		LEFT JOIN t_user u ON
+		u.id=n.userid AND u.isenable=1
+		WHERE d.userid=#{userid}
+		<if test="starttime!=null and starttime!=''">
+			AND s.addtime &gt;=#{starttime}
+		</if>
+		<if test="endtime!=null and endtime!=''">
+			AND s.addtime &lt;=#{endtime}
+		</if>
+		<if test="context!=null and context!=''">
+			AND (y.devnum LIKE CONCAT('%',#{context},'%') or g.groupname LIKE CONCAT('%',#{context},'%'))
+		</if>
+		AND g.moduleid=#{moduleid}
+		GROUP BY y.id
+	</select>
+
+	<!--app查询签到设备 -->
+	<select id="selectSigndDevVo" resultType="com.hot.manage.entity.common.patrol.AppSigndDevVo">
+		SELECT y.id,y.devnum,m.id,m.`name` as modulename,y.own_id as
+		ownid,t.contacts,y.mac,y.lng,y.lat,1 as type FROM t_hk_signdevice s
+		LEFT JOIN t_module m ON m.id=s.moduleid AND m.isenable=1
+		LEFT JOIN
+		<include refid="tables" />
+		y ON y.id=s.deviceid AND y.isenable=1
+		LEFT JOIN t_device_group_relation
+		d ON d.deviceid=y.id AND d.moduleid=m.id AND d.isenable=1
+		LEFT JOIN
+		t_user t ON y.own_id=t.id AND t.isenable=1
+		LEFT JOIN
+		t_hk_patdevrelationdevice p ON p.signdeviceid=s.id AND p.isdelete=0
+		LEFT JOIN t_hk_userpatrelation u ON u.id=p.userpatid AND u.isenable=1
+		WHERE u.userid=#{userid}
+		AND s.isdelete=0
+		AND d.moduleid=#{moduleid}
+		<if test="groupid!=null and groupid!=''">
+			AND d.groupid=#{groupid}
+		</if>
+		<if test="context!=null and context!=''">
+			AND (y.devnum LIKE CONCAT('%',#{context},'%') or y.`code`
+			LIKE CONCAT('%',#{context},'%'))
+		</if>
+
+		<!-- SELECT y.id,y.devnum,m.`name` as modulename,y.own_id as ownid,t.contacts,y.mac,y.lng,y.lat,1 
+			as type FROM t_hk_signdevice s LEFT JOIN t_module m ON m.id=s.moduleid AND 
+			m.isenable=1 LEFT JOIN t_device_yg y ON y.id=s.deviceid AND y.isenable=1 
+			LEFT JOIN t_user t ON y.own_id=t.id AND t.isenable=1 LEFT JOIN t_hk_patdevrelationdevice 
+			p ON p.signdeviceid=s.id AND p.isdelete=0 LEFT JOIN t_hk_userpatrelation 
+			u ON u.id=p.userpatid AND u.isenable=1 WHERE u.userid=#{userid} AND s.isdelete=0 
+			<if test="context!=null and context!=''"> AND (y.devnum LIKE CONCAT('%',#{context},'%') 
+			or y.`code` LIKE CONCAT('%',#{context},'%')) </if> -->
+	</select>
+</mapper>

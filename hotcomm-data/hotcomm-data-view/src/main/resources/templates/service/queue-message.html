@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+
+<head th:include="common">
+    <meta content="text/html;charset=UTF-8" />
+    <meta http-equiv="Access-Control-Allow-Origin" content="*" />
+</head>
+<script type="text/javascript" src="/static/js/service/queueMessage.js"></script>
+
+<body style="height: 100%;">
+    <div class="easyui-layout">
+        <div id="queue" data-options="region:'north',border:false" style="height: auto; padding: 10px; overflow: hidden;">
+			<form id="queue_search_form" class="searcher-form">
+				<div>
+					<input name="memberId" type="hidden" th:value="${memberId}" />
+	        	    <select name="type" class="easyui-combobox field" label="队列类型：" labelWidth="65" editable="false" style="width:175px" data-options="valueField:'value', textField:'label', panelHeight:'auto'">
+		                <option value="1">上行</option>
+		                <option value="2">下行</option>
+	                </select>
+	                <a id="queue_refresh_button" class="easyui-linkbutton searcher" data-options="iconCls:'fa fa-refresh'">刷新</a>
+	                <a id="queue_search_button" class="easyui-linkbutton searcher" data-options="iconCls:'fa fa-search'">查询通道信息</a>
+	            </div>
+			</form>
+            <form id="queue_form" style="margin-top:10px;">
+                <table border="0" cellspacing="10" style="width: 100%">
+                    <tr>
+                        <td align="right">队列名称：</td>
+                        <td>
+                            <input id="queueName" name="queueName" class="easyui-textbox field" style="width: 91%" readonly="readonly" />
+                        </td>
+                        <td align="right">队列有效期限：</td>
+                        <td>
+                            <input id="holeTime" name="holeTime" class="easyui-textbox field" style="width: 91%" readonly="readonly" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="right">队列状态：</td>
+                        <td>
+                            <input id="queueStatus" name="queueStatus" class="easyui-textbox field" style="width: 91%" readonly="readonly" />
+                        </td>
+                        <td align="right">数据接收总量：</td>
+                        <td>
+                            <input id="receiveDataNum" name="receiveDataNum" class="easyui-textbox field" style="width: 91%" readonly="readonly" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="right">数据待发送总量：</td>
+                        <td>
+                            <input id="waitSendNum" name="waitSendNum" class="easyui-textbox field" style="width: 91%" readonly="readonly" />
+                        </td>
+                        <td align="right">虚拟主机地址：</td>
+                        <td>
+                            <input id="vhost" name="vhost" class="easyui-textbox field" style="width: 91%" readonly="readonly" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="right">虚拟主机账号：</td>
+                        <td>
+                            <input id="vhostAccount" name="vhostAccount" class="easyui-textbox field" style="width: 91%" readonly="readonly" />
+                        </td>
+                        <td align="right">虚拟主机密码：</td>
+                        <td>
+                            <input id="vhostPassword" name="vhostPassword" class="easyui-textbox field" style="width: 91%" readonly="readonly" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="right">通道中数据数量：</td>
+                        <td>
+                            <input id="messages" name="messages" class="easyui-textbox field" style="width: 91%" data-options="prompt:'点击按钮查询'" readonly="readonly" />
+                        </td>
+                        <td align="right">队列消费者数量：</td>
+                        <td>
+                            <input id="consumers" name="consumers" class="easyui-textbox field" style="width: 91%" data-options="prompt:'点击按钮查询'" readonly="readonly" />
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    </div>
+    <script type="text/javascript">
+        $(function () {
+            $(".layout-panel").css("position", "static");
+        });
+         //easyui使用不了placeholder， 此方法解决placeholder问题
+        /* function numberInputPlaceholder(){
+			$("input").each(function(i){
+				var span = $(this).siblings("span")[0];
+				var targetInput = $(span).find("input:first");
+				if(targetInput){
+					$(targetInput).attr("placeholder", $(this).attr("placeholder"));
+				}
+			});
+		} */
+    </script>
+    <script th:inline="javascript">
+		window.onload = function(){
+			var keys = [[${keys}]];
+			setKeys(keys);
+		}
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.common.appmap.APPMapMapper">
+
+	<!-- app地图页面-用户下的项目 -->
+	<select id="AppMapGroupList" resultType="com.hot.manage.entity.common.appmap.AppMapGroupList">
+	SELECT dg.id as groupid , dg.groupname as groupname , dg.moduleid as moduleid , m.`name` as `name` ,
+	dg.x as x , dg.y as y
+	FROM t_device_group dg
+	RIGHT JOIN t_user_dgroup_relation ug on ug.userid=#{userid} and ug.isenable = 1 and ug.devicegroupid = dg.id
+	LEFT JOIN t_module m on m.isdelete = 0 and m.isenable = 1 and m.id = dg.moduleid
+	WHERE dg.isdelete = 0 and dg.isenable = 1
+	</select>
+	
+	<!-- app地图页面-根据项目组查询展示设备 -->
+	<select id="AppMapDevList" resultType="com.hot.manage.entity.common.appmap.AppMapDevList">
+	SELECT y.id as id , y.state as state , y.lat as lat , y.lng as lng , COUNT(w.id) as wonum , dg.moduleid as moduleid 
+	FROM t_device_group_relation dg
+	LEFT JOIN 
+		<if test="moduleid==1">t_device_dc</if>
+		<if test="moduleid==2">t_device_yg</if>
+		<if test="moduleid==3">t_device_jg</if>
+		<if test="moduleid==4">t_device_pm</if>
+		<if test="moduleid==5">t_device_wt</if>
+		<if test="moduleid==6">t_device_et</if>
+		<if test="moduleid==7">t_device_sl</if>
+		<if test="moduleid==8">t_device_hw</if>
+		<if test="moduleid==9">t_device_ljt</if>
+		<if test="moduleid==10">t_device_sj</if>
+		<if test="moduleid==11">t_device_mc</if>
+		<if test="moduleid==12">t_device_krq</if>
+		<if test="moduleid==13">t_device_ywj</if>
+		<if test="moduleid==14">t_device_sxdl</if>
+		<if test="moduleid==15">t_device_sxdy</if>
+		<if test="moduleid==16">t_device_sy</if>
+		<if test="moduleid==17">t_device_sydl</if>
+	 y on y.isdelete = 0 and y.id = dg.deviceid
+	RIGHT JOIN t_user_dgroup_relation ug on ug.userid=#{userid} and ug.isenable = 1 and ug.devicegroupid = dg.groupid
+	LEFT JOIN t_hk_wodevrelation wd on wd.moduleid = dg.moduleid and wd.devid = y.id
+	LEFT JOIN t_hk_wo w on w.isdelete = 0 and w.state != 2 and w.id = wd.woid
+	WHERE dg.isdelete = 0 and dg.moduleid = #{moduleid}
+	<if test="groupid != null and groupid != ''">
+	 and dg.groupid = #{groupid}
+	</if>
+	<if test="devnumorcode != null and devnumorcode != ''">
+	 and (y.devnum LIKE CONCAT('%',#{devnumorcode},'%') or y.code LIKE CONCAT('%',#{devnumorcode},'%'))
+	</if>
+	GROUP BY y.id
+	</select>
+
+	<select id="AppMapDevnum" resultType="com.hot.manage.entity.common.appmap.AppMapDevnum">
+	SELECT y.devnum as devnum
+	FROM 
+		<if test="moduleid==1">t_device_dc</if>
+		<if test="moduleid==2">t_device_yg</if>
+		<if test="moduleid==3">t_device_jg</if>
+		<if test="moduleid==4">t_device_pm</if>
+		<if test="moduleid==5">t_device_wt</if>
+		<if test="moduleid==6">t_device_et</if>
+		<if test="moduleid==7">t_device_sl</if>
+		<if test="moduleid==8">t_device_hw</if>
+		<if test="moduleid==9">t_device_ljt</if>
+		<if test="moduleid==10">t_device_sj</if>
+		<if test="moduleid==11">t_device_mc</if>
+		<if test="moduleid==12">t_device_krq</if>
+		<if test="moduleid==13">t_device_ywj</if>
+		<if test="moduleid==14">t_device_sxdl</if>
+		<if test="moduleid==15">t_device_sxdy</if>
+		<if test="moduleid==16">t_device_sy</if>
+		<if test="moduleid==17">t_device_sydl</if>
+	 y
+	 LEFT JOIN t_device_group_relation dg on dg.isdelete = 0 and dg.isenable = 1 and dg.moduleid = #{moduleid} and dg.deviceid = y.id
+	 RIGHT JOIN t_user_dgroup_relation ug on ug.userid=#{userid} and ug.isenable = 1 and ug.devicegroupid = dg.groupid
+	WHERE y.isdelete = 0 and y.isenable = 1 and (y.devnum LIKE CONCAT(lower(#{devnum}),'%') or y.devnum LIKE CONCAT(upper(#{devnum}),'%'))
+	</select>
+	<select id="queryApkUrl" resultType="com.hot.manage.entity.common.THKApp">
+		SELECT id,version as vsersion,url,versionname FROM t_hk_app WHERE version &gt; #{version}
+		ORDER BY id DESC
+		LIMIT 1
+	</select>
+<!-- 	selectSignid -->
+
+
+		<select id="selectSignid" resultType="java.lang.Integer" >
+			SELECT id FROM t_hk_sign s WHERE s.devnum=#{devnum}
+	</select>
+
+		<select id="selectrelation" resultType="java.lang.Integer" >
+			SELECT  COUNT(*) as y FROM  t_hk_patdevrelation  s WHERE 
+			 s.userpatid=#{userid}  AND s.signid=#{signid}
+	</select>
+
+	
+	<select id="selectjw" resultType="java.lang.Integer" >
+		
+		SELECT  
+			<if test="lat!=null and lng!=null">
+			
+			ROUND(
+			6378.138 * 2 * ASIN(
+			SQRT(
+			POW(
+			SIN(
+			(
+			${lat} *
+			PI() / 180 - S.`lat` * PI() / 180
+			) / 2
+			),
+			2
+			) + COS(${lat} * PI()
+			/ 180) * COS(S.`lat` * PI() / 180) * POW(
+			SIN(
+			(
+			${lng} * PI() /
+			180 - S.`lng` * PI() / 180
+			) / 2
+			),
+			2
+			)
+			)
+			) * 1000
+			) 
+		</if>
+		 FROM t_hk_sign S WHERE id=#{signid}
+		
+	</select>
+	
+	
+	
+	<insert id="AppSign" >
+		INSERT INTO t_hk_signlog
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="userid != null and userid != ''">
+				userid,
+			</if>
+			<if test="signid != null and signid != ''">
+				signid,
+			</if>
+			<if test="addtime != null and addtime != ''">
+				addtime,
+			</if>
+			<if test=" picaddr != null and  picaddr != ''">
+				 picaddr,
+			</if>
+			
+				<if test=" signstate != null and  signstate != ''">
+				 signstate,
+			</if>
+			
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+		<if test="userid != null and userid != ''">
+				#{userid},
+			</if>
+			<if test="signid != null and signid != ''">
+				#{signid},
+			</if>
+			<if test="addtime != null and addtime != ''">
+				#{addtime},
+			</if>
+	        <if test=" picaddr != null and  picaddr != ''">
+				#{picaddr}, 
+			</if>
+			
+			<if test=" signstate != null and  signstate != ''">
+				#{signstate},
+			</if>
+			
+			
+		
+		</trim>
+		
+		
+	</insert>
+	
+<!-- 	AppUpdateSign -->
+
+<update id="AppUpdateSign">
+		UPDATE t_hk_sign
+		SET lastsigntime = #{addtime}
+		WHERE  id=#{signid}
+	</update>
+	
+	<select id="AppSignLog" resultType="com.hot.manage.entity.common.appmap.SignlogList">
+<!-- signstate;addtime;  devnum; address;  picaddr; -->
+		SELECT S.devnum AS devnum,  S.address AS address, SL.signstate AS signstate, SL.picaddr AS picaddr, SL.addtime AS addtime   FROM t_hk_signlog  SL 
+LEFT JOIN t_hk_sign s ON s.id=SL.signid
+  WHERE   SL.userid=#{userid}
+
+ORDER BY  SL.addtime DESC 
+	</select>
+	
+	
+	
+</mapper>

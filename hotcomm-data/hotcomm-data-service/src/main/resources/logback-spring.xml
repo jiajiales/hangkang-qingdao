@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xml>
+<configuration>
+	
+	<property name="log.home.path"  value="D:/hotcomm/logs/data/service"/>
+	<property name="log.path" value="${log.home.path}/data_console" />
+	<property name="service.info.path" value="${log.home.path}/data_info" />	
+	<property name="service.error.path" value="${log.home.path}/data_error" />	
+	
+	
+	<!-- 控制台日志输入 -->
+	<appender name="console_sdtout" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+			</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="console_file"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${log.path}</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${log.path}.%d{yyyy-MM-dd}.log</fileNamePattern>
+			<maxHistory>30</maxHistory>
+			<totalSizeCap>3GB</totalSizeCap>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%d %p [%t] %c{10} [%F:%L] %msg%n</pattern>
+		</encoder>
+	</appender>
+	
+	<!-- 业务正常日志 -->
+	<appender name="service_info_file" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${service.info.path}</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${service.info.path}.%d{yyyy-MM-dd}.log</fileNamePattern>
+			<maxHistory>30</maxHistory>
+			<totalSizeCap>3GB</totalSizeCap>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%d [%t] [%F:%L] %m%n</pattern>
+		</encoder>
+	</appender>
+	
+	<!-- 业务ERROR日志 -->
+	<appender name="service_error_file" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${service.error.path}</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${service.error.path}.%d{yyyy-MM-dd}.log</fileNamePattern>
+			<maxHistory>30</maxHistory>
+			<totalSizeCap>3GB</totalSizeCap>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%d [%t] [%F:%L] %m%n</pattern>
+		</encoder>
+	</appender>
+	
+	
+	<logger level="info" additivity="false"  name="infoLogger"  >
+		<appender-ref ref="service_info_file" />
+		<appender-ref ref="console_sdtout" />	
+	</logger>
+	
+	<logger level="error" additivity="false"  name="errorLogger"  >
+	    <appender-ref ref="console_sdtout" />
+		<appender-ref ref="service_error_file" />
+	</logger>
+	
+	<root level="info"  >
+		<appender-ref ref="console_sdtout" />
+		<appender-ref ref="console_file" />
+	</root>
+	
+	
+</configuration>

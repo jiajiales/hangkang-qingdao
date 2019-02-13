@@ -1,0 +1,60 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.hotcomm</groupId>
+    <artifactId>hotcomm-operator</artifactId>
+    <version>1.1.0</version>
+  </parent>
+  <artifactId>hotcomm-analysis</artifactId>
+  <packaging>jar</packaging>
+ <dependencies>
+ 	<!--sping-boot web  -->
+ 	<dependency>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-web</artifactId>
+	</dependency>
+	<!-- HttpUtils -->
+	<dependency>
+		<groupId>org.apache.httpcomponents</groupId>
+		<artifactId>httpclient</artifactId>
+        <version>4.2.1</version>
+    </dependency>
+    <dependency>
+    <groupId>org.apache.httpcomponents</groupId>
+    <artifactId>httpcore</artifactId>
+		<version>4.2.1</version>
+    </dependency>
+    <dependency>
+		<groupId>commons-lang</groupId>
+		<artifactId>commons-lang</artifactId>
+		<version>2.6</version>
+    </dependency>
+    <dependency>
+		<groupId>org.eclipse.jetty</groupId>
+		<artifactId>jetty-util</artifactId>
+		<version>9.3.7.v20160115</version>
+    </dependency>
+    <!-- json jar包 -->
+	<dependency>
+    	<groupId>net.sf.json-lib</groupId>
+    	<artifactId>json-lib</artifactId>
+    	<version>2.4</version>
+    	<classifier>jdk15</classifier>
+	</dependency>
+ </dependencies>
+  <build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>

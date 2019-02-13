@@ -1,0 +1,638 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.hotcomm.prevention.db.mysql.manage.devicemanager.DeviceMapper">
+	<select id="seleteDevMap"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.devicemanager.SeleteDevMap">
+		SELECT p.id as id ,
+		p.picpath as picpath , p.site as site ,
+		p.itemid as itemid
+		FROM
+		t_item_pic p
+		WHERE p.itemid = #{groupid} and
+		p.isenable = 1
+	</select>
+
+	<select id="seleteGroupListDevnum" resultType="java.lang.Integer">
+		SELECT COUNT(1) as
+		devnum
+		FROM t_device_group_relation dg
+		LEFT JOIN t_user_dgroup_relation
+		ug on ug.userid = #{userid}
+		WHERE dg.groupid = ug.devicegroupid and
+		dg.moduleid = #{moduleid} and
+		dg.isdelete = 0 and dg.isenable = 1 and
+		dg.groupid = #{groupid}
+	</select>
+
+	<select id="GroupListDev"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.devicemanager.GroupListDev">
+		SELECT j.id as id , j.x as x , j.y as y , j.state as state , c.site as
+		site , c.picpath as picpath
+		FROM t_item_pic c
+		LEFT JOIN t_dev_item_pic p
+		on p.item_pic_id = c.id
+		LEFT JOIN t_device_group_relation g on
+		g.moduleid = #{moduleid} and g.isdelete = 0 and g.isenable = 1 and
+		g.deviceid = p.dev_id
+		LEFT JOIN t_device_all j on j.moduleid =
+		#{moduleid} and j.isenable = 1 and j.id = p.dev_id
+		WHERE
+		c.itemid =
+		#{groupid} and g.groupid = #{groupid}
+		<if test="site!='' and site!=null">
+			and c.site = #{site}
+		</if>
+	</select>
+
+	<select id="DevList"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.devicemanager.DevList">
+		SELECT y.id as devid , y.devnum as devnum , y.mac as mac ,
+		dg.groupname as groupname , y.code as code , dg.managerid as
+		managerid,
+		u.contacts as contacts , y.addtime as addtime , y.lat as lat
+		, y.lng as lng ,
+		y.x,y.y,ip.id as itempicid,ip.`site`,y.state as state
+		,y.battery as battery ,
+		ip.picpath as picpath,
+		CASE
+		WHEN DATEDIFF(CURDATE(), lastDataTime) > 3
+		THEN 0
+		ELSE 1
+		END AS onlinestate
+		FROM
+		t_device_all y
+		LEFT
+		JOIN
+		t_device_group_relation tg on
+		tg.moduleid =
+		#{moduleid} and
+		tg.deviceid
+		= y.id
+		LEFT JOIN
+		t_device_group
+		dg on dg.id
+		= tg.groupid
+		LEFT
+		JOIN t_user
+		u on u.id =
+		y.own_id
+		LEFT JOIN
+		t_dev_item_pic dip on
+		dip.dev_id = y.id
+		AND
+		dip.moduleid=#{moduleid}
+		AND
+		dip.isdelete=0
+		LEFT
+		JOIN t_item_pic ip
+		on
+		ip.id=dip.item_pic_id AND
+		ip.itemid= dg.id AND
+		ip.isdelete=0
+		RIGHT
+		JOIN
+		t_user_dgroup_relation udr
+		ON udr.devicegroupid =
+		dg.id AND
+		udr.userid
+		=#{userid} AND udr.isdelete
+		!=1 AND udr.isenable !=0
+		WHERE
+		y.moduleid = #{moduleid} and
+		y.isenable =
+		1
+		<if test="starttime!='' and starttime!=null">
+			and y.addtime &gt;= #{starttime}
+		</if>
+		<if test="endtime!='' and endtime!=null">
+			and y.addtime &lt;= #{endtime}
+		</if>
+		<if test="context!='' and context!=null">
+			and (y.devnum LIKE CONCAT('%',#{context},'%') or
+			y.code
+			LIKE CONCAT('%',#{context},'%') or
+			y.mac LIKE
+			CONCAT('%',#{context},'%'))
+		</if>
+		<if test="batterytype==1">
+			and y.battery &lt; 20
+		</if>
+		<if test="batterytype==2">
+			and y.battery &gt;= 20
+		</if>
+		<if test="groupid != null and groupid != ''">
+			and tg.groupid = #{groupid}
+		</if>
+		ORDER BY y.addtime DESC
+	</select>
+
+	<!-- 删除设备，设备与项目组关联 -->
+	<update id="DeleteDev">
+		update t_device_all j , t_device_group_relation g
+		set
+		j.isdelete = 1 , j.isenable = 0 , g.isdelete = 1 , g.isenable = 0
+		where j.id = #{devid} and g.deviceid = j.id and g.moduleid =
+		#{moduleid}
+	</update>
+	<!-- 删除设备与楼层关联 -->
+	<update id="DeleteDevPic">
+		update t_dev_item_pic p
+		set p.isdelete = 1 ,
+		p.isenable = 0
+		where p.dev_id = #{devid} and p.moduleid = #{moduleid}
+	</update>
+	<!-- 删除设备与视频关联 -->
+	<update id="cutDevVideoRelation">
+		UPDATE t_dev_video_relation SET isdelete=1 WHERE
+		deviceid=#{devid} AND moduleid=#{moduleid}
+	</update>
+
+	<!-- 新建设备与项目关联 -->
+	<insert id="AddDevGroup">
+		INSERT INTO t_device_group_relation
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="deviceid != null and deviceid != ''">
+				deviceid,
+			</if>
+			<if test="groupid != null and groupid != ''">
+				groupid,
+			</if>
+			<if test="moduleid != null and moduleid != ''">
+				moduleid,
+			</if>
+			<if test="addtime != null and addtime != ''">
+				addtime,
+			</if>
+			<if test="userid != null and userid != ''">
+				adduserid,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="deviceid !='' and deviceid !=null">
+				#{deviceid},
+			</if>
+			<if test="groupid!=null and groupid!=''">
+				#{groupid},
+			</if>
+			<if test="moduleid!=null and moduleid!=''">
+				#{moduleid},
+			</if>
+			<if test="addtime!=null and addtime!=''">
+				#{addtime},
+			</if>
+			<if test="userid!=null and userid!=''">
+				#{userid},
+			</if>
+		</trim>
+	</insert>
+	<!-- 新建设备与楼层关联 -->
+	<insert id="AddDevGroupPic">
+		INSERT INTO t_dev_item_pic
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="itempicid != null and itempicid != ''">
+				item_pic_id,
+			</if>
+			<if test="devid != null and devid != ''">
+				dev_id,
+			</if>
+			<if test="moduleid != null and moduleid != ''">
+				moduleid,
+			</if>
+			<if test="addtime != null and addtime != ''">
+				addtime,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="itempicid != null and itempicid != ''">
+				#{itempicid},
+			</if>
+			<if test="devid!=null and devid!=''">
+				#{devid},
+			</if>
+			<if test="moduleid!=null and moduleid!=''">
+				#{moduleid},
+			</if>
+			<if test="addtime!=null and addtime!=''">
+				#{addtime},
+			</if>
+		</trim>
+	</insert>
+	<!-- 新建设备与视频关联 -->
+	<insert id="AddDevVideo">
+		INSERT INTO
+		t_dev_video_relation(deviceid,videoid,moduleid)
+		values(#{deviceid},#{videoid},#{moduleid})
+	</insert>
+
+	<!-- 根据设备id查询设备 -->
+	<select id="SelectOnId"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.devicemanager.SelectOnId">
+		SELECT <!-- jg.id as id , jg.devnum as devnum , jg.lat as lat , jg.lng as 
+			lng , jg.x as x ,jg.y as y , jg.lastvalue1 as lastvalue1 , jg.lastvalue2 
+			as lastvalue2 , jg.lastvalue3 as lastvalue3 , jg.lastvalue4 as lastvalue4 
+			, jg.lastvalue5 as lastvalue5 , jg.lastvalue6 as lastvalue6 ,jg.lastalarmtime 
+			as lastalarmtime , jg.maxalarmvalue as maxalarmvalue , jg.minalarmvalue as 
+			minalarmvalue ,jg.own_id as ownid, jg.mac,jg.`code`,jg.plusminus as plusminus, -->
+		jg.*,
+		tu.contacts, g.id as groupid,g.groupname as groupname ,p.id as
+		itempicid, p.picpath as picpath , p.site as site,
+		GROUP_CONCAT(t666.`videoid`) AS videos
+		FROM t_device_all jg
+		LEFT JOIN
+		t_device_group_relation dg on
+		dg.moduleid = #{moduleid} and
+		dg.deviceid
+		= jg.id and dg.isenable = 1
+		<!-- RIGHT JOIN t_user_dgroup_relation ug on ug.userid = #{userid} and 
+			ug.devicegroupid = dg.groupid -->
+		LEFT JOIN t_dev_item_pic dp on dp.dev_id
+		=
+		dg.deviceid and dp.moduleid =
+		dg.moduleid
+		LEFT JOIN t_item_pic p on
+		p.id
+		= dp.item_pic_id and
+		p.isenable = 1
+		LEFT JOIN t_device_group g on
+		g.id =
+		dg.groupid and
+		g.isenable = 1
+		LEFT JOIN t_user tu on
+		tu.id=jg.own_id and
+		tu.isdelete!=1
+		LEFT JOIN t_dev_video_relation t666
+		ON jg.`id` =
+		t666.`deviceid`
+		AND
+		t666.`moduleid` = 13
+		LEFT JOIN
+		t_device_video t888
+		ON
+		t666.`videoid` =
+		t888.`id`
+		AND t888.`isdelete` = 0
+		WHERE jg.moduleid = #{moduleid} and
+		jg.isenable = 1
+		<if test="devid != null and devid != ''">
+			and jg.id = #{devid}
+		</if>
+		<if test="devnum!=null and devnum!=''">
+			and jg.devnum = #{devnum}
+		</if>
+		<if test="mac!=null and mac!=''">
+			and jg.mac = #{mac}
+		</if>
+	</select>
+
+	<!-- 查询可更换的项目组 -->
+	<select id="GroupList"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.devicemanager.GroupList">
+		SELECT g.id as id , g.groupname as groupname, g.groupcode
+		as groupcode
+		,GROUP_CONCAT(p.id) as
+		itempicid , GROUP_CONCAT(p.picpath)
+		as picpath ,
+		GROUP_CONCAT(p.site)
+		as site , g.x as lng , g.y as lat ,
+		g.itemnum as
+		itemnum , u.contacts as contacts,
+		g.addtime as addtime ,
+		g.imgpath as
+		imgpath
+		FROM t_device_group g
+		RIGHT JOIN
+		t_user_dgroup_relation ug on
+		ug.userid = #{userid} and ug.devicegroupid
+		= g.id and ug.isdelete = 0
+		and ug.isenable = 1
+		LEFT JOIN t_item_pic p on
+		p.itemid = g.id
+		LEFT JOIN
+		t_user u on u.id = g.managerid
+		WHERE g.isdelete
+		= 0 and g.moduleid =
+		#{moduleid}
+		GROUP BY g.id
+	</select>
+
+	<!-- 修改设备mac -->
+	<update id="ChangeMac">
+		UPDATE t_device_all SET mac=#{mac} WHERE id=#{devid}
+		and moduleid = #{moduleid}
+	</update>
+
+	<!-- 批量修改责任人 -->
+	<update id="ChangeOwn" parameterType="java.util.List">
+		UPDATE t_device_all SET
+		own_id=#{changeOwn.ownid} WHERE moduleid =
+		#{changeOwn.moduleid} and
+		id in
+		<foreach collection="changeOwn.devid" index="index" item="item"
+			open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</update>
+
+	<!-- 修改设备信息 -->
+	<!-- 修改设备与项目关联 -->
+	<update id="UpdateDevGroup">
+		UPDATE t_device_group_relation SET groupid =
+		#{groupid} WHERE deviceid
+		= #{deviceid} and moduleid = #{moduleid}
+	</update>
+	<!-- 修改设备绑定楼层 -->
+	<update id="UpdateDevGroupPic">
+		UPDATE t_dev_item_pic SET item_pic_id = #{itempicid}
+		WHERE dev_id
+		= #{deviceid} and moduleid = #{moduleid}
+	</update>
+	<!-- 修改设备与视频关联 -->
+	<!-- 删除huo恢复该设备与视频的全部关联 -->
+	<update id="UpdateDevGroupVideo">
+		UPDATE t_dev_video_relation SET isdelete = #{isdelete} WHERE deviceid
+		= #{deviceid} and moduleid = #{moduleid}
+		<if test="isdelete == 0 and videoid != null and videoid != ''">
+			and videoid = #{videoid}
+		</if>
+	</update>
+
+	<!-- 设备运行日志数据 -->
+	<!-- 可燃气 -->
+	<select id="SelectKrqLog"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.devicemanager.SelectKrqLog">
+		SELECT
+		*
+		FROM
+		log_krq t1
+		INNER JOIN t_device_all t2
+		ON t2.moduleid =
+		#{moduleid} and t2.`mac` =
+		t1.`macAddr`
+		AND t2.`isdelete` = 0
+		AND
+		t2.`isenable` = 1
+		<if test="mac!=null and mac!=''">
+			AND t2.`mac`=#{mac}
+		</if>
+		INNER JOIN t_device_group_relation t3
+		ON t3.`moduleid` = 12
+		AND
+		t3.`isdelete` = 0
+		AND t3.`isenable` = 1
+		AND t3.`deviceid` = t2.`id`
+		INNER JOIN t_device_group t4
+		ON t4.`id` = t3.`groupid`
+		AND t4.`moduleid`
+		= 12
+		AND t4.`isdelete` = 0
+		AND t4.`isenable` = 1
+		INNER JOIN
+		t_user_dgroup_relation t5
+		ON t5.`devicegroupid` = t4.`id`
+		AND
+		t5.`isdelete` = 0
+		AND t5.`isenable` = 1
+		INNER JOIN t_user t6
+		ON t6.`id` =
+		t5.`userid`
+		AND t6.`id` = #{userid}
+		WHERE 1=1
+		<if test="endtime!=null and endtime!=''">
+			AND t1.`addtime` &lt;= #{endtime}
+		</if>
+		<if test="starttime!=null and starttime!=''">
+			AND t1.`addtime` &gt;= #{starttime}
+		</if>
+	</select>
+
+	<!-- 烟感 -->
+	<resultMap
+		type="com.hotcomm.prevention.bean.mysql.manage.devicemanager.YGLog"
+		id="DeviceGroupPageMap">
+		<result column="lb_alarm" property="lbAlarm" />
+		<result column="commsys_type" property="commsysType" />
+		<result column="df_id" property="dfId" />
+		<result column="fault_alarm" property="faultAlarm" />
+		<result column="fire_alarm" property="fireAlarm" />
+		<result column="frame_cnt" property="frameCnt" />
+		<result column="input_time" property="inputTime" />
+		<result column="mac_addr" property="macAddr" />
+		<result column="msg_id" property="msgId" />
+		<result column="place_id" property="placeId" />
+		<result column="snr_max" property="snrMax" />
+		<result column="snr_min" property="snrMin" />
+		<result column="sys_type" property="sysType" />
+		<result column="temp_alarm" property="tempAlarm" />
+		<result column="temp_value" property="tempValue" />
+		<result column="update_time" property="updateTime" />
+	</resultMap>
+	<select id="SelectYGLog" resultMap="DeviceGroupPageMap">
+		SELECT t0.* FROM log_yg t0
+		LEFT JOIN t_device_all t1 ON t1.moduleid=2
+		and t1.mac=t0.mac_addr
+		LEFT JOIN t_device_group_relation t2 ON
+		t1.id=t2.deviceid
+		LEFT JOIN t_user_dgroup_relation t3 ON
+		t3.devicegroupid=t2.groupid
+		WHERE t3.userid=#{userid} AND t2.moduleid=2
+		<if test="endtime!=null and endtime!=''">
+			AND t0.`addtime` &lt;= #{endtime}
+		</if>
+		<if test="starttime!=null and starttime!=''">
+			AND t0.`addtime` &gt;= #{starttime}
+		</if>
+		<if test="mac!=null and mac!=''">
+			AND t0.mac_addr=#{mac}
+		</if>
+	</select>
+
+	<!-- 门磁 -->
+	<select id="SelectMCLog"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.devicemanager.MCLog">
+		SELECT t0.* FROM log_mc t0
+		LEFT JOIN t_device_all t1 ON t1.moduleid=11
+		and t1.mac=t0.macAddr
+		LEFT JOIN t_device_group_relation t2 ON
+		t1.id=t2.deviceid
+		LEFT JOIN t_user_dgroup_relation t3 ON
+		t3.devicegroupid=t2.groupid
+		WHERE t3.userid=1 AND t2.moduleid=11
+		<if test="endtime!=null and endtime!=''">
+			AND t0.`addtime` &lt;= #{endtime}
+		</if>
+		<if test="starttime!=null and starttime!=''">
+			AND t0.`addtime` &gt;= #{starttime}
+		</if>
+		<if test="mac!=null and mac!=''">
+			AND t0.macAddr=#{mac}
+		</if>
+	</select>
+
+	<!-- 三相电压 -->
+	<select id="SelectSxdyDevLogPage"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.devicemanager.SXDYDevLogList">
+		SELECT
+		*
+		FROM
+		log_sxdy t1
+		INNER JOIN t_device_all t2
+		ON t2.moduleid = 15
+		and t2.`mac` =
+		t1.`mac_addr`
+		AND t2.`isdelete` = 0
+		AND t2.`isenable` = 1
+		<if test="mac!=null and mac!=''">
+			AND t2.`mac`=#{mac}
+		</if>
+		INNER JOIN t_device_group_relation t3
+		ON t3.`moduleid` = 15
+		AND
+		t3.`isdelete` = 0
+		AND t3.`isenable` = 1
+		AND t3.`deviceid` = t2.`id`
+		INNER JOIN t_device_group t4
+		ON t4.`id` = t3.`groupid`
+		AND t4.`moduleid`
+		= 15
+		AND t4.`isdelete` = 0
+		AND t4.`isenable` = 1
+		INNER JOIN
+		t_user_dgroup_relation t5
+		ON t5.`devicegroupid` = t4.`id`
+		AND
+		t5.`isdelete` = 0
+		AND t5.`isenable` = 1
+		INNER JOIN t_user t6
+		ON t6.`id` =
+		t5.`userid`
+		AND t6.`id` = #{userid}
+		WHERE 1=1
+		<if test="endtime!=null and endtime!=''">
+			AND t1.`input_time` &lt;= #{endtime}
+		</if>
+		<if test="starttime!=null and starttime!=''">
+			AND t1.`input_time` &gt;= #{starttime}
+		</if>
+	</select>
+
+	<!-- 三相电流 -->
+	<select id="SelectSxdlLog"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.devicemanager.LogSxdl">
+		SELECT
+		`id`,`lb_alarm`,`channel`,`commsys_type`,`df_id`,`fault_alarm`,`fire_alarm`,`frame_cnt`,`gwid`,`gwip`,`input_time`,`mac_addr`,`msg_id`,`place_id`,`repeater`,`reserved`,`rssi`,`sf`,`snr`,`snr_max`,`snr_min`,`status`,`sys_type`,`temp_alarm`,`temp_value`,`update_time`,`DL_A`,`DL_B`,`DL_C`
+		FROM log_sxdl
+		<where>
+			<if test="mac != '' and mac != null ">
+				`mac_addr`=#{mac}
+			</if>
+		</where>
+		ORDER BY `input_time` DESC
+	</select>
+
+	<!-- 剩余电流 -->
+	<select id="SelectSydlLog"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.devicemanager.LogSydl">
+		SELECT
+		`id`,`lb_alarm`,`channel`,`commsys_type`,`df_id`,`fault_alarm`,`fire_alarm`,`frame_cnt`,`gwid`,`gwip`,`input_time`,`mac_addr`,`msg_id`,`place_id`,`repeater`,`reserved`,`rssi`,`sf`,`snr`,`snr_max`,`snr_min`,`status`,`sys_type`,`temp_alarm`,`temp_value`,`update_time`
+		from log_sydl
+		<where>
+			<if test="mac != '' and mac != null ">
+				`mac_addr`=#{mac}
+			</if>
+		</where>
+		ORDER BY `input_time` DESC
+	</select>
+
+	<!-- 水压 -->
+	<select id="SelectSyLog"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.devicemanager.LogSy">
+		SELECT
+		`id`,`lb_alarm`,`channel`,`commsys_type`,`df_id`,`fault_alarm`,`fire_alarm`,`frame_cnt`,`gwid`,`gwip`,`input_time`,`mac_addr`,`msg_id`,`place_id`,`repeater`,`reserved`,`rssi`,`sf`,`snr`,`snr_max`,`snr_min`,`status`,`sys_type`,`temp_alarm`,`temp_value`,`update_time`
+		from log_sy
+		<where>
+			<if test="mac != '' and mac != null ">
+				`mac_addr`=#{mac}
+			</if>
+		</where>
+		ORDER BY `input_time` DESC
+	</select>
+
+	<!-- 井盖运行日志 -->
+	<select id="SelectJgLog"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.devicemanager.LogJg">
+		SELECT *
+		from log_jg
+		<where>
+			<if test="mac != '' and mac != null ">
+				`macaddr`=#{mac}
+			</if>
+		</where>
+		ORDER BY `addtime` DESC
+	</select>
+
+	<!-- 地磁运行日志 -->
+	<select id="SelectDcLog"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.devicemanager.LogDc">
+		SELECT *
+		from log_dc
+		<where>
+			<if test="mac != '' and mac != null ">
+				`macaddr`=#{mac}
+			</if>
+		</where>
+		ORDER BY `addtime` DESC
+	</select>
+
+	<!-- 红外运行日志 -->
+	<select id="SelectHwLog"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.devicemanager.LogHw">
+		SELECT *
+		from log_hw
+		<where>
+			<if test="mac != '' and mac != null ">
+				`macaddr`=#{mac}
+			</if>
+		</where>
+		ORDER BY `addtime` DESC
+	</select>
+
+	<!-- 垃圾桶运行日志 -->
+	<select id="SelectLjtLog"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.devicemanager.LogLjt">
+		SELECT *
+		from log_ljt
+		<where>
+			<if test="mac != '' and mac != null ">
+				`macaddr`=#{mac}
+			</if>
+		</where>
+		ORDER BY `addtime` DESC
+	</select>
+
+	<!-- 水浸运行日志 -->
+	<select id="SelectSjLog"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.devicemanager.LogSj">
+		SELECT *
+		from log_sj
+		<where>
+			<if test="mac != '' and mac != null">
+				`macaddr`=#{mac}
+			</if>
+		</where>
+		ORDER BY `addtime` DESC
+	</select>
+
+	<!-- pm运行日志 -->
+	<select id="SelectPmLog"
+		resultType="com.hotcomm.prevention.bean.mysql.manage.devicemanager.LogPm">
+		SELECT *
+		from log_pm
+		<where>
+			<if test="mac != '' and mac != null">
+				`macaddr`=#{mac}
+			</if>
+		</where>
+		ORDER BY `addtime` DESC
+	</select>
+</mapper>

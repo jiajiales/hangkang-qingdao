@@ -1,0 +1,29 @@
+<div id="temp_data_search" data-options="region:'north',border:false" style="height: 30px; padding: 10px; overflow: hidden;">
+    <form id="device_data_search_form" class="searcher-form">
+        <div>
+           	<input name="deviceCode" id="deviceCode" type="hidden" />
+            <select name="sendStatus" class="easyui-combobox field" label="发送状态：" labelWidth="65" editable="false" style="width:200px" data-options="valueField:'value', textField:'label', panelHeight:'auto'">
+                <option value="">全部</option>
+                <option value="1">未发送</option>
+                <option value="2">等待发送</option>
+                <option value="3">发送成功</option>
+                <option value="4">发送失败</option>
+            </select>
+            <select name="dataSource" class="easyui-combobox field" label="数据来源：" labelWidth="65" editable="false" style="width:200px" data-options="valueField:'value', textField:'label', panelHeight:'auto'">
+                <option value="">全部</option>
+                <option value="1">AMQP</option>
+                <option value="2">MQTT</option>
+                <option value="3">TCP</option>
+                <option value="4">HTTP</option>
+            </select>
+            <input name="queueName" class="easyui-textbox field" label="队列名称：" labelWidth="65" style="width:250px" />
+            <input name="startTime" class="easyui-datebox field" label="起始时间：" labelWidth="65" style="width:200px" />
+            <input name="endTime" class="easyui-datebox field" label="结束时间：" labelWidth="65" style="width:200px" />
+            <a id="temp_data_search_button" class="easyui-linkbutton searcher" data-options="iconCls:'fa fa-search'">检索</a>
+            <a id="temp_data_reset_button" class="easyui-linkbutton reset" data-options="iconCls:'fa fa-repeat'">重置</a>
+        </div>
+    </form>
+</div>
+<div>
+	<table class="easyui-datagrid" style="" id="device_data_datagrid"></table>
+</div>

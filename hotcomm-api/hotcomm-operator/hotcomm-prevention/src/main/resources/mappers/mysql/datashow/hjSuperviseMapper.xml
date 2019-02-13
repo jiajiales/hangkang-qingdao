@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.mysql.datashow.hjSuperviseMapper">
+	<!-- PM设备数据 -->
+	<select id="selectPMGroupData" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.PMGroupDataVo">
+		SELECT COUNT(tda.id) as alldevcount,
+				COUNT(CASE WHEN tda.state=0 AND tda.id is not null THEN tda.id END) as normaldevcount,
+				COUNT(CASE WHEN tda.state=1 AND tda.id is not null THEN tda.id END) as alarmdevcount,
+				COUNT(case WHEN tda.state=2 AND tda.id is not null THEN tda.id END) as faultdevcount
+		FROM t_device_all tda 
+		LEFT JOIN t_device_group_relation dgr ON dgr.deviceid = tda.id AND dgr.moduleid = tda.moduleid AND dgr.isdelete!=1 AND dgr.isenable=1
+		LEFT JOIN t_device_group dg ON dg.id=dgr.groupid AND dg.moduleid=tda.moduleid AND dg.isdelete!=1 AND dg.isenable=1
+		RIGHT JOIN t_user_dgroup_relation udr ON udr.devicegroupid=dg.id AND udr.isdelete!=1 AND udr.isenable=1 AND udr.userid = #{userid}
+		WHERE tda.moduleid=4 AND tda.isdelete!=1 AND tda.isenable=1
+	</select>
+	<!-- 城市Pm值统计 -->
+	<select id="selectPMAvgByCity" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.PMAvgByCityVo">
+		<if test="areaid ==null or areaid =='' ">
+			SELECT ta.addvb,dg.areaid,ta.lng as x,ta.lat as y,AVG(tda.pm) as pm,AVG(tda.pm_noiseval) as noiseval,
+					(CASE  WHEN AVG(tda.pm)&lt;=35 THEN 1 
+						   WHEN AVG(tda.pm)&lt;=75 THEN 2 
+						   ELSE 3
+						END) as `pmlevel`,
+					(CASE WHEN AVG(tda.pm_noiseval)&lt;=50 THEN 1
+						  WHEN AVG(tda.pm_noiseval)&lt;=70 THEN 2
+						  ELSE 3
+						END) as `noisevallevel`
+			FROM t_device_all tda 
+			LEFT JOIN t_device_group_relation dgr ON dgr.deviceid = tda.id AND dgr.moduleid = tda.moduleid AND dgr.isdelete!=1 AND dgr.isenable=1
+			LEFT JOIN t_device_group dg ON dg.id=dgr.groupid AND dg.moduleid=tda.moduleid AND dg.isdelete!=1 AND dg.isenable=1
+			LEFT JOIN t_area ta ON ta.id=dg.areaid
+			RIGHT JOIN t_user_dgroup_relation udr ON udr.devicegroupid=dg.id AND udr.isdelete!=1 AND udr.isenable=1 AND udr.userid = 1
+			WHERE tda.moduleid=4 AND tda.isdelete!=1 AND tda.isenable=1
+			GROUP BY ta.id
+		</if>
+		<if test="areaid !='' and areaid != null">
+			SELECT ta.addvb,dg.areaid,dg.groupname,dg.x,dg.y,AVG(tda.pm) as pm,AVG(tda.pm_noiseval) as noiseval,dg.id as groupid,
+				(CASE  WHEN AVG(tda.pm)&lt;=35 THEN 1 
+					   WHEN AVG(tda.pm)&lt;=75 THEN 2 
+					   ELSE 3
+					END) as `pmlevel`,
+				(CASE WHEN AVG(tda.pm_noiseval)&lt;=50 THEN 1
+					  WHEN AVG(tda.pm_noiseval)&lt;=70 THEN 2
+					  ELSE 3
+					END) as `noisevallevel`
+		FROM t_device_all tda 
+		LEFT JOIN t_device_group_relation dgr ON dgr.deviceid = tda.id AND dgr.moduleid = tda.moduleid AND dgr.isdelete!=1 AND dgr.isenable=1
+		LEFT JOIN t_device_group dg ON dg.id=dgr.groupid AND dg.moduleid=tda.moduleid AND dg.isdelete!=1 AND dg.isenable=1
+		LEFT JOIN t_area ta ON ta.id=dg.areaid
+		RIGHT JOIN t_user_dgroup_relation udr ON udr.devicegroupid=dg.id AND udr.isdelete!=1 AND udr.isenable=1 AND udr.userid = 1
+		WHERE tda.moduleid=4 AND tda.isdelete!=1 AND tda.isenable=1 AND ta.id=#{areaid}
+		GROUP BY ta.id,dg.id
+		</if>
+	</select>
+	<!-- 全市pm平均值 -->
+	<select id="selectPMAvgByAllCity" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.PMAvgByCityVo">
+		SELECT AVG(tda.pm) as pmall,AVG(tda.pm_noiseval) as noisevalall
+		FROM t_device_all tda 
+		LEFT JOIN t_device_group_relation dgr ON dgr.deviceid = tda.id AND dgr.moduleid = tda.moduleid AND dgr.isdelete!=1 AND dgr.isenable=1
+		LEFT JOIN t_device_group dg ON dg.id=dgr.groupid AND dg.moduleid=tda.moduleid AND dg.isdelete!=1 AND dg.isenable=1
+		LEFT JOIN t_area ta ON ta.id=dg.areaid
+		RIGHT JOIN t_user_dgroup_relation udr ON udr.devicegroupid=dg.id AND udr.isdelete!=1 AND udr.isenable=1 AND udr.userid = #{userid}
+		WHERE tda.moduleid=4 AND tda.isdelete!=1 AND tda.isenable=1
+		GROUP BY tda.moduleid
+	</select>
+	<!-- 温湿度趋势图 -->
+	<select id="selectTemperatureAndHumidityTrendChart" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.TemperatureAndHumidityTrendChart">
+		SELECT temp1.TheDate,
+				IF(FORMAT(AVG(CASE WHEN tda.id is not null THEN logpm.commsysType END),4) is null ,0,FORMAT(AVG(CASE WHEN tda.id is not null THEN logpm.commsysType END),4)) as humidity,
+				IF(FORMAT(AVG(case when tda.id is not null THEN logpm.temperature END),4) is null,0,FORMAT(AVG(case when tda.id is not null THEN logpm.temperature END),4)) as temp
+		<if test="type ==1">
+			FROM(
+			SELECT
+				ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate ,@d :=@d - 1 DAY
+			FROM
+				t_power,
+				(SELECT @d := 0) temp
+			WHERE
+				ADDDATE(CURDATE(), INTERVAL @d DAY) >= date_add(CURDATE(), INTERVAL - 29 DAY)
+			ORDER BY
+				DAY
+			)temp1
+			LEFT JOIN log_pm logpm ON DATE_FORMAT(logpm.addtime, '%Y-%m-%d') = temp1.TheDate
+		</if> 
+		<if test="type==2">
+			FROM(
+			SELECT
+				DATE_FORMAT(ADDDATE(CURDATE(), INTERVAL @d MONTH),'%Y-%m') AS TheDate ,@d :=@d - 1 as DateTime
+			FROM
+				t_power,
+				(SELECT @d := 0) temp
+			WHERE
+				ADDDATE(CURDATE(), INTERVAL @d MONTH) >= date_sub(CURDATE(), INTERVAL  12 MONTH)
+			ORDER BY
+				TheDate
+			)temp1
+			LEFT JOIN log_pm logpm ON DATE_FORMAT(logpm.addtime, '%Y-%m') = temp1.TheDate
+		</if>
+		LEFT JOIN t_device_all tda ON  logpm.macAddr = tda.mac AND tda.moduleid=4 AND tda.isdelete!=1 AND tda.isenable=1
+		GROUP BY temp1.TheDate
+		order BY temp1.TheDate		
+	</select>
+	<!-- 环境监控图 -->
+	<select id="selectEnvironmentalMonitoringChart" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.EnvironmentalMonitoringChart">
+		SELECT temp1.TheDate,
+				IF(AVG(CASE WHEN tda.id is not null THEN logpm.lastvalue END) is null ,0,FORMAT(AVG(CASE WHEN tda.id is not null THEN logpm.lastvalue END),4)) as pm25,
+				IF(AVG(case when tda.id is not null THEN logpm.rssi END) is null,0,FORMAT(AVG(case when tda.id is not null THEN logpm.rssi END),4)) as noiseval
+		<if test="type ==1">
+			FROM(
+			SELECT
+				ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate ,@d :=@d - 1 DAY
+			FROM
+				t_power,
+				(SELECT @d := 0) temp
+			WHERE
+				ADDDATE(CURDATE(), INTERVAL @d DAY) >= date_add(CURDATE(), INTERVAL - 29 DAY)
+			ORDER BY
+				DAY
+			)temp1
+			LEFT JOIN log_pm logpm ON DATE_FORMAT(logpm.addtime, '%Y-%m-%d') = temp1.TheDate
+		</if> 
+		<if test="type==2">
+			FROM(
+			SELECT
+				DATE_FORMAT(ADDDATE(CURDATE(), INTERVAL @d MONTH),'%Y-%m') AS TheDate ,@d :=@d - 1 as DateTime
+			FROM
+				t_power,
+				(SELECT @d := 0) temp
+			WHERE
+				ADDDATE(CURDATE(), INTERVAL @d MONTH) >= date_sub(CURDATE(), INTERVAL  12 MONTH)
+			ORDER BY
+				TheDate
+			)temp1
+			LEFT JOIN log_pm logpm ON DATE_FORMAT(logpm.addtime, '%Y-%m') = temp1.TheDate
+		</if>
+		LEFT JOIN t_device_all tda ON  logpm.macAddr = tda.mac AND tda.moduleid=4 AND tda.isdelete!=1 AND tda.isenable=1
+		GROUP BY temp1.TheDate
+		order BY temp1.TheDate	
+	</select>
+	<!-- 监测点 -->
+	<select id="selectPMMonitoringPoint" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.PMMonitoringPoint">
+		SELECT dg.id as groupid ,dg.groupname,ifnull(AVG(tda.pm),0) as pm25,ifnull(AVG(tda.pm_noiseval),0) as noiseval,
+				(CASE  WHEN AVG(tda.pm)&lt;=35 THEN '优' 
+					   WHEN AVG(tda.pm)&lt;=75 THEN '良' 
+					   WHEN AVG(tda.pm)&lt;=115 THEN '轻度污染' 
+					   WHEN AVG(tda.pm)&lt;=150 THEN '中度污染' 
+					   WHEN AVG(tda.pm)&lt;=250 THEN '重度污染' 
+					   WHEN AVG(tda.pm)&lt;=500 THEN '严重污染' 
+					   ELSE '暂无数据'
+					END) as `level`
+		from t_device_all tda 
+		LEFT JOIN t_device_group_relation dgr ON dgr.deviceid = tda.id AND dgr.isdelete!=1 AND dgr.isenable=1 AND
+		dgr.moduleid=tda.moduleid
+		LEFT JOIN t_device_group dg ON dg.id=dgr.groupid AND dg.isdelete!=1 AND dg.isenable=1
+		WHERE tda.isdelete!=1 AND tda.isenable=1 AND tda.moduleid=4
+		group BY dg.id
+	</select>
+	<!-- 运行数据概况 -->
+	<select id="selectOperationalDataOverview" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.OperationalDataOverview">
+		select COUNT(CASE WHEN tda.handlestate=2 and tdas.state_name LIKE '%含量超标%' THEN tda.id END)as pmalarmcount,COUNT(CASE WHEN tda.handlestate=2 and tdas.state_name like '%噪音%' THEN tda.id END) as noisevalalarmcount
+		from t_dev_alarm tda
+		LEFT JOIN t_dev_alarm_state tdas ON tdas.id= tda.alarmstateid AND tdas.isdelete!=1 AND tdas.module_id = tda.moduleid
+		LEFT JOIN t_dev_handle_state tdhs ON tdhs.id=tda.handleresult AND tdhs.isdelete!=1 AND tdhs.module_id=tda.moduleid
+	</select>
+	<!-- PM楼层图片 -->
+	<select id="selectPMGroupFloor" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.PMFloor">
+		SELECT tip.id,tip.picpath,tip.site
+		FROM t_device_group dg 
+		LEFT JOIN t_item_pic tip ON tip.itemid=dg.id AND tip.isdelete!=1 AND tip.isenable=1
+		WHERE dg.isdelete!=1 AND dg.isenable=1 AND dg.moduleid=4 AND dg.id=#{groupid}
+	</select>
+	<!-- PM设备信息 -->
+	<select id="selectPMDevInfo" resultType="com.hotcomm.prevention.bean.mysql.datashow.vo.PMDevInfoVo">
+		SELECT tda.id,tda.x,tda.y,tda.state,tu.contacts,tda.mac,tda.devnum,tda.battery,dg.groupname,dg.id as groupid
+		FROM t_item_pic tip
+		LEFT JOIN t_dev_item_pic tdip ON tdip.item_pic_id=tip.id AND tdip.moduleid=4 AND tdip.isdelete!=1 AND tdip.isenable=1
+		LEFT JOIN t_device_all tda ON tda.id=tdip.dev_id AND tda.moduleid=4 AND tda.isenable=1 AND tda.isdelete!=1
+		LEFT JOIN t_user tu ON tu.id=tda.own_id AND tu.isdelete!=1 AND tu.isenable=1
+		LEFT JOIN t_device_group_relation dgr ON dgr.deviceid=tda.id AND dgr.moduleid=4 AND dgr.isenable=1 AND dgr.isdelete!=1
+		LEFT JOIN t_device_group dg ON dg.id= dgr.groupid AND dg.moduleid=4 AND dg.isdelete!=1 AND dg.isenable=1
+		WHERE tip.isdelete!=1 AND tip.isenable=1 AND tip.id=#{tipid}
+	</select>
+</mapper>

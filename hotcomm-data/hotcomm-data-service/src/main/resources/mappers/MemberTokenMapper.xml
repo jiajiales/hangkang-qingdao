@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.data.db.MemberTokenMapper">
+
+	<update id="update" parameterType="MemberToken">
+		update member_token 
+		set token = #{token}, expire_time = #{expireTime} 
+		where member_id = #{memberId} and session_id = #{sessionId}
+	</update>
+
+	<update id="updateExpireTime">
+		update member_token set expire_time = #{expireTime} where token = #{token}
+	</update>
+
+	<delete id="delByToken">
+		delete from member_token where token = #{token}
+	</delete>
+
+</mapper>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.data.db.LogMapper">
+
+	<resultMap type="Log" id="LogMap">
+		<id column="id" property="id" />
+		<result column="record_user" property="recordUser" />
+		<result column="record_event" property="recordEvent" />
+		<result column="record_time" property="recordTime" />
+		<result column="record_ip" property="recordIp" />
+	</resultMap>
+
+	<select id="queryLogInPage" resultMap="LogMap">
+		SELECT id, record_user, record_event, record_time, record_ip FROM hk_log v1
+		<where>
+			v1.record_user LIKE CONCAT('%', #{recordUser}, '%')
+			<if test="startTime != null and startTime != ''">
+				AND v1.record_time <![CDATA[>=]]> #{startTime}
+			</if>
+			<if test="endTime != null and endTime != ''">
+				AND v1.record_time <![CDATA[<=]]> #{endTime}
+			</if>
+		</where>
+		ORDER BY record_time DESC
+	</select>
+
+</mapper>

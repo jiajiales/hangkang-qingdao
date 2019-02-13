@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.data.db.QueueMapper">
+
+	<resultMap type="QueuePageVO" id="QueuePageMap">
+		<id property="queueId" column="queue_id" />
+		<result property="queueName" column="queue_name" />
+		<result property="type" column="type" />
+		<result property="memberName" column="member_name" />
+		<result property="holeTime" column="hole_time" />
+		<result property="receiveDataNum" column="receive_data_num" />
+		<result property="waitSendNum" column="wait_send_num" />
+		<result property="queueStatus" column="queue_status" />
+		<result property="createTime" column="create_time" />
+		<result property="remark" column="remark" />
+	</resultMap>
+
+	<resultMap type="Queue" id="QueueMap" extends="QueuePageMap">
+		<result property="sendFilterInterval"
+			column="send_filter_interval" />
+		<result property="memberId" column="member_id" />
+	</resultMap>
+
+	<select id="queryPage" resultMap="QueuePageMap" parameterType="com.hotcomm.data.bean.params.service.queue.QueuePageParams">
+		SELECT f1.queue_id, f1.queue_name, f1.type, f2.member_name, f1.hole_time, f1.queue_status, f1.create_time, f1.remark
+		FROM hk_queue f1 
+		LEFT JOIN sys_member f2 ON f1.member_id = f2.member_id
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="pageParams.loginUserType != null and pageParams.loginUserType == 1">
+				AND f1.member_id IN (SELECT f3.customer_id FROM hk_customer_member f3 WHERE f3.member_id = #{pageParams.loginMemberId})
+			</if>
+			<if test="pageParams.memberId != null">
+				AND f1.member_id = #{pageParams.memberId}
+			</if>
+			<if test="pageParams.type != null">
+				AND f1.type = #{pageParams.type}
+			</if>
+			<if test="pageParams.queueStatus != null">
+				AND f1.queue_status = #{pageParams.queueStatus}
+			</if>
+			<if test="pageParams.queueName != null and pageParams.queueName != ''">
+				AND f1.queue_name LIKE CONCAT('%', #{pageParams.queueName}, '%')
+			</if>
+			<if test="pageParams.memberName != null and pageParams.memberName != ''">
+				AND f2.member_name LIKE CONCAT('%', #{pageParams.memberName}, '%')
+			</if>
+			<if test="pageParams.remark != null and pageParams.remark != ''">
+				AND f1.remark LIKE CONCAT('%', #{pageParams.remark}, '%')
+			</if>
+		</trim>
+		ORDER BY f1.create_time DESC
+	</select>
+
+	<select id="queryQueues" resultMap="QueueMap">
+		select queue_id, queue_name, member_id, send_filter_interval, `type`,
+		queue_status, hole_time
+		from hk_queue
+		<where>
+			1 = 1
+			<if test="params.memberIds != null">
+				<foreach collection="params.memberIds" open="and member_id in  (" item="memberId" index="index" separator="," close=")">
+					#{memberId}
+				</foreach>
+			</if>
+			<if test="params.moreStatus != null">
+				<foreach collection="params.moreStatus" open="and queue_status in  (" item="memberId" index="index" separator="," close=")">
+					#{memberId}
+				</foreach>
+			</if>
+		</where>
+	</select>
+
+	<select id="getQueueParamsByQueueId" parameterType="java.lang.Integer" resultType="com.hotcomm.data.bean.vo.queue.QueueVO">
+		SELECT queue_name queueName, 
+			(SELECT COUNT(0) FROM hk_data_queue WHERE queue_id = #{queueId} AND send_status = 3) receiveDataNum,
+			(SELECT COUNT(0) FROM hk_data_queue WHERE queue_id = #{queueId} AND send_status = 2) waitSendNum,
+			hole_time holeTime, 
+			send_filter_interval sendFilterInterval
+		FROM hk_queue
+		<where>
+			queue_id = #{queueId}
+		</where>
+	</select>
+
+	<select id="getWaitSendNumByQueueId" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+		SELECT COUNT(0) waitSendNum
+		FROM hk_data_queue 
+		<where>
+			queue_id = #{queueId} AND send_status = 2
+		</where>
+	</select>
+
+	<update id="updateQueueDataParams">
+		UPDATE hk_queue 
+		SET receive_data_num = (receive_data_num + 1), wait_send_num = (wait_send_num + 1)
+		<where>
+			queue_name = #{queueName}
+		</where>
+	</update>
+
+	<select id="listActive" resultMap="QueueMap">
+		SELECT *
+		FROM hk_queue v1
+		<where>
+			v1.`is_delete` = 1
+			<if test="memberIds != null">
+				<foreach collection="memberIds" open="and v1.member_id in  (" item="memberId" index="index" separator="," close=")">
+					#{memberId}
+				</foreach>
+			</if>
+			<if test="type != null">
+				and v1.type = #{type}
+			</if>
+		</where>
+	</select>
+
+	<update id="updateQueueWaitSendNums">
+		UPDATE hk_queue 
+		SET wait_send_num = (wait_send_num - 1) 
+		<where>
+			queue_name = #{queueName}
+		</where>
+	</update>
+
+	<select id="getWaitSendNums" resultType="java.lang.Long">
+		SELECT COUNT(0)
+		FROM hk_data_queue v1
+		<where>
+			v1.member_id = #{memberId} AND v1.send_status = 2
+		</where>
+	</select>
+
+	<select id="getQueueView" resultType="com.hotcomm.data.bean.vo.queue.QueueVO" parameterType="com.hotcomm.data.bean.params.service.queue.QueuePageParams">
+		SELECT v1.queue_name queueName, v1.hole_time holeTime, v1.queue_status queueStatus, 
+		    (SELECT COUNT(0) FROM hk_data_queue WHERE queue_id = (SELECT queue_id FROM hk_queue WHERE member_id = #{params.memberId} AND `type` = 1) AND send_status = 3) receiveDataNum,
+		    (SELECT COUNT(0) FROM hk_data_queue WHERE queue_id = (SELECT queue_id FROM hk_queue WHERE member_id = #{params.memberId} AND `type` = 1) AND send_status = 2) waitSendNum, 
+			v1.send_filter_interval sendFilterInterval, 
+			v2.vhost, v2.vhost_account vhostAccount, v2.vhost_password vhostPassword
+		FROM hk_queue v1 
+		LEFT JOIN hk_member_vhost v2 ON v1.member_id = v2.member_id
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="params.memberId != null">
+				AND v1.member_id = #{params.memberId}
+			</if>
+			<if test="params.type != null">
+				AND v1.type = #{params.type}
+			</if>
+		</trim>
+	</select>
+
+	<update id="updateQueueName" parameterType="Queue">
+		update hk_queue 
+		set queue_name = #{queueName} 
+		<where>
+			member_id = #{memberId} and type = #{type}
+		</where>
+	</update>
+
+	<update id="stopQueue" parameterType="java.lang.Integer">
+		UPDATE hk_queue 
+		SET queue_status = 2
+		<where>
+			member_id = #{memberId}
+		</where>
+	</update>
+
+	<select id="getExpireQueue" resultType="Queue" >
+		SELECT v1.queue_id queueId,v1.queue_name queueName,v1.`hole_time` holeTime
+		FROM hk_queue v1 WHERE is_delete=1 AND  v1.hole_time <![CDATA[<=]]> NOW() AND v1.queue_status=1
+	</select>
+
+	<select id="getRuningQueue"  resultType="java.util.Map">
+		SELECT v2.`vhost`,v1.`queue_id` queueId,v1.`queue_name` queueName,v1.`send_filter_interval` blockMaxSize
+		FROM hk_queue v1 
+		INNER JOIN hk_member_vhost v2 ON v1.`member_id`=v2.`member_id` 
+		INNER JOIN sys_member v3 ON v3.`member_id`=v1.`member_id`
+		WHERE v1.`is_delete`=1 AND v1.`queue_status`=1 AND v2.`vhost_status`=3  AND v3.`is_delete`=1 AND v3.`status`=1
+	</select>
+
+	<update id="delQueueByCustomerId" parameterType="java.lang.Integer">
+		UPDATE hk_queue
+		SET queue_status = 2, is_delete = 2, update_time = NOW()
+		WHERE member_id = #{customerId}
+	</update>
+
+</mapper>

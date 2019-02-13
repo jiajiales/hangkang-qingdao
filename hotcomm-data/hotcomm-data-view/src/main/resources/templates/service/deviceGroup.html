@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+
+<head th:include="common">
+    <meta content="text/html;charset=UTF-8" />
+    <meta http-equiv="Access-Control-Allow-Origin" content="*" />
+    <meta name="keywords" content="keyword1,keyword2,keyword3"></meta>
+    <meta name="description" content="this is my page"></meta>
+    <meta name="content-type" content="text/html; charset=UTF-8"></meta>
+</head>
+<script type="text/javascript" src="/static/js/service/deviceGroup.js"></script>
+
+<body style="height: 100%;">
+    <div class="easyui-layout">
+        <div id="deviceGroup_search" data-options="region:'north',border:false" style="height: 60px;padding: 10px;overflow: hidden;">
+            <form id="deviceGroup_search_from" class="searcher-form" enctype="multipart/form-data" method="post" action="http://localhost:8085/deviceGroup/deviceGroupTypeManage/addListdeviceGroup">
+                <input id="selectMemberId" name="selectMemberId" class="easyui-textbox field" label="关联客户:" labelWidth="60" />
+                <input id="deviceGroupId" name="deviceGroupId" class="easyui-textbox field" label="设备组:" labelWidth="50" />
+                <select id="devGroupStatus" class="easyui-combobox" name="devGroupStatus" label="设备组状态:" labelWidth="80" style="width:150px;" editable="false" data-options="valueField:'value', textField:'label', panelHeight:'auto'">
+                    <option value="">全部</option>
+                    <option value="1">有效</option>
+                    <option value="2">无效</option>
+                </select>
+                <a id="deviceGroup_search_button" class="easyui-linkbutton searcher" data-options="iconCls:'fa fa-search'">检索</a>
+                <a id="deviceGroup_reset_button" class="easyui-linkbutton reset" data-options="iconCls:'fa fa-repeat'">重置</a>
+            </form>
+        </div>
+        <div>
+            <table class="easyui-datagrid" id="deviceGroup_datagrid"></table>
+        </div>
+    </div>
+    <script type="text/javascript">
+        $(function () {
+            $(".layout-panel").css("position", "static");
+        });
+    </script>
+    <script th:inline="javascript">
+		$(function () {
+	     	var b = [[${buttons}]];
+	     	setButtons(b);
+	        generateButtons(buttons);
+		});
+    </script>
+</body>
+
+</html>

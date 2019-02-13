@@ -1,0 +1,499 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.yg.YGAlarmParticMapper">
+	<sql id="motab">
+		<if test="moduleid==1">t_device_dc</if>
+		<if test="moduleid==2">t_device_yg</if>
+		<if test="moduleid==3">t_device_jg</if>
+		<if test="moduleid==4">t_device_pm</if>
+		<if test="moduleid==5">t_device_wt</if>
+		<if test="moduleid==6">t_device_et</if>
+		<if test="moduleid==7">t_device_sl</if>
+		<if test="moduleid==8">t_device_hw</if>
+		<if test="moduleid==9">t_device_ljt</if>
+		<if test="moduleid==10">t_device_sj</if>
+		<if test="moduleid==11">t_device_mc</if>
+		<if test="moduleid==12">t_device_krq</if>
+		<if test="moduleid==13">t_device_ywj</if>
+		<if test="moduleid==14">t_device_sxdl</if>
+		<if test="moduleid==15">t_device_sxdy</if>
+		<if test="moduleid==16">t_device_sy</if>
+		<if test="moduleid==17">t_device_sydl</if>
+	</sql>
+	<select id="selectForState" resultType="com.hot.manage.entity.yg.vo.YGAlarmPartic">
+		select b.id as
+		alarmid,b.deviceid,h.devnum,h.`code`,e.contacts,b.addtime,h.lat,h.lng,b.`handler`,c.`order`,b.handlestate,c.state_name
+		from t_yg_alarm b
+		LEFT JOIN t_device_yg h ON h.id=b.deviceid
+		LEFT JOIN
+		t_alarm_state c on c.id=b.alarmStateId
+		LEFT JOIN
+		t_device_group_relation g ON g.deviceid = b.deviceid and g.moduleid=2
+		LEFT JOIN t_device_group p ON p.id = g.groupid
+		LEFT JOIN t_user e ON
+		e.id=p.managerid
+		<where>
+			<if test="handlestate!=1">
+				<choose>
+					<when test="handlestate=2">
+						b.handlestate=0
+					</when>
+					<when test="handlestate=3">
+						b.handlestate=1
+					</when>
+					<when test="handlestate=4">
+						b.handlestate=2
+					</when>
+				</choose>
+			</if>
+			<choose>
+				<when test="stateid!=-1">
+					and c.id = #{stateid}
+				</when>
+			</choose>
+		</where>
+	</select>
+	<select id="selectForTime" resultType="com.hot.manage.entity.yg.vo.YGAlarmPartic">
+		select b.id as
+		alarmid,b.deviceid,h.devnum,h.`code`,e.contacts,b.addtime,h.lat,h.lng,b.`handler`,c.`order`,b.handlestate,c.state_name
+		from t_yg_alarm b
+		LEFT JOIN t_device_yg h ON h.id=b.deviceid
+		LEFT JOIN
+		t_alarm_state c on c.id=b.alarmStateId
+		LEFT JOIN
+		t_device_group_relation g ON g.deviceid = b.deviceid and g.moduleid=2
+		LEFT JOIN t_device_group p ON p.id = g.groupid
+		LEFT JOIN t_user e ON
+		e.id=p.managerid
+		<where>
+			<if test="startTime!=null and endTime!=null">
+
+				b.addtime &gt;= #{startTime} AND b.addtime &lt;=
+				#{endTime}
+			</if>
+			<if test="message!=null">
+				and
+				CONCAT_WS(&apos;/&apos;,h.devnum,h.`code`,e.contacts,b.`handler`,c.state_name)
+				LIKE CONCAT(&apos;%&apos;,#{message},&apos;%&apos;) COLLATE
+				utf8_unicode_ci
+			</if>
+		</where>
+		ORDER BY b.handlestate ASC
+	</select>
+	<select id="selectHistoricalDate" resultType="com.hot.manage.entity.yg.vo.YGHistoricalDate">
+		CALL
+		Get_YGHistoricalData(#{deviceid},#{theyear});
+	</select>
+	<select id="selectHistoricalStateDate" resultType="com.hot.manage.entity.yg.vo.YGHistoricalStateDate">
+		CALL
+		Get_YGHistoricalStateDate(#{deviceid},#{theyear});
+	</select>
+
+	<insert id="insertOneEvent" useGeneratedKeys="true" keyProperty="id">
+		<if test="instructions!=null">
+			INSERT INTO t_hk_event
+			(`code`,`describe`,`level`,
+			<if test="instructions!=null">instructions,</if>
+			adduserid,addtime,moduleid)
+			VALUES(#{code},#{describe},#{level},
+			<if test="instructions!=null">#{instructions},</if>
+			#{adduserid},#{addtime},2)
+		</if>
+	</insert>
+	<insert id="insertEventDevRel">
+		INSERT INTO t_hk_evdevrelation (eventid,devid)
+		VALUES(#{eventid},#{devid})
+	</insert>
+	<update id="closeYGalarmById">
+		update t_yg_alarm set handlestate=2 where
+		id=#{alarmid};
+	</update>
+
+	<select id="smokeAlarmingTrend" resultType="com.hot.manage.entity.yg.vo.YGAlarmingTrend">
+		SELECT
+		test1.TheDate AS DATE,YEAR(NOW()) - YEAR(test1.newdate) AS
+		yearAgo,
+		CASE
+		WHEN test2.alarmcount IS NULL
+		THEN 0
+		ELSE test2.alarmcount
+		END AS alarmcount
+		FROM
+		<if test="queryType==1">
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d DAY) AS
+			TheDate,ADDDATE(CURDATE(), INTERVAL @d DAY) AS newdate,
+			@d
+			:= @d - 1
+			DAY
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp
+			WHERE ADDDATE(CURDATE(),
+			INTERVAL
+			@d
+			DAY) >= DATE_ADD(CURDATE(), INTERVAL
+			-
+			1 MONTH)
+			) test1
+		</if>
+		<if test="queryType==2">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate,TheDate AS
+			newdate
+			FROM
+			(SELECT
+			ADDDATE(
+			DATE_FORMAT(
+			CURDATE(),
+			CONCAT(YEAR(CURDATE()) + 1,
+			'-%m-%d')
+			),
+			INTERVAL @d MONTH
+			) AS TheDate,
+			@d := @d - 1 MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			WHERE
+			YEAR(TheDate) &lt;=
+			YEAR(CURDATE())
+			AND YEAR(TheDate) >=
+			YEAR(CURDATE()) - 2) test1
+		</if>
+		<if test="queryType==3">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate,TheDate AS
+			newdate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 6)
+			test1
+		</if>
+		LEFT JOIN
+		(SELECT
+		DATE_FORMAT(t1.`addtime`, '%Y-%m-%d') AS DATE,
+		COUNT(t1.`id`) AS alarmcount
+		FROM
+		t_dev_alarm t1
+		INNER JOIN
+		<include refid="motab"></include>
+		t2
+		ON t1.`deviceid` = t2.`id`
+		AND t1.`moduleid` = #{moduleid}
+		AND
+		t2.`isdelete` = 0
+		INNER JOIN t_device_group_relation t3
+		ON t3.`deviceid`
+		= t2.`id`
+		AND
+		t3.`isdelete` = 0
+		AND t3.`moduleid` = t1.`moduleid`
+		INNER
+		JOIN
+		t_device_group t4
+		ON t4.`id` = t3.`groupid`
+		AND t4.`isdelete` = 0
+		AND
+		t4.`moduleid` = t1.`moduleid`
+		<if test="groupid !=null">
+			AND t4.`id`=#{groupid}
+		</if>
+		INNER JOIN t_user_dgroup_relation t5
+		ON
+		t5.`devicegroupid` = t4.`id`
+		AND
+		t5.`isdelete` = 0
+		INNER JOIN t_user
+		t6
+		ON t6.`id` = t5.`userid`
+		AND
+		t6.`isdelete` = 0
+		AND t6.`id` = #{userid}
+		INNER JOIN t_dev_alarm_state
+		t7
+		ON t7.`state_name` NOT LIKE '%电量%'
+		AND t7.`id` = t1.`alarmstateid`
+		AND t7.`type` = 1
+		AND t7.`module_id`=t1.`moduleid`
+		GROUP BY
+		MONTH(t1.`addtime`))
+		test2
+		<if test="queryType==1">
+			ON test1.TheDate = test2.DATE
+		</if>
+		<if test="queryType==2">
+			ON test1.TheDate = DATE_FORMAT(test2.DATE, '%Y-%m')
+		</if>
+		<if test="queryType==3">
+			ON test1.TheDate = DATE_FORMAT(test2.DATE, '%Y-%m')
+		</if>
+	</select>
+
+	<select id="smokeAlarmingTrendByGroup" resultType="com.hot.manage.entity.yg.vo.YGAlarmingTrend">
+		SELECT
+		test1.TheDate AS DATE,YEAR(NOW()) - YEAR(test1.newdate) AS
+		yearAgo,
+		CASE
+		WHEN test2.alarmcount IS NULL
+		THEN 0
+		ELSE test2.alarmcount
+		END AS alarmcount
+		FROM
+		<if test="queryType==1">
+			<!-- (SELECT -->
+			<!-- ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate, -->
+			<!-- @d -->
+			<!-- := @d - 1 DAY -->
+			<!-- FROM -->
+			<!-- t_power, -->
+			<!-- (SELECT -->
+			<!-- @d := 0) temp -->
+			<!-- WHERE ADDDATE(CURDATE(), -->
+			<!-- INTERVAL @d DAY) >= DATE_ADD(CURDATE(), INTERVAL -->
+			<!-- - -->
+			<!-- 1 MONTH) -->
+			<!-- ORDER BY -->
+			<!-- DAY) test1 -->
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d DAY) AS
+			TheDate,ADDDATE(CURDATE(), INTERVAL @d DAY) AS newdate,
+			@d
+			:= @d - 1
+			DAY
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp
+			WHERE ADDDATE(CURDATE(),
+			INTERVAL
+			@d
+			DAY) >= DATE_ADD(CURDATE(), INTERVAL
+			-
+			1 MONTH)
+			) test1
+		</if>
+		<if test="queryType==2">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate,TheDate AS newdate
+			FROM
+			(SELECT
+			ADDDATE(
+			DATE_FORMAT(
+			CURDATE(),
+			CONCAT(YEAR(CURDATE()) + 1,
+			'-%m-%d')
+			),
+			INTERVAL @d MONTH
+			) AS TheDate,
+			@d := @d - 1 MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			WHERE YEAR(TheDate) &lt;=
+			YEAR(CURDATE()) AND YEAR(TheDate) >=
+			YEAR(CURDATE())-2) test1
+
+			<!-- (SELECT -->
+			<!-- DATE_FORMAT(TheDate, '%Y-%m') AS TheDate -->
+			<!-- FROM -->
+			<!-- (SELECT -->
+			<!-- ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate, -->
+			<!-- @d := @d - 1 MONTH -->
+			<!-- FROM -->
+			<!-- t_power, -->
+			<!-- (SELECT -->
+			<!-- @d := 0) temp) test -->
+			<!-- WHERE YEAR(TheDate) &lt;= -->
+			<!-- YEAR(CURDATE()) -->
+			<!-- AND YEAR(TheDate) >= YEAR(CURDATE()) - 2) test1 -->
+		</if>
+		<if test="queryType==3">
+			(SELECT
+			DATE_FORMAT(TheDate, '%Y-%m') AS TheDate,TheDate AS
+			newdate
+			FROM
+			(SELECT
+			ADDDATE(CURDATE(), INTERVAL @d MONTH) AS TheDate,
+			@d := @d - 1
+			MONTH
+			FROM
+			t_power,
+			(SELECT
+			@d := 0) temp) test
+			LIMIT 0, 6)
+			test1
+		</if>
+		LEFT JOIN
+		(SELECT
+		DATE_FORMAT(t1.`addtime`, '%Y-%m-%d') AS DATE,
+		COUNT(t1.`id`) AS alarmcount
+		FROM
+		t_dev_alarm t1
+		INNER JOIN t_device_yg
+		t2
+		ON t1.`deviceid` = t2.`id`
+		AND t1.`moduleid` = #{moduleid}
+		AND
+		t2.`isdelete` = 0
+		INNER JOIN t_device_group_relation t3
+		ON t3.`deviceid`
+		= t2.`id`
+		AND
+		t3.`isdelete` = 0
+		AND t3.`moduleid` = t1.`moduleid`
+		INNER
+		JOIN
+		t_device_group t4
+		ON t4.`id` = t3.`groupid`
+		AND t4.`isdelete` = 0
+		AND
+		t4.`moduleid` = t1.`moduleid`
+		AND t4.`id`=#{groupid}
+		INNER JOIN
+		t_user_dgroup_relation t5
+		ON
+		t5.`devicegroupid` =
+		t4.`id`
+		AND
+		t5.`isdelete` = 0
+		INNER JOIN t_user t6
+		ON t6.`id` =
+		t5.`userid`
+		AND
+		t6.`isdelete` = 0
+		AND t6.`id` = #{userid}
+		GROUP BY
+		MONTH(t1.`addtime`))
+		test2
+		<if test="queryType==1">
+			ON test1.TheDate = test2.DATE
+		</if>
+		<if test="queryType==2">
+			ON test1.TheDate = DATE_FORMAT(test2.DATE, '%Y-%m')
+		</if>
+		<if test="queryType==3">
+			ON test1.TheDate = DATE_FORMAT(test2.DATE, '%Y-%m')
+		</if>
+	</select>
+
+	<select id="YGselectDevAlarmHandleByTime"
+		resultType="com.hot.manage.entity.yg.vo.YGDevAlarmHandleByTimeVO">
+		<!-- 查询报警处理(杨) -->
+		SELECT
+		t3.`moduleid` AS moduleid,
+		<if test="queryType==2">
+			DATE(t1.`addtime`) AS date,
+		</if>
+		<if test="queryType==3">
+			DATE_FORMAT(t1.`addtime`,'%Y-%m-%01') AS DATE,
+		</if>
+		<if test="queryType==4">
+			YEAR(t1.`addtime`) AS DATE,
+		</if>
+		COUNT(t1.`id`) AS alarmcount,
+		SUM(
+		CASE
+		WHEN t1.`handlestate` = 2
+		THEN 1
+		ELSE 0
+		END
+		) AS handlecount,
+		SUM(
+		CASE
+		WHEN t1.`handlestate` = 0
+		THEN 1
+		ELSE
+		0
+		END
+		) AS unhandlecount
+		FROM
+		t_dev_alarm t1
+		INNER JOIN
+		t_device_yg
+		t2
+		ON
+		t1.`deviceid` = t2.`id`
+		AND t1.`moduleid` = 2
+		AND
+		t2.`isdelete` = 0
+		INNER
+		JOIN t_device_group_relation t3
+		ON t3.`deviceid`
+		= t2.`id`
+		AND
+		t3.`isdelete` = 0
+		AND t3.`moduleid` = 2
+		INNER
+		JOIN t_device_group t4
+		ON
+		t4.`id` = t3.`groupid`
+		AND t4.`isdelete` = 0
+		AND t4.`moduleid` = 2
+		INNER
+		JOIN t_user_dgroup_relation t5
+		ON
+		t5.`devicegroupid` = t4.`id`
+		AND
+		t5.`isdelete` = 0
+		INNER JOIN t_user t6
+		ON t6.`id` = t5.`userid`
+		AND
+		t6.`isdelete` = 0
+		AND t6.`id` = #{userid}
+		WHERE t1.`addtime` >=
+		#{startTime}
+		AND t1.`addtime` &lt;= #{endTime}
+		<if test="queryType==2">
+			GROUP BY DATE(t1.`addtime`)
+		</if>
+		<if test="queryType==3">
+			GROUP BY MONTH(t1.`addtime`)
+		</if>
+		<if test="queryType==4">
+			GROUP BY YEAR(t1.`addtime`)
+		</if>
+	</select>
+
+	<select id="YGAlarmTypeCount" resultType="com.hot.manage.entity.yg.vo.YGAlarmCount">
+		<!-- 烟感报警类型统计 -->
+		SELECT
+		s.state_name AS stateName,
+		COUNT(a.alarmstateid) AS num
+		FROM
+		t_dev_alarm_state s
+		LEFT JOIN t_dev_alarm a
+		ON a.moduleid = s.module_id
+		AND s.id = a.alarmstateid
+		AND YEAR(a.addtime) = #{year}
+		LEFT JOIN
+		t_device_group_relation dg
+		ON dg.moduleid = s.module_id
+		AND dg.deviceid
+		= a.deviceid
+		AND dg.isenable = 1
+		LEFT JOIN t_user_dgroup_relation ug
+		ON
+		ug.devicegroupid = dg.groupid
+		AND ug.isenable = 1
+		LEFT JOIN t_user tu
+		ON
+		tu.`id` = ug.`userid`
+		AND tu.`id`=#{userid}
+		WHERE s.module_id = 2
+		AND
+		s.isdelete = 0
+		GROUP BY s.id
+	</select>
+
+</mapper>

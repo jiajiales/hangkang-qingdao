@@ -1,0 +1,539 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.common.workorder.LKTWorkMapper">
+	<sql id="moduleidtable">
+		<if test="moduleid==1">t_device_dc</if>
+		<if test="moduleid==2">t_device_yg</if>
+		<if test="moduleid==3">t_device_jg</if>
+		<if test="moduleid==4">t_device_pm</if>
+		<if test="moduleid==5">t_device_wt</if>
+		<if test="moduleid==6">t_device_et</if>
+		<if test="moduleid==7">t_device_sl</if>
+		<if test="moduleid==8">t_device_hw</if>
+		<if test="moduleid==9">t_device_ljt</if>
+		<if test="moduleid==10">t_device_sj</if>
+		<if test="moduleid==11">t_device_mc</if>
+		<if test="moduleid==12">t_device_krq</if>
+		<if test="moduleid==13">t_device_ywj</if>
+		<if test="moduleid==14">t_device_sxdl</if>
+		<if test="moduleid==15">t_device_sxdy</if>
+		<if test="moduleid==16">t_device_sy</if>
+		<if test="moduleid==17">t_device_sydl</if>
+	</sql>
+	<sql id="moduleName">
+		<if test="moduleid == 1">'地磁'</if>
+		<if test="moduleid == 2">'烟感'</if>
+		<if test="moduleid == 3">'井盖'</if>
+		<if test="moduleid == 4">'pm2.5'</if>
+		<if test="moduleid == 5">'水表'</if>
+		<if test="moduleid == 6">'电表'</if>
+		<if test="moduleid == 7">'路灯'</if>
+		<if test="moduleid == 8">'红外'</if>
+		<if test="moduleid == 9">'垃圾桶'</if>
+		<if test="moduleid == 10">'水浸'</if>
+		<if test="moduleid == 11">'门磁'</if>
+		<if test="moduleid == 12">'可燃气'</if>
+		<if test="moduleid == 13">'液位计'</if>
+		<if test="moduleid == 14">'三相电流'</if>
+		<if test="moduleid == 15">'三相电压'</if>
+		<if test="moduleid == 16">'水压'</if>
+		<if test="moduleid == 17">'剩余电流'</if>
+	</sql>
+	<!-- ("查询用户下的设备总数") -->
+	<select id="LKTWorkDevnum"  resultType="com.hot.manage.entity.common.workorder.LKTWorkDevnum">
+	SELECT COUNT(1) as devnum
+	FROM t_device_group_relation dg
+	RIGHT JOIN t_user_dgroup_relation ug on ug.userid = #{userid} and ug.devicegroupid = dg.groupid and ug.isenable = 1 and ug.isdelete = 0
+	WHERE dg.isenable = 1 and dg.isdelete = 0 and dg.moduleid = #{moduleid}
+	</select>
+
+	<!-- ("查询地图项目信息，工单数") -->
+	<select id="LKTWorkMyproject" resultType="com.hot.manage.entity.common.workorder.LKTWorkMyproject">
+	SELECT  dg.id as groupid , dg.groupname as groupname , dg.x as lng , dg.y as lat , 
+				dg.groupcode , dg.coordinate , dg.addtime, dg.adduserid , dg.managerid , 
+				u.contacts , dg.cityid , u.telephone as telephone , dg.imgpath , dg.itemnum ,
+				COUNT(w.id) as worknum
+	FROM t_device_group dg
+	RIGHT JOIN t_user_dgroup_relation ug on ug.userid = #{userid} and ug.devicegroupid = dg.id and ug.isenable = 1
+	LEFT JOIN t_user u on u.id = dg.managerid and u.isenable = 1
+	LEFT JOIN t_device_group_relation tg on tg.moduleid = dg.moduleid and tg.groupid = dg.id and tg.isenable = 1
+	LEFT JOIN t_hk_wodevrelation wd on wd.moduleid = dg.moduleid and wd.devid = tg.deviceid
+	LEFT JOIN t_hk_wo w on w.id = wd.woid and w.isdelete = 0 and w.state != 2
+	WHERE dg.isenable = 1 and dg.moduleid = #{moduleid}
+	GROUP BY dg.id
+	</select>
+	<!-- ("工单列表（可按项目组查）查询工单") -->
+	<select id="LKTWorkListFather" resultType="com.hot.manage.entity.common.workorder.LKTWorkListFather">
+		SELECT
+		w.id as woid
+		,w.code as code ,w.addtime as addtime ,
+		w.title	as title ,w.assignid as assignid ,w.complete_time as complete_time ,
+		w.adduserid as adduserid ,u1.telephone as telephone,u.telephone as assigntelephone ,w.state as state
+		,w.audit as audit, u.contacts as contacts , u1.contacts as adduser , y.devnum as devnum
+		FROM t_hk_wo w 
+		left join t_hk_wodevrelation h on h.woid = w.id and h.moduleid = w.moduleid
+		left JOIN 
+		<include refid="moduleidtable"></include>
+		 y ON y.id = h.devid and y.isdelete = 0
+		LEFT JOIN t_device_group_relation r ON r.deviceid = y.id AND r.moduleid = #{moduleid} and r.isdelete = 0
+		LEFT JOIN t_device_group g ON g.id = r.groupid
+		RIGHT JOIN t_user_dgroup_relation ug on ug.userid = #{userid} and ug.devicegroupid = g.id
+		LEFT JOIN t_user u ON u.id = w.assignid
+		LEFT JOIN t_user u1 on u1.id = w.adduserid
+		WHERE w.isdelete = 0  and w.moduleid = #{moduleid} and w.isdelete = 0
+		<if test="groupid!=null">
+		and r.groupid = #{groupid}
+		</if>
+		<if test="starttime!='' and starttime!=null">
+		and	w.addtime &gt;= #{starttime} 
+		</if>
+		<if test="endtime!='' and endtime!=null">
+		and	w.addtime &lt;= #{endtime} 
+		</if>
+		<if test="workname!='' and workname!=null">
+			and (w.title LIKE CONCAT('%',#{workname},'%') or w.code LIKE CONCAT('%',#{workname},'%'))
+		</if>
+		<if test="state !=null">
+		and	w.state = #{state} 
+		</if>
+		GROUP BY w.id
+		ORDER BY w.addtime desc
+	</select>
+	
+	<!-- ("查询未处理报警与未处理事件自动带入设备-可按设备id查询，可按事件上报id查询") -->
+	<select id="LKTWorkAllAlarm" resultType="com.hot.manage.entity.common.workorder.LKTWorkAllAlarm">
+	SELECT a.id as id , '报警' as sourcetype , a.addtime as addtime , sa.state_name as state_name ,
+	sa.level as level , y.id as devid , y.code as code , y.devnum as devnum , y.mac as mac , y.lat as lat , y.lng as lng ,
+		<include refid="moduleName"></include> as devicetype
+	FROM t_dev_alarm a
+	LEFT JOIN t_dev_alarm_state sa on sa.module_id = a.moduleid and sa.id = a.alarmstateid
+	LEFT JOIN 
+		<include refid="moduleidtable"></include>
+	 y on y.id = a.deviceid and y.isenable = 1
+	LEFT JOIN t_device_group_relation dg on dg.moduleid = a.moduleid and dg.deviceid = y.id 
+	RIGHT JOIN t_user_dgroup_relation ug on ug.userid = #{userid} and ug.devicegroupid = dg.groupid and ug.isenable = 1
+	WHERE a.isdispatch = 1 and a.moduleid = #{moduleid} and a.handlestate = 0
+	<if test="id != null">
+		and y.id in 
+		<foreach collection="id" index="index" item="item" open="(" separator="," close=")">
+	            #{item}
+	    </foreach>
+	</if>
+	<if test="aeid != null">
+		 and a.id in 
+		<foreach collection="aeid" index="index" item="item" open="(" separator="," close=")">
+	            #{item}
+	    </foreach>
+	</if>
+	</select>
+	
+	<!-- ("查询未处理报警与未处理事件自动带入设备-可按设备id查询，可按事件上报id查询") -->
+	<select id="LKTWorkAllEven" resultType="com.hot.manage.entity.common.workorder.LKTWorkAllAlarm">
+	SELECT a.id as id , '事件上报' as sourcetype , a.addtime as addtime , sa.state_name as state_name ,
+	a.`level` as level , y.id as devid , y.code as code , y.devnum as devnum , y.mac as mac , y.lat as lat , y.lng as lng ,
+		<include refid="moduleName"></include> as devicetype
+	FROM t_hk_event a
+	LEFT JOIN t_hk_evdevrelation ed on ed.eventid = a.id
+	LEFT JOIN t_event_state sa on sa.module_id = a.moduleid and sa.id = a.`describe`
+	LEFT JOIN 
+		<include refid="moduleidtable"></include>
+	 y on y.id = ed.devid and y.isenable = 1
+	LEFT JOIN t_device_group_relation dg on dg.moduleid = a.moduleid and dg.deviceid = y.id 
+	RIGHT JOIN t_user_dgroup_relation ug on ug.userid = #{userid} and ug.devicegroupid = dg.groupid and ug.isenable = 1
+	WHERE a.isdispatch = 1 and a.moduleid = #{moduleid} and a.state = 0
+	<if test="id != null">
+		and y.id in 
+		<foreach collection="id" index="index" item="item" open="(" separator="," close=")">
+	            #{item}
+	    </foreach>
+	</if>
+	<if test="aeid != null">
+		 and a.id in 
+		<foreach collection="aeid" index="index" item="item" open="(" separator="," close=")">
+	            #{item}
+	    </foreach>
+	</if>
+	</select>
+	
+	<!-- ("故障设备列表查询") -->
+	<select id="LKTWorkDevList" resultType="com.hot.manage.entity.common.workorder.LKTWorkDevList">
+	SELECT y.id as id , y.mac as mac , y.code as code , y.lat as lat , y.lng as lng , y.devnum as devnum ,
+		<include refid="moduleName"></include> as device
+	FROM <if test="moduleid==1">t_device_dc</if>
+		<include refid="moduleidtable"></include> y
+	LEFT JOIN t_device_group_relation tg on tg.moduleid = #{moduleid} and tg.isenable = 1 and tg.deviceid = y.id
+	RIGHT JOIN t_user_dgroup_relation ug on ug.userid = #{userid} and ug.devicegroupid = tg.groupid and ug.isenable = 1
+	WHERE y.isenable = 1 and y.state != 0
+	</select>
+	
+	<!-- 创建工单流程 -->
+	<!-- 创建工单数据 -->
+	<insert id="LKTWorkNew" keyProperty="id" useGeneratedKeys="true">
+	INSERT INTO t_hk_wo
+	(title,descrition,code,complete_time,assignid,adduserid,addtime,moduleid)
+	VALUES
+	(#{title},#{descrition},#{code},#{complete_time},#{assignid},#{userid},NOW(),#{moduleid});
+	</insert>
+	<!-- 更改工单信息 -->
+	<update id="LKTWorkNewUpdate">
+	UPDATE t_hk_wo SET `code` =  #{code} 
+	<if test="fatherid != null and fatherid != ''">
+		, fatherid = #{fatherid}
+	</if>
+	WHERE id = #{id}
+	</update>
+	<!-- 插入工单与设备关联 -->
+	<insert id="LKTWorkNewDev">
+	INSERT into t_hk_wodevrelation (woid,devid,moduleid)
+	VALUES (#{woid},#{devid},#{moduleid});
+	</insert>
+	<!-- 插入工单与报警，事件关联 -->
+	<insert id="LKTWorkNewAE">
+	INSERT into t_hk_woevrelation
+	(woid,relationid,relationtype,moduleid)<!-- #工单id，报警记录id，类型（2报警or1事件） -->
+	VALUES (#{fateherid},#{aeid},#{type},#{moduleid});
+	</insert>
+	<!-- 修改报警数据状态 -->
+	<update id="LKTWorkNewAlarmUp">
+	UPDATE t_dev_alarm set handler = #{assignid}, handlestate = 1
+	where id = #{alarmid} and moduleid = #{moduleid}
+	</update>
+	<!-- 修改事件上报状态 -->
+	<update id="LKTWorkNewEventUp">
+	UPDATE t_hk_event set state = 1
+	where id = #{eventid} and moduleid = #{moduleid}
+	</update>
+	
+	<!-- 查询工单内容详情 -->
+	<select id="LKTWorkDetails" resultType="com.hot.manage.entity.common.workorder.LKTWorkDetails">
+	SELECT t.id as id , t.code as code , t.state as state , t.title as title ,
+	t.addtime as addtime, t.complete_time as complete_time , t.descrition as descrition ,
+	u.contacts as assign, u.telephone as assigntelephone, 
+	tu.contacts as adduserid , tu.telephone as adduseridtelephone
+	FROM t_hk_wo t
+	LEFT JOIN t_user u on u.id = t.assignid
+	LEFT JOIN t_user tu on tu.id = t.adduserid
+	WHERE t.id = #{woid} and t.moduleid = #{moduleid}
+	</select>
+	<!-- 查询工单关联报警  -->
+	<select id="LKTWorkDetailsAllAlarmonf" resultType="com.hot.manage.entity.common.workorder.LKTWorkDetailsAllevent">
+	SELECT w.id as woid , t.id as id, '报警' as sourcetype , t.addtime as addtime, 
+						t.remark as state_name, a.level as level, 
+						y.id as devid , y.mac as mac , y.code as code , y.lat , y.lng , y.devnum
+	FROM t_hk_wo w 
+	LEFT JOIN t_hk_woevrelation wo on wo.woid =  w.id and wo.relationtype = 2 and wo.moduleid = w.moduleid
+	LEFT JOIN t_dev_alarm t on t.id = wo.relationid and t.moduleid = wo.moduleid
+	LEFT JOIN 
+		<include refid="moduleidtable"></include> y
+	on y.id = t.deviceid
+	LEFT JOIN t_device_group_relation tg on tg.isdelete = 0 and tg.moduleid = wo.moduleid and tg.deviceid = y.id
+	RIGHT JOIN t_user_dgroup_relation ug on ug.userid = #{userid} and ug.isdelete = 0 and ug.devicegroupid = tg.groupid
+	LEFT JOIN t_dev_alarm_state a on t.alarmStateId = a.id
+	WHERE w.isdelete = 0 and w.moduleid = #{moduleid} and w.id =#{woid}
+	</select>
+	<!-- 查询工单关联事件 -->
+	<select id="LKTWorkDetailsAllEvenonf" resultType="com.hot.manage.entity.common.workorder.LKTWorkDetailsAllevent">
+	SELECT wo.woid as woid , t.id as id, '事件上报' as sourcetype , t.addtime as addtime, 
+						t.instructions as state_name, t.level as level, 
+						y.id as devid , y.mac as mac , y.code as code , y.lat , y.lng , y.devnum	
+	FROM t_hk_wo w 
+	LEFT JOIN t_hk_woevrelation wo on wo.woid = w.id and wo.relationtype = 1 and wo.moduleid = w.moduleid
+	LEFT JOIN t_hk_event t on t.id = wo.relationid and t.moduleid = wo.moduleid
+	LEFT JOIN t_hk_evdevrelation ed on ed.eventid = t.id
+	LEFT JOIN 
+		<include refid="moduleidtable"></include> y
+	on y.id = ed.devid
+	LEFT JOIN t_device_group_relation tg on tg.isdelete = 0 and tg.moduleid = wo.moduleid and tg.deviceid = y.id
+	RIGHT JOIN t_user_dgroup_relation ug on ug.userid = #{userid} and ug.isdelete = 0 and ug.devicegroupid = tg.groupid
+	<!-- LEFT JOIN t_dev_alarm_state a on t.`describe` = a.id -->
+	WHERE w.isdelete = 0 and w.moduleid = #{moduleid} and w.id =#{woid}
+	</select>
+	<!-- 查询工单关联设备-type=0查父工单=1查子工单 -->
+	<select id="LKTWorkDetailsDeviceAll" resultType="com.hot.manage.entity.common.workorder.LKTWorkDetailsDeviceAll">
+	SELECT y.id , y.devnum , y.mac , y.code , y.addtime , y.adduserid ,
+			y.lat , y.lng , y.state , y.battery , y.x , y.y	,
+			<include refid="moduleName"></include> as devicetype
+	FROM t_hk_wo w
+	LEFT JOIN t_hk_wodevrelation wd on wd.woid = w.id
+	LEFT JOIN 
+		<include refid="moduleidtable"></include> y
+	on y.id = wd.devid and y.isdelete = 0
+	LEFT JOIN t_device_group_relation tg on tg.moduleid = w.moduleid and tg.isenable = 1 and tg.deviceid = y.id
+	RIGHT JOIN t_user_dgroup_relation ug on ug.userid = #{userid} and ug.devicegroupid = tg.groupid
+	WHERE w.moduleid = #{moduleid} and w.isdelete = 0 and w.id = #{woid}
+	</select>
+	<!-- 查询工单关联指示 -->
+	<select id="LKTWorkDetailsInstructions" resultType="com.hot.manage.entity.common.workorder.LKTWorkDetailsInstructions">
+	SELECT u.contacts as name , e.content as content
+	FROM t_hk_wo w 
+	LEFT JOIN t_hk_woevrelation wo on wo.woid = w.id and  wo.moduleid = w.moduleid
+	LEFT JOIN t_hk_evinsrelation e on e.moduleid = wo.moduleid and e.type = wo.relationtype
+	LEFT JOIN t_user u on u.id = e.adduserid
+	WHERE w.isdelete = 0 and w.moduleid = #{moduleid} and w.id =#{woid} and e.eventid = wo.relationid
+	</select>
+	<!-- 查询工单关联指示-按报警、事件id单条查询 -->
+	<select id="LKTWorkDetailsInstructionsOnid" resultType="com.hot.manage.entity.common.workorder.LKTWorkDetailsInstructions">
+	SELECT u.contacts as name , e.content as content
+	FROM t_hk_evinsrelation e
+	LEFT JOIN t_user u on u.id = e.adduserid
+	WHERE e.moduleid = #{moduleid} and e.type = #{type} and e.eventid = #{aeid}
+	</select>
+	
+	<!-- 查询已处理或挂起工单-type=0按父工单查=1按子工单查 -->
+	<select id="LKTWorkTure" resultType="com.hot.manage.entity.common.workorder.LKTWorkTure">
+	SELECT w.id as woid , w.handleType as handleType , w.problemdesc as problemdesc , w.remark as remark,
+	w.endtime as endtime , we.resourcetype as resourcetype ,GROUP_CONCAT(we.url) as url , w.newdevnum as newdevnum
+	FROM t_hk_wo w
+	LEFT JOIN t_hk_woresrelation we on we.woid = w.id and we.resourcetype = 1
+	WHERE w.isdelete = 0 and w.moduleid = #{moduleid} and w.state != 0 and w.id = #{woid}
+	</select>
+	
+	<!-- 删除工单 -->
+	<update id="LKTWorkDeletef">
+	UPDATE t_hk_wo set isdelete = 1 WHERE id = #{woid} and state = 2 and moduleid = #{moduleid}
+	</update>
+	<!-- 删除工单与设备关联 -->
+	<delete id="LKTWorkDeleteDev">
+	DELETE FROM t_hk_wodevrelation WHERE moduleid = #{moduleid} and woid = #{woid}
+	</delete>
+	<!-- 删除工单与报警/事件关联 -->
+	<delete id="LKTWorkDeleteAE">
+	DELETE FROM t_hk_woevrelation WHERE woid = #{woid} and moduleid = #{moduleid}
+	</delete>
+	<!-- 删除工单与资源关联 -->
+	<delete id="LKTWorkDeleteResources">
+	DELETE FROM t_hk_woresrelation WHERE woid = #{woid}
+	</delete>
+	
+	<!-- 审核工单 -->
+	<!-- 更改工单数据审核状态 -->
+	<update id="LKTWorkExamine">
+	update t_hk_wo w set w.state = #{state} , endtime = NOW() , w.audit =
+	#{audit} where  w.id = #{woid} and w.moduleid = #{moduleid} and w.isdelete = 0
+	</update>
+	<!-- 更改工单数据对应的维修记录表数据审核状态 -->
+	<update id="LKTWorkExamineRepair">
+	update t_hk_repair_log w set w.remark = #{remark} , w.audit = #{audit} where w.woId = #{woid} and w.remark is NULL
+	</update>
+	<!-- 修改报警数据状态 -->
+	<update id="LKTWorkExamineAlarmUp">
+	UPDATE t_dev_alarm set handlestate = 1 , handleTime = NOW()
+	where id = #{alarmid} and moduleid = #{moduleid}
+	</update>
+	<!-- 修改事件上报状态 -->
+	<update id="LKTWorkExamineEventUp">
+	UPDATE t_hk_event set state = 1
+	where id = #{eventid} and moduleid = #{moduleid}
+	</update>
+	<!-- 修改设备状态为正常 -->
+	<update id="LKTWorkExamineDevUp">
+	UPDATE 
+		<include refid="moduleidtable"></include> set state = 0
+	where id = #{id}
+	</update>
+	<!-- 审核不通过时-删除工单资源数据 -->
+	<delete id="LKTWorkExamineDelRs">
+		DELETE FROM t_hk_woresrelation WHERE woid = #{woid}
+	</delete>
+	
+	<!-- APP待处理工单列表 -->
+	<select id="LKTWorkUntreatedApp" resultType="com.hot.manage.entity.common.workorder.LKTWorkUntreatedApp">
+		SELECT w.id as woid , w.title as title , y.devnum as devnum ,	 w.addtime as addtime , w.complete_time as complete_time , y.code as code ,
+		 u.contacts as contacts , u.telephone as telephone , w.state as state , y.lng as lng , y.lat as lat , w.moduleid as moduleid
+		FROM t_hk_wo w
+		LEFT JOIN t_hk_wodevrelation d on d.woid = w.id
+		LEFT JOIN 
+		<include refid="moduleidtable"></include> y on y.id = d.devid
+		LEFT JOIN t_user u on u.id = w.adduserid
+		WHERE w.moduleid = #{moduleid} and (w.state = 0 or w.state = 1) and w.assignid = #{userid} and w.isdelete = 0
+		<if test="dvenumorcode!='' and dvenumorcode!=null">
+			and (y.devnum LIKE CONCAT('%',#{dvenumorcode},'%') 
+			or y.code LIKE CONCAT('%',#{dvenumorcode},'%'))
+		</if>
+		<if test="readtype==1">
+			 and DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(w.addtime)
+		</if>
+		<if test="readtype==3">
+			 and DATE_SUB(CURDATE(), INTERVAL 3 MONTH) &lt;= date(w.addtime)
+		</if>
+		order by w.addtime desc
+	</select>
+	
+	<!-- App待处理工单详情 -->
+	<select id="LKTWorkDetailedApp" resultType="com.hot.manage.entity.common.workorder.LKTWorkDetailedApp">
+	SELECT w.id as woid , w.title as title , w.descrition as descrition , y.code as code , y.lng as lng , y.lat as lat ,
+			w.complete_time as complete_time , w.addtime as addtime, u.contacts as contacts , u.telephone as telephone,
+			w.state as state , y.devnum as devnum , y.id as devid , w.adduserid as pdid , w.moduleid as moduleid , 
+			<include refid="moduleName"></include> as devicetype
+		FROM t_hk_wo w 
+		LEFT JOIN t_hk_wodevrelation d on d.woid = w.id
+		LEFT JOIN 
+		<include refid="moduleidtable"></include> y on y.id = d.devid
+		LEFT JOIN t_user u on u.id = w.adduserid
+		WHERE w.id = #{woid} and w.moduleid= #{moduleid}
+	</select>
+	<select id="LKTWorkDetailedAppimg" resultType="com.hot.manage.entity.common.workorder.LKTWorkDetailedApp">
+	SELECT GROUP_CONCAT(url) as img
+	FROM t_hk_evresrelation
+	WHERE moduleid = #{moduleid} and type = #{type}
+	<if test="id != null">
+		 and eventid in  
+		<foreach collection="id" index="index" item="item" open="(" separator="," close=")">
+	            #{item}
+	    </foreach>
+	</if>
+	</select>
+	
+	<!-- App工单处理-维修 -->
+	<update id="LKTWorkMaintenanceApp">
+	UPDATE t_hk_wo set endtime = NOW() , handleType = #{handleType} ,
+	problemdesc = #{problemdesc} , remark = #{remark} , state = 2 WHERE id = #{woid}
+	<!-- handleType处理方式，1：维修，2：挂起，3：更换 -->
+	</update>
+	<insert id="LKTWorkMaintenanceAppImg">
+	INSERT INTO t_hk_woresrelation(woid,resourcetype,url)
+		VALUES(#{woid},#{resourcetype},#{url})
+	<!-- 资源类型，1：图片；2：音频；3：视频 -->
+	</insert>
+	<!-- 修改报警处理状态 -->
+	<update id="LKTWorkMaintenanceAppal">
+	update t_dev_alarm set handleTime = NOW() , handlestate = 2 
+	<if test="deviceid!=null and deviceid!=''">
+	, deviceid = #{deviceid}
+	</if>
+	WHERE id = #{alarmid} and moduleid = #{moduleid}
+	</update>
+	<!-- 修改事件处理状态 -->
+	<update id="LKTWorkMaintenanceAppev">
+	update t_hk_event set state = 3 WHERE id = #{evenid} and moduleid = #{moduleid}
+	</update>
+	<insert id="LKTWorkMaintenanceApplog">
+	INSERT INTO t_hk_repair_log(woId,devID,AssignID,AssignTime)
+	VALUES(#{woid},#{devid},#{userid},now())
+	</insert>
+	
+	<!-- App工单处理-设备挂起 -->
+	<update id="LKTWorkHangApp">
+	UPDATE t_hk_wo set handleType = #{handleType} ,	remark = #{problemdesc} , state = 1 WHERE id = #{woid}
+	<!-- handleType处理方式，1：维修，2：挂起，3：更换 -->
+	</update>
+	
+	<!-- App工单处理-设备更换 -->
+	<update id="LKTWorkUpdateApp">
+	UPDATE t_hk_wo set endtime = NOW() , handleType = #{handleType} , remark = #{remark} , state = 2 WHERE id = #{woid}
+	<!-- handleType处理方式，1：维修，2：挂起，3：更换 -->
+	</update>
+	<!-- 修改设备信息 -->
+	<update id="LKTWorkUpdateAppdev">
+		UPDATE 
+		<include refid="moduleidtable"></include> set devnum = #{devnum} 
+		<if test="own_id != null and own_id != ''">
+		,own_id = #{own_id}
+		</if>
+		<if test="devtype != null and devtype != ''">
+		, devtype = #{devtype}
+		</if>
+		, state = 0 
+		WHERE id = #{devid}
+	</update>
+	
+	<!-- App工单详情-已处理或挂起 -->
+	<select id="LKTWorkCompleteApp" resultType="com.hot.manage.entity.common.workorder.LKTWorkCompleteApp">
+		SELECT w.remark as remark , w.problemdesc as problemdesc , GROUP_CONCAT(e.url) as pictureurl , 
+		w.handleType as handleType
+		FROM t_hk_wo w
+		LEFT JOIN t_hk_woresrelation e on  e.woid = w.id and e.resourcetype = 1
+		WHERE w.id = #{woid} and w.moduleid = #{moduleid}
+		<!-- 处理方式，1：维修，2：挂起，3：更换 -->
+	</select>
+	<select id="LKTWorkCompleteAppList" resultType="com.hot.manage.entity.common.workorder.LKTWorkCompleteApp">
+	SELECT w.id as woid , w.title as title , w.descrition as descrition , y.code as code , y.lng as lng , y.lat as lat ,
+			w.complete_time as complete_time , w.addtime as addtime, u.contacts as contacts , u.telephone as telephone,
+			w.state as state , y.devnum as devnum , y.id as devid , w.adduserid as pdid , w.moduleid as moduleid , w.newdevnum
+		FROM t_hk_wo w 
+		LEFT JOIN t_hk_wodevrelation d on d.woid = w.id
+		LEFT JOIN 
+		<include refid="moduleidtable"></include> y on y.id = d.devid
+		LEFT JOIN t_user u on u.id = w.adduserid
+		WHERE w.id = #{woid} and w.moduleid= #{moduleid} and w.isdelete = 0
+	</select>
+	
+	<!-- App已处理工单列表 -->
+	<select id="LKTWorkCompleteListApp" resultType="com.hot.manage.entity.common.workorder.LKTWorkCompleteListApp">
+		SELECT w.id as woid , w.title as title , y.devnum as devnum , w.endtime as addtime , w.complete_time as complete_time , y.code as code ,
+		 u.contacts as contacts , u.telephone as telephone , w.state as state , y.lng as lng , y.lat as lat , w.moduleid as moduleid ,
+		 w.handleType as handleType , TIMESTAMPDIFF(SECOND,w.addtime,w.endtime) as ordertime
+		FROM t_hk_wo w
+		LEFT JOIN t_hk_wodevrelation d on d.woid = w.id
+		LEFT JOIN 
+		<include refid="moduleidtable"></include> y on y.id = d.devid
+		LEFT JOIN t_user u on u.id = w.adduserid
+		WHERE w.state = 2 and w.moduleid = #{moduleid} and w.isdelete = 0 and w.assignid =#{userid}
+		<if test="dvenumorcode!='' and dvenumorcode!=null">
+			and (y.devnum LIKE CONCAT('%',#{dvenumorcode},'%') 
+			or y.code LIKE CONCAT('%',#{dvenumorcode},'%'))
+		</if>
+		<if test="readtype==1">
+			 and DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(w.addtime)
+		</if>
+		<if test="readtype==2">
+			 and DATE_SUB(CURDATE(), INTERVAL 3 MONTH) &lt;= date(w.addtime)
+		</if>
+		order by w.endtime desc
+	</select>
+	<!--  -->
+	<select id="SelectWo" resultType="com.hot.manage.entity.common.workorder.vaule.LKTWorkNewVaule">
+	select id , moduleid
+	from t_hk_wo
+	where id = #{woid}
+	</select>
+	<!-- 查出设备信息 -->
+	<select id="SelDevmsg" resultType="com.hot.manage.entity.common.workorder.SelDevmsg">
+		select y.devnum , y.addtime , y.adduserid , y.own_id , y.lat , y.lng , y.code
+		from
+		<include refid="moduleidtable"></include>
+		y
+		where y.id = #{id}
+	</select>
+	<!-- 增加旧设备 -->
+	<insert id="AddDevmsg" keyProperty="id" useGeneratedKeys="true">
+		INSERT INTO <include refid="moduleidtable"></include>
+		(devnum,addtime,adduserid,own_id,isenable,lat,lng,code,isdelete)
+		VALUES
+		(#{devnum},#{addtime},#{adduserid},#{own_id},0,#{lat},#{lng},#{code},0)
+	</insert>
+	<!-- 查出设备关联项目组 -->
+	<select id="SelDevmsgGroup"  resultType="com.hot.manage.entity.common.workorder.SelDevmsg">
+		select dg.groupid
+		from t_device_group_relation dg
+		where dg.moduleid = #{moduleid} and dg.deviceid = #{id}
+	</select>
+	<!-- 增加设备关联项目组 -->
+	<insert id="AddDevmsgGroup">
+		INSERT INTO t_device_group_relation
+		(deviceid,groupid,moduleid,isdelete,isenable)
+		VALUES
+		(#{deviceid},#{groupid},#{moduleid},0,0)
+	</insert>
+	<!-- 修改事件与设备关联 -->
+	<update id="UpdataEvent">
+		UPDATE t_hk_evdevrelation SET devid =  #{devid} 
+		WHERE eventid = #{eventid}
+	</update>
+	<!-- 保存新设备编号 -->
+	<update id="UpdataWoDevnum">
+		UPDATE t_hk_wo SET newdevnum =  #{newdevnum} 
+		WHERE id = #{id}
+	</update>
+	<!-- 修改工单与设备绑定 -->
+	<update id="UpdataWoDev">
+		UPDATE t_hk_wodevrelation SET devid =  #{devid} 
+		WHERE moduleid = #{moduleid} and woid = #{woid}
+	</update>
+	<!--  -->
+	<select id="SelWoci" resultType="com.hot.manage.entity.common.workorder.SelDevmsg">
+		select id , newdevnum
+		from t_hk_wo
+		where id = #{woid}
+	</select>
+</mapper>

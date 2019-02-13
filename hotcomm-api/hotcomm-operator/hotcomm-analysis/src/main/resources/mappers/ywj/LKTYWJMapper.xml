@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.analysis.db.ywj.LKTYWJMapper">
+
+	<select id="LKTYWJselectFlipNum" resultType="com.hot.analysis.bean.ywj.LKTYWJselectFlipNum">
+	SELECT al.moduleid as moduleID , y.id as devID , COUNT(al.id) as Count , y.code as devName , y.lat as lat , y.lng as lng
+	FROM t_device_ywj y
+	LEFT JOIN t_dev_alarm al on al.moduleid = #{moduleid} and al.deviceid = y.id
+	LEFT JOIN t_device_group_relation dg on dg.moduleid = al.moduleid and dg.deviceid = y.id and dg.isenable = 1
+	RIGHT JOIN t_user_dgroup_relation ug on ug.isenable = 1 and ug.userid = #{userid} and ug.devicegroupid = dg.groupid
+	WHERE y.isenable = 1
+		<if test="startTime !='' and startTime !=null">
+		and	al.addtime &gt;= #{startTime} 
+		</if>
+		<if test="endTime !='' and endTime !=null">
+		and	al.addtime &lt;= #{endTime} 
+		</if>
+	GROUP BY al.deviceid
+	</select>
+	<select id="YWJAlarmType" resultType="com.hot.analysis.bean.sj.LKTSJAlarmList">
+	SELECT s.state_name as statename , COUNT(a.alarmstateid) as num
+	FROM t_dev_alarm_state s
+	LEFT JOIN t_dev_alarm a on a.moduleid = s.module_id and s.id = a.alarmstateid and YEAR(a.addtime) = #{Time}
+	LEFT JOIN t_device_group_relation dg on dg.moduleid = s.module_id and dg.deviceid = a.deviceid and dg.isenable = 1
+	LEFT JOIN t_user_dgroup_relation ug on ug.userid = #{userID} and ug.devicegroupid = dg.groupid and ug.isenable = 1
+	WHERE s.module_id = #{moduleID} and s.isdelete = 0
+	GROUP BY s.state_name
+	</select>
+</mapper>

@@ -1,0 +1,681 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.hw.LKTHWMapper">
+
+	<select id="LKTHWDevList" resultType="com.hot.manage.entity.hw.LKTHWDevList">
+		SELECT j.id as devid , j.devnum as devnum , tg.groupname as groupname,
+		j.code as code , tg.managerid as managerid,
+		u.contacts as contacts ,j.addtime as addtime , j.lat as lat , j.lng as lng
+		,count(v.videoid) as count ,
+		j.Battery as Battery , j.mac as mac , j.x as x , j.y as y
+		,j.own_id,ip.`site`,ip.picpath,ip.id as itempicid
+		FROM t_device_hw j
+		LEFT JOIN t_device_group_relation g on g.moduleid =
+		#{Moduleid} and g.deviceid = j.id
+		RIGHT JOIN t_user_dgroup_relation ug
+		on ug.userid = #{userid} and ug.devicegroupid = g.groupid and
+		ug.isdelete = 0 and ug.isenable = 1
+		LEFT JOIN t_device_group tg on
+		tg.id = g.groupid
+		LEFT JOIN t_user u on u.id = j.own_id
+		LEFT JOIN
+		t_dev_video_relation v on v.moduleid= #{Moduleid} AND j.id=v.deviceid
+		LEFT JOIN t_dev_item_pic dip ON dip.dev_id = j.id AND
+		dip.moduleid=#{Moduleid} AND dip.isdelete!=1
+		LEFT JOIN t_item_pic ip ON
+		ip.id=dip.item_pic_id AND ip.isdelete!=1
+		WHERE
+		g.isdelete = 0 and g.isenable = 1 and tg.isdelete = 0
+		<if test="Starttime!='' and Starttime!=null">
+			and j.addtime &gt;= #{Starttime}
+		</if>
+		<if test="Endtime!='' and Endtime!=null">
+			and j.addtime &lt;= #{Endtime}
+		</if>
+		<if test="context!='' and context!=null">
+			and (j.devnum LIKE CONCAT('%',#{context},'%') or j.mac LIKE CONCAT('%',#{context},'%'))
+		</if>
+		<if test="Batterytype==1">
+			and j.Battery &lt; 20
+		</if>
+		<if test="Batterytype==2">
+			and j.Battery &gt;= 20
+		</if>
+		<if test="groupid != null and groupid != ''">
+			and g.groupid = #{groupid}
+		</if>
+		group by j.id
+	</select>
+	<select id="LKTHWAddSignDevList" resultType="java.lang.Integer">
+		CALL
+		Get_AddSignDevList(#{moduleid,jdbcType=INTEGER},#{devid,jdbcType=VARCHAR},#{patrolid,jdbcType=INTEGER});
+	</select>
+	<update id="LKTHWUpdateDev">
+		UPDATE t_device_hw jg , t_device_group_relation dg
+		SET jg.id = jg.id
+		<if test="devnum!='' and devnum!=null">
+			, jg.devnum = #{devnum}
+		</if>
+		<if test="lat!='' and lat!=null">
+			, jg.lat = #{lat}
+		</if>
+		<if test="lng!='' and lng!=null">
+			, jg.lng = #{lng}
+		</if>
+		<if test="x!='' and x!=null">
+			, jg.x = #{x}
+		</if>
+		<if test="y!='' and y!=null">
+			, jg.y = #{y}
+		</if>
+		<if test="code!='' and code!=null">
+			, jg.code = #{code}
+		</if>
+		<if test="ownId!='' and ownId!=null">
+			, jg.own_id = #{ownId}
+		</if>
+		<if test="groupid!='' and groupid!=null">
+			, dg.groupid = #{groupid}
+		</if>
+		WHERE jg.id = #{devid} and dg.moduleid = #{moduleid} and dg.deviceid =
+		#{devid}
+	</update>
+	<insert id="LKTHWUpdateDevAddPic">
+		call
+		Get_UpdateDevAddPic(#{devid,jdbcType=INTEGER},#{itempicid,jdbcType=INTEGER},#{moduleid,jdbcType=INTEGER});
+	</insert>
+	<update id="LKTHWDeleteDev">
+		update t_device_hw j , t_device_group_relation g
+		set
+		j.isdelete = 1 , j.isenable = 0 , g.isdelete = 1 , g.isenable = 0
+		where j.id = #{devid} and g.deviceid = j.id and g.moduleid =
+		#{moduleid}
+	</update>
+	<update id="LKTHWDeleteDevPic">
+		update t_dev_item_pic p
+		set p.isdelete = 1 ,
+		p.isenable = 0
+		where p.moduleid = #{moduleid} and p.dev_id=#{devid}
+	</update>
+	<select id="LKTHWGroupListDev" resultType="com.hot.manage.entity.jg.LKTGroupListDev">
+		SELECT j.id as id , j.x as x , j.y as y , j.state as state , c.site as
+		site , c.picpath as picpath
+		FROM t_item_pic c
+		LEFT JOIN t_dev_item_pic p
+		on p.item_pic_id = c.id
+		LEFT JOIN t_device_group_relation g on
+		g.moduleid = #{moduleid} and g.isdelete = 0 and g.isenable = 1 and
+		g.deviceid = p.dev_id
+		LEFT JOIN t_device_hw j on j.id = p.dev_id
+		WHERE
+		c.itemid = #{groupid} and g.groupid = #{groupid}
+		<if test="site!='' and site!=null">
+			and c.site = #{site}
+		</if>
+	</select>
+	<select id="LKTHWGroupListDevnum" resultType="com.hot.manage.entity.jg.LKTJgDevNum">
+		SELECT COUNT(1) as
+		devnum
+		FROM t_device_group_relation dg
+		LEFT JOIN t_user_dgroup_relation
+		ug on ug.userid = #{userid}
+		WHERE dg.groupid = ug.devicegroupid and
+		dg.moduleid = #{moduleid} and
+		dg.isdelete = 0 and dg.isenable = 1 and
+		dg.groupid = #{groupid}
+	</select>
+	<select id="LKTHWDevNum" resultType="com.hot.manage.entity.jg.LKTJgDevNum">
+		SELECT COUNT(1) as devnum
+		FROM t_device_group_relation g
+		LEFT JOIN t_user_dgroup_relation ug on
+		ug.userid = #{userid} and ug.isdelete = 0 and ug.isenable = 1
+		LEFT JOIN
+		t_device_jg j on j.isdelete = 0 and j.isenable = 1 and j.id =
+		g.deviceid
+		WHERE g.moduleid = #{moduleid} and g.isdelete = 0 and g.isenable = 1 and
+		g.groupid = ug.devicegroupid
+	</select>
+	<select id="LKTHWItemList" resultType="com.hot.manage.entity.jg.LKTJgItemList">
+		SELECT tg.id as id , tg.imgpath as imgpath , tg.itemnum as itemnum ,
+		tg.groupname as groupname , tg.groupcode as groupcode , COUNT(g.id) as
+		devnum ,
+		u.contacts as contacts , tg.addtime as addtime , tg.x as x , tg.y as y
+		FROM
+		t_device_group tg
+		RIGHT JOIN t_user_dgroup_relation ug on ug.userid =
+		#{userid} and ug.devicegroupid = tg.id
+		LEFT JOIN t_device_group_relation g on g.moduleid = #{moduleid} and
+		g.isdelete = 0 and g.isenable = 1 and g.groupid = tg.id
+		LEFT JOIN
+		t_user u on u.id = tg.managerid
+		WHERE tg.isdelete = 0 and tg.isenable =
+		1 and tg.moduleid = #{moduleid}
+		<if test="Starttime!='' and Starttime!=null">
+			and tg.addtime &gt;= #{Starttime}
+		</if>
+		<if test="Endtime!='' and Endtime!=null">
+			and tg.addtime &lt;= #{Endtime}
+		</if>
+		<if test="context!='' and context!=null">
+			and tg.groupname LIKE CONCAT('%',#{context},'%') or
+			tg.groupcode LIKE CONCAT('%',#{context},'%')
+		</if>
+		GROUP BY tg.id
+		ORDER BY tg.id
+	</select>
+	<update id="LKTHWDeleteItem">
+		UPDATE t_device_group t
+		SET t.isdelete = 1, t.isenable
+		=0
+		WHERE t.id = #{id}
+	</update>
+	<select id="LKTHWDeleteItemcondition" resultType="com.hot.manage.entity.yg.LKTCode">
+		SELECT COUNT(1)
+		as code
+		FROM t_device_group_relation t
+		WHERE t.groupid = #{id} and
+		t.isdelete = 0 and t.isenable = 1
+	</select>
+	<select id="LKTHWSelectOnId" resultType="com.hot.manage.entity.hw.LKTHWSelectOnId">
+		SELECT
+		jg.id AS id,
+		jg.devnum AS devnum,
+		jg.lat AS lat,
+		jg.lng AS lng,
+		jg.x AS x,
+		jg.y AS y,
+		g.id AS groupid,
+		g.groupname AS groupname,
+		p.id AS itempicid,
+		p.picpath AS picpath,
+		p.site AS site,
+		jg.mac AS mac,
+		jg.`code`,
+		jg.own_id,
+		GROUP_CONCAT(t666.`videoid`) AS videos
+		FROM
+		t_device_hw jg
+		LEFT JOIN t_device_group_relation dg ON dg.moduleid =#{moduleid}
+		AND dg.deviceid = jg.id AND dg.isenable = 1
+		RIGHT JOIN
+		t_user_dgroup_relation ug ON ug.userid = #{userid} AND
+		ug.devicegroupid = dg.groupid AND ug.isdelete=0
+		LEFT JOIN
+		t_dev_item_pic dp ON dp.dev_id = jg.id AND dp.moduleid = #{moduleid}
+		AND dp.isdelete=0
+		LEFT JOIN t_item_pic p ON p.id = dp.item_pic_id AND
+		p.isenable = 1 AND p.isdelete=0
+		LEFT JOIN t_device_group g ON g.id =
+		dg.groupid AND g.isenable = 1 AND g.isdelete=0
+		LEFT JOIN
+		t_dev_video_relation t666
+		ON jg.`id`=t666.`deviceid`
+		AND t666.`moduleid`=8
+		LEFT JOIN t_device_video t888
+		ON t666.`videoid`=t888.`id`
+		AND t888.`isdelete`=0
+		WHERE
+		jg.isenable = 1
+		<if test="devid!=null">
+			and jg.id = #{devid}
+		</if>
+		<if test="devnum!=null and devnum!=''">
+			and jg.devnum = #{devnum}
+		</if>
+		<if test="mac !=null and mac !=''">
+			and jg.mac = #{mac}
+		</if>
+	</select>
+	<select id="LKTHWGroupList" resultType="com.hot.manage.entity.jg.LKTGroupList">
+		SELECT g.id as id , g.groupname as groupname, g.groupcode as groupcode
+		,GROUP_CONCAT(p.id) as
+		itempicid , GROUP_CONCAT(p.picpath) as picpath ,
+		GROUP_CONCAT(p.site)
+		as site , g.x as lng , g.y as lat , g.itemnum as
+		itemnum , u.contacts as contacts,
+		g.addtime as addtime , g.imgpath as
+		imgpath
+		FROM t_device_group g
+		RIGHT JOIN t_user_dgroup_relation ug on
+		ug.userid = #{userid} and ug.devicegroupid = g.id and ug.isdelete = 0
+		and ug.isenable = 1
+		LEFT JOIN t_item_pic p on p.itemid = g.id
+		LEFT JOIN
+		t_user u on u.id = g.managerid
+		WHERE g.isdelete = 0 and g.moduleid = #{moduleid}
+		<if test="id!=null">
+			and g.id = #{id}
+		</if>
+		<if test="groupname!='' and groupname!=null">
+			and g.groupname = #{groupname}
+		</if>
+		<if test="itemnum!='' and itemnum!=null">
+			and g.itemnum = #{itemnum}
+		</if>
+		GROUP BY g.id
+	</select>
+	<update id="LKTHWUpdateItem">
+		UPDATE t_device_group t
+		SET t.id = t.id
+		<if test="imgpath!='' and imgpath!=null">
+			, t.imgpath = #{imgpath}
+		</if>
+		<if test="itemnum!='' and itemnum!=null">
+			, t.itemnum = #{itemnum}
+		</if>
+		<if test="groupname!='' and groupname!=null">
+			, t.groupname = #{groupname}
+		</if>
+		<if test="groupcode!='' and groupcode!=null">
+			, t.groupcode = #{groupcode}
+		</if>
+		<if test="contactsid!='' and contactsid!=null">
+			, t.managerid = #{contactsid}
+		</if>
+		<if test="x!='' and x!=null">
+			, t.x = #{x}
+		</if>
+		<if test="y!='' and y!=null">
+			, t.y = #{y}
+		</if>
+		WHERE t.id = #{itemid}
+	</update>
+	<!-- 更换设备 -->
+	<select id="LKTHWChangeDevMac" resultType="com.hot.manage.entity.hw.LKTHWDevList">
+		select id as devid , mac as mac
+		from t_device_hw
+		where mac = #{mac}
+	</select>
+	<update id="LKTHWChangeDev">
+		UPDATE t_device_hw t
+		SET t.mac=#{mac}
+		WHERE t.id =
+		#{devid}
+	</update>
+	<update id="LKTHWChangelllDev">
+		UPDATE t_device_group t
+		SET t.id = t.id
+		<if test="imgpath!='' and imgpath!=null">
+			, t.imgpath = #{imgpath}
+		</if>
+		<if test="itemnum!='' and itemnum!=null">
+			, t.itemnum = #{itemnum}
+		</if>
+		<if test="groupname!='' and groupname!=null">
+			, t.groupname = #{groupname}
+		</if>
+		<if test="groupcode!='' and groupcode!=null">
+			, t.groupcode = #{groupcode}
+		</if>
+		<if test="contactsid!='' and contactsid!=null">
+			, t.managerid = #{contactsid}
+		</if>
+		<if test="x!='' and x!=null">
+			, t.x = #{x}
+		</if>
+		<if test="y!='' and y!=null">
+			, t.y = #{y}
+		</if>
+		WHERE t.id = #{itemid}
+	</update>
+
+
+	<update id="LKTHWUpdateItemDelPic">
+		UPDATE t_item_pic p
+		SET p.isdelete = 1 , p.isenable = 0
+		WHERE p.itemid = #{itemid}
+	</update>
+	<update id="LKTHWUpdateItemPic">
+		UPDATE t_item_pic p
+		SET p.isdelete = 0 , p.isenable = 1
+		<if test="picnum!='' and picnum!=null">
+			, p.picnum = #{picnum}
+		</if>
+		<if test="picpath!='' and picpath!=null">
+			, p.picpath = #{picpath}
+		</if>
+		<if test="addtime !='' and addtime !=null">
+			, p.updatetime = #{addtime}
+		</if>
+		WHERE p.site = #{site} and p.itemid = #{itemid}
+	</update>
+	<select id="LKTHWItemListMap" resultType="com.hot.manage.entity.jg.LKTJgItemListMap">
+		SELECT g.id as id ,
+		g.groupname as groupname , g.x as x , g.y as y, g.groupcode as
+		groupcode ,
+		g.coordinate as coordinate , g.addtime as addtime, g.adduserid as adduserid ,
+		g.managerid as managerid ,
+		g.cityid as cityid , g.imgpath as imgpath ,
+		g.itemnum as itemnum , u.contacts , u.telephone as telephone,
+		count(tg.id) as allCount,
+		SUM(CASE WHEN j.state= 1 THEN 1 ELSE 0 END)
+		as alarmCount,
+		SUM(CASE WHEN j.state= 2 THEN 1 ELSE 0 END) as
+		faultCount
+		FROM t_device_group g
+		RIGHT JOIN t_user_dgroup_relation ug on
+		ug.userid = #{userid} and
+		ug.isdelete = 0 and ug.isenable = 1 and
+		ug.devicegroupid = g.id
+		LEFT JOIN t_device_group_relation tg on
+		tg.groupid = ug.devicegroupid and
+		tg.isdelete = 0 and tg.moduleid =
+		#{moduleid}
+		LEFT JOIN t_device_jg j on j.id = tg.deviceid
+		LEFT JOIN
+		t_user u on u.id = g.managerid
+		WHERE g.moduleid = #{moduleid}
+		GROUP BY
+		g.id
+	</select>
+	<insert id="LKTHWAddDev" keyProperty="id" useGeneratedKeys="true">
+		INSERT INTO t_device_hw
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="mac != null and mac != ''">
+				mac,
+			</if>
+			<if test="code != null and code != ''">
+				code,
+			</if>
+			<if test="lng != null and lng != ''">
+				lng,
+			</if>
+			<if test="lat != null and lat != ''">
+				lat,
+			</if>
+			<if test="state != null">
+				state,
+			</if>
+			<if test="addtime != null and addtime != ''">
+				addtime,
+			</if>
+			<if test="userid != null">
+				adduserid,
+			</if>
+			<if test="x != null and x != ''">
+				x,
+			</if>
+			<if test="y != null and y != ''">
+				y,
+			</if>
+			<if test="devnum != null and devnum != ''">
+				devnum,
+			</if>
+			<if test="own_id != null">
+				own_id,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="mac != null and mac != ''">
+				#{mac},
+			</if>
+			<if test="code != null and code != ''">
+				#{code},
+			</if>
+			<if test="lng != null and lng != ''">
+				#{lng},
+			</if>
+			<if test="lat != null and lat != ''">
+				#{lat},
+			</if>
+			<if test="state != null">
+				#{state},
+			</if>
+			<if test="addtime != null and addtime != ''">
+				#{addtime},
+			</if>
+			<if test="userid != null">
+				#{userid},
+			</if>
+			<if test="x != null and x != ''">
+				#{x},
+			</if>
+			<if test="y != null and y != ''">
+				#{y},
+			</if>
+			<if test="devnum != null and devnum != ''">
+				#{devnum},
+			</if>
+			<if test="own_id != null">
+				#{own_id},
+			</if>
+		</trim>
+	</insert>
+	<insert id="LKTHWAddDevGroup">
+		INSERT INTO t_device_group_relation
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="id != null">
+				deviceid,
+			</if>
+			<if test="groupid != null">
+				groupid,
+			</if>
+			<if test="moduleid != null">
+				moduleid,
+			</if>
+			<if test="addtime != null">
+				addtime,
+			</if>
+			<if test="userid != null">
+				adduserid,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="id!='' and id!=null">
+				#{id},
+			</if>
+			<if test="groupid!=null">
+				#{groupid},
+			</if>
+			<if test="moduleid!=null">
+				#{moduleid},
+			</if>
+			<if test="addtime!=null and addtime!=''">
+				#{addtime},
+			</if>
+			<if test="userid!=null">
+				#{userid},
+			</if>
+		</trim>
+	</insert>
+	<insert id="LKTHWAddDevGroupPic">
+		INSERT INTO t_dev_item_pic
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="itempicid != null">
+				item_pic_id,
+			</if>
+			<if test="id != null">
+				dev_id,
+			</if>
+			<if test="moduleid != null">
+				moduleid,
+			</if>
+			<if test="addtime != null">
+				addtime,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="itempicid != null">
+				#{itempicid},
+			</if>
+			<if test="id!=null">
+				#{id},
+			</if>
+			<if test="moduleid!=null">
+				#{moduleid},
+			</if>
+			<if test="addtime!=null and addtime!=''">
+				#{addtime},
+			</if>
+		</trim>
+	</insert>
+	<insert id="LKTHWAddGroup" keyProperty="id" useGeneratedKeys="true">
+		INSERT INTO t_device_group
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="moduleid != null">
+				moduleid,
+			</if>
+			<if test="groupname != null and groupname != ''">
+				groupname,
+			</if>
+			<if test="fatherid != null">
+				fatherid,
+			</if>
+			<if test="groupcode != null and groupcode != ''">
+				groupcode,
+			</if>
+			<if test="x != null and x != ''">
+				x,
+			</if>
+			<if test="y != null and y != ''">
+				y,
+			</if>
+			<if test="addtime != null and addtime != ''">
+				addtime,
+			</if>
+			<if test="userid != null">
+				adduserid,
+			</if>
+			<if test="managerid != null">
+				managerid,
+			</if>
+			<if test="cityid != null">
+				cityid,
+			</if>
+			<if test="imgpath != null and imgpath != ''">
+				imgpath,
+			</if>
+			<if test="itemnum != null and itemnum != ''">
+				itemnum,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="moduleid != null">
+				#{moduleid},
+			</if>
+			<if test="groupname != null and groupname != ''">
+				#{groupname},
+			</if>
+			<if test="fatherid != null">
+				#{fatherid},
+			</if>
+			<if test="groupcode != null and groupcode != ''">
+				#{groupcode},
+			</if>
+			<if test="x != null and x != ''">
+				#{x},
+			</if>
+			<if test="y != null and y != ''">
+				#{y},
+			</if>
+			<if test="addtime != null and addtime != ''">
+				#{addtime},
+			</if>
+			<if test="userid != null">
+				#{userid},
+			</if>
+			<if test="managerid != null">
+				#{managerid},
+			</if>
+			<if test="cityid != null">
+				#{cityid},
+			</if>
+			<if test="imgpath != null and imgpath != ''">
+				#{imgpath},
+			</if>
+			<if test="itemnum != null and itemnum != ''">
+				#{itemnum},
+			</if>
+		</trim>
+	</insert>
+	<insert id="LKTHWAddGroupUser">
+		INSERT INTO t_user_dgroup_relation
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="userid != null">
+				userid,
+			</if>
+			<if test="id != null">
+				devicegroupid,
+			</if>
+			<if test="addtime != null">
+				addtime,
+			</if>
+			<if test="userid != null">
+				adduserid,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="userid != null">
+				#{userid},
+			</if>
+			<if test="id!=null">
+				#{id},
+			</if>
+			<if test="addtime!=null and addtime!=''">
+				#{addtime},
+			</if>
+			<if test="userid!=null">
+				#{userid},
+			</if>
+		</trim>
+	</insert>
+	<insert id="LKTHWAddGroupPic">
+		INSERT INTO
+		t_item_pic(picnum,picpath,site,itemid,addtime)
+		VALUES(#{picnum},#{picpath},#{site},#{id},#{addtime})
+	</insert>
+	<select id="LKTHWSeleteMap" resultType="com.hot.manage.entity.jg.LKTSeleteMap">
+		SELECT p.id as id ,
+		p.picpath as picpath , p.site as site , p.itemid as itemid
+		FROM
+		t_item_pic p
+		WHERE p.itemid = #{groupid} and p.isenable = 1
+	</select>
+
+
+	<!-- 修改责任人 changeDevOwn -->
+	<update id="changeDevOwn" parameterType="java.util.List">
+		UPDATE t_device_hw SET
+		own_id=#{hWChangeUser.ownid} WHERE id in
+		<foreach collection="hWChangeUser.devid" index="index" item="item"
+			open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</update>
+	<!-- 根据Mac查询设备id LKTHWDevIdByMac -->
+	<select id="LKTHWDevIdByMac" resultType="java.lang.Integer">
+		SELECT id
+		FROM t_device_hw
+		WHERE mac = #{mac}
+	</select>
+	<!-- 删除关联 -->
+	<update id="LKTHWUpdateDevVideoDel">
+		UPDATE t_dev_video_relation
+		SET isdelete =1
+		WHERE moduleid = #{moduleid} and deviceid = #{deviceid} and isdelete = 0
+	</update>
+
+	<!-- 修改关联 -->
+	<update id="LKTHWUpdateDevVideo">
+		UPDATE t_dev_video_relation
+		SET isdelete = 0
+		WHERE moduleid = #{moduleid} and deviceid = #{deviceid} and videoid =
+		#{videoid}
+	</update>
+	<!-- 插入关联 -->
+	<insert id="LKTHWUpdateDevVideoAdd">
+		INSERT INTO t_dev_video_relation(deviceid,videoid,moduleid)
+		VALUES(#{deviceid},#{videoid},#{moduleid})
+	</insert>
+	
+
+<select id="selectHWAlarmNums" resultType="com.hot.manage.entity.hw.vaule.HWAlarmNum" >
+		SELECT s.state_name as stateName , COUNT(a.alarmstateid) as Num
+	      FROM t_dev_alarm_state s
+	      LEFT JOIN  t_dev_alarm a on a.moduleid = s.module_id and s.id = a.alarmstateid and YEAR(a.addtime) =#{Time}
+	      LEFT JOIN t_device_group_relation dg on dg.moduleid = s.module_id and dg.deviceid = a.deviceid and dg.isenable = 1
+	      LEFT JOIN t_user_dgroup_relation ug on ug.userid =#{userid}  and ug.devicegroupid = dg.groupid and ug.isenable = 1
+	      WHERE s.module_id = #{moduleID}  and s.isdelete = 0 
+	      GROUP BY s.id
+	</select>
+</mapper>

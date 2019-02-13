@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.item.TDeviceGroupRelationMapper">
+	<select id="selectListById" resultType="com.hot.manage.entity.item.TDeviceGroupRelation">
+		select * FROM
+		t_device_group_relation WHERE groupid=#{groupid}
+	</select>
+
+	<select id="selectByDevIdAndModuleid" resultType="com.hot.manage.entity.item.TDeviceGroupRelation">
+		SELECT * FROM
+		t_device_group_relation
+		WHERE deviceid=#{deviceid}
+		AND moduleid=#{moduleid}
+		AND isenable=1
+	</select>
+
+	<insert id="insertDevBath">
+		insert into t_device_group_relation
+		(deviceid,groupid,moduleid,addtime,adduserid)
+		values
+		<foreach collection="params" item="item" index="index"
+			separator=",">
+			(#{item.deviceid},#{item.groupid},#{item.moduleid},#{item.addtime},#{item.adduserid})
+		</foreach>
+	</insert>
+</mapper>

@@ -1,0 +1,538 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.krq.LKTKRQDevMapper">
+
+	<select id="LKTKRQDevList" resultType="com.hot.manage.entity.krq.LKTKRQDevList">
+		SELECT y.id as devid , y.devnum as devnum , y.mac as mac ,
+		gg.groupname as groupname , y.code as code , gg.managerid as managerid
+		,
+		u.contacts as contacts , y.addtime as addtime , y.lat as lat , y.lng
+		as lng ,
+		y.x as x , y.y as y,
+		y.state as state , y.battery as battery ,
+		count(v.videoid) as count ,
+		y.adduserid as adduserid,
+		y.lastalarmtime as
+		lastalarmtime , y.own_id
+		as own_id,
+		ip.site as site, ip.picpath as
+		picpath
+		FROM t_device_krq y
+		LEFT JOIN t_device_group_relation tg on
+		tg.moduleid = #{moduleid} and
+		tg.deviceid = y.id
+		LEFT JOIN
+		t_device_group gg on gg.id = tg.groupid
+		right JOIN
+		t_user_dgroup_relation dg on dg.userid = #{userid} and
+		dg.devicegroupid = tg.groupid
+		LEFT JOIN t_user u on u.id = y.own_id
+		LEFT JOIN t_dev_video_relation v on v.moduleid= #{moduleid} AND
+		y.id=v.deviceid
+		LEFT JOIN t_dev_item_pic dip ON dip.dev_id=y.id AND
+		dip.moduleid
+		=#{moduleid} AND dip.isdelete!=1
+		LEFT JOIN t_item_pic ip ON
+		ip.id=dip.item_pic_id AND ip.itemid=dg.devicegroupid AND
+		ip.isdelete!=1
+		WHERE y.isenable = 1
+		<if test="Starttime!='' and Starttime!=null">
+			and y.addtime &gt;= #{Starttime}
+		</if>
+		<if test="Endtime!='' and Endtime!=null">
+			and y.addtime &lt;= #{Endtime}
+		</if>
+		<if test="context!='' and context!=null">
+			and (y.devnum LIKE CONCAT('%',#{context},'%') or
+			y.code LIKE CONCAT('%',#{context},'%') or
+			y.mac LIKE CONCAT('%',#{context},'%'))
+		</if>
+		<if test="Batterytype==1">
+			and y.battery &lt; 20
+		</if>
+		<if test="Batterytype==2">
+			and y.battery &gt;= 20
+		</if>
+		<if test="groupid != null and groupid != ''">
+			and tg.groupid = #{groupid}
+		</if>
+		group by y.id
+	</select>
+	<update id="LKTKRQUpdateDev">
+		UPDATE t_device_krq jg
+		<if test="groupid!='' and groupid!=null">
+			, t_device_group_relation dg
+		</if>
+		SET jg.id = jg.id
+		<if test="devnum!='' and devnum!=null">
+			, jg.devnum = #{devnum}
+		</if>
+		<if test="code !='' and code !=null">
+			, jg.code = #{code}
+		</if>
+		<if test="lat!='' and lat!=null">
+			, jg.lat = #{lat}
+		</if>
+		<if test="lng!='' and lng!=null">
+			, jg.lng = #{lng}
+		</if>
+		<if test="x!='' and x!=null">
+			, jg.x = #{x}
+		</if>
+		<if test="y!='' and y!=null">
+			, jg.y = #{y}
+		</if>
+		<if test="own_id!='' and own_id!=null">
+			, jg.own_id = #{own_id}
+		</if>
+		<if test="groupid!='' and groupid!=null">
+			, dg.groupid = #{groupid}
+		</if>
+		WHERE jg.id = #{devid}
+		<if test="groupid!='' and groupid!=null">
+			and dg.moduleid = #{moduleid} and dg.deviceid = #{devid}
+		</if>
+	</update>
+	<!-- 删除关联 -->
+	<update id="LKTKRQUpdateDevVideoDel">
+		UPDATE t_dev_video_relation
+		SET isdelete =1
+		WHERE
+		moduleid = #{moduleid} and deviceid = #{deviceid} and isdelete = 0
+	</update>
+	<!-- 修改关联 -->
+	<update id="LKTKRQUpdateDevVideo">
+		UPDATE t_dev_video_relation
+		SET isdelete = 0
+		WHERE
+		moduleid = #{moduleid} and deviceid = #{deviceid} and videoid =
+		#{videoid}
+	</update>
+	<!-- 插入关联 -->
+	<insert id="LKTKRQUpdateDevVideoAdd">
+		INSERT INTO
+		t_dev_video_relation(deviceid,videoid,moduleid)
+		VALUES(#{deviceid},#{videoid},#{moduleid})
+	</insert>
+	<insert id="LKTKRQUpdateDevAddPic">
+		call
+		Get_UpdateDevAddPic(#{devid,jdbcType=INTEGER},#{itempicid,jdbcType=INTEGER},#{moduleid,jdbcType=INTEGER});
+	</insert>
+	<select id="LKTKRQGroupList" resultType="com.hot.manage.entity.krq.LKTKRQGroupList">
+		SELECT g.id as id , g.groupname as groupname, g.groupcode as groupcode
+		,GROUP_CONCAT(p.id) as
+		itempicid , GROUP_CONCAT(p.picpath) as picpath ,
+		GROUP_CONCAT(p.site)
+		as site , g.x as lng , g.y as lat , g.itemnum as
+		itemnum , u.contacts as contacts,
+		g.addtime as addtime , g.imgpath as
+		imgpath
+		FROM t_device_group g
+		RIGHT JOIN t_user_dgroup_relation ug on
+		ug.userid = #{userid} and ug.devicegroupid = g.id and ug.isdelete = 0
+		and ug.isenable = 1
+		LEFT JOIN t_item_pic p on p.itemid = g.id
+		LEFT JOIN
+		t_user u on u.id = g.managerid
+		WHERE g.isdelete = 0 and g.moduleid =
+		#{moduleid}
+		<if test="id!=null">
+			and g.id = #{id}
+		</if>
+		<if test="groupname!='' and groupname!=null">
+			and g.groupname = #{groupname}
+		</if>
+		<if test="itemnum!='' and itemnum!=null">
+			and g.itemnum = #{itemnum}
+		</if>
+		GROUP BY g.id
+	</select>
+	<update id="LKTKRQDeleteDev">
+		update t_device_krq j , t_device_group_relation g
+		set
+		j.isdelete = 1 , j.isenable = 0 , g.isdelete = 1 , g.isenable = 0
+		where j.id = #{devid} and g.deviceid = j.id and g.moduleid =
+		#{moduleid}
+	</update>
+	<update id="LKTKRQDeleteDevPic">
+		update t_dev_item_pic p
+		set p.isdelete = 1 ,
+		p.isenable = 0
+		where p.dev_id = j.id and p.moduleid = #{moduleid}
+	</update>
+	<delete id="LKTKRQDeleteDevVideo">
+		DELETE FROM t_dev_video_relation WHERE moduleid =
+		#{moduleid} and deviceid =
+		#{deviceid}
+	</delete>
+	<select id="LKTKRQSelectOnId" resultType="com.hot.manage.entity.krq.LKTKRQSelectOnId">
+		SELECT jg.id as id , jg.devnum as devnum , jg.lat as lat , jg.lng as
+		lng ,
+		jg.x as x ,jg.y as y ,jg.`code`,g.id as groupid,g.groupname as
+		groupname
+		,p.id as
+		itempicid,
+		p.picpath as picpath , p.site as
+		site,jg.lastalarmtime as lastalarmtime ,
+		jg.own_id as
+		own_id,GROUP_CONCAT(t666.`videoid`) AS videos
+		FROM
+		t_device_krq jg
+		LEFT
+		JOIN t_device_group_relation dg on dg.moduleid =
+		#{moduleid} and
+		dg.deviceid = jg.id and dg.isenable = 1
+		RIGHT JOIN
+		t_user_dgroup_relation ug on ug.userid = #{userid} and
+		ug.devicegroupid = dg.groupid
+		LEFT JOIN t_dev_item_pic dp on dp.dev_id
+		= dg.deviceid and dp.moduleid = dg.moduleid
+		LEFT JOIN t_item_pic p on
+		p.id = dp.item_pic_id and p.isenable = 1
+		LEFT JOIN t_device_group g on
+		g.id = dg.groupid and g.isenable = 1
+		LEFT JOIN t_dev_video_relation
+		t666
+		ON jg.`id`=t666.`deviceid`
+		AND t666.`moduleid`=12
+		LEFT JOIN
+		t_device_video t888
+		ON t666.`videoid`=t888.`id`
+		AND t888.`isdelete`=0
+		WHERE jg.isenable = 1
+		<if test="devid != null">
+			and jg.id = #{devid}
+		</if>
+		<if test="devnum!=null and devnum!=''">
+			and jg.devnum = #{devnum}
+		</if>
+		<if test="macAddr!=null and macAddr!=''">
+			and jg.mac = #{macAddr}
+		</if>
+	</select>
+	<insert id="LKTKRQAddDev" keyProperty="id" useGeneratedKeys="true">
+		INSERT INTO t_device_krq
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="devnum!='' and devnum!=null">
+				devnum,
+			</if>
+			<if test="macAddr!='' and macAddr!=null">
+				mac,
+			</if>
+			<if test="code!='' and code!=null">
+				`code`,
+			</if>
+			<if test="lng!='' and lng!=null">
+				lng,
+			</if>
+			<if test="lat!='' and lat!=null">
+				lat,
+			</if>
+			<if test="x != null and x != ''">
+				x,
+			</if>
+			<if test="y != null and y != ''">
+				y,
+			</if>
+			<if test="installtime != null and installtime != ''">
+				installtime,
+			</if>
+			<if test="addtime!='' and addtime!=null">
+				addtime,
+			</if>
+			<if test="userid != null">
+				adduserid,
+			</if>
+			<if test="own_id != null">
+				own_id,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="devnum!='' and devnum!=null">
+				#{devnum},
+			</if>
+			<if test="macAddr!='' and macAddr!=null">
+				#{macAddr},
+			</if>
+			<if test="code!='' and code!=null">
+				#{code},
+			</if>
+			<if test="lng!='' and lng!=null">
+				#{lng},
+			</if>
+			<if test="lat!='' and lat!=null">
+				#{lat},
+			</if>
+			<if test="x != null and x != ''">
+				#{x},
+			</if>
+			<if test="y != null and y != ''">
+				#{y},
+			</if>
+			<if test="installtime != null and installtime != ''">
+				#{installtime},
+			</if>
+			<if test="addtime!='' and addtime!=null">
+				#{addtime},
+			</if>
+			<if test="userid!=null">
+				#{userid},
+			</if>
+			<if test="own_id != null">
+				#{own_id}
+			</if>
+		</trim>
+	</insert>
+	<insert id="LKTKRQAddDevVideo">
+		INSERT INTO
+		t_dev_video_relation(deviceid,videoid,moduleid)
+		VALUES(#{deviceid},#{videoid},#{moduleid})
+	</insert>
+	<insert id="LKTKRQAddDevGroup">
+		INSERT INTO t_device_group_relation
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="id != null">
+				deviceid,
+			</if>
+			<if test="groupid != null">
+				groupid,
+			</if>
+			<if test="moduleid != null">
+				moduleid,
+			</if>
+			<if test="addtime != null">
+				addtime,
+			</if>
+			<if test="userid != null">
+				adduserid,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="id!='' and id!=null">
+				#{id},
+			</if>
+			<if test="groupid!=null">
+				#{groupid},
+			</if>
+			<if test="moduleid!=null">
+				#{moduleid},
+			</if>
+			<if test="addtime!=null and addtime!=''">
+				#{addtime},
+			</if>
+			<if test="userid!=null">
+				#{userid},
+			</if>
+		</trim>
+	</insert>
+	<insert id="LKTKRQAddDevGroupPic">
+		INSERT INTO t_dev_item_pic
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="itempicid != null">
+				item_pic_id,
+			</if>
+			<if test="id != null">
+				dev_id,
+			</if>
+			<if test="moduleid != null">
+				moduleid,
+			</if>
+			<if test="addtime != null">
+				addtime,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="itempicid != null">
+				#{itempicid},
+			</if>
+			<if test="id!=null">
+				#{id},
+			</if>
+			<if test="moduleid!=null">
+				#{moduleid},
+			</if>
+			<if test="addtime!=null and addtime!=''">
+				#{addtime},
+			</if>
+		</trim>
+	</insert>
+
+	<!-- 更换设备 LKTKRQChangeDev -->
+	<select id="LKTKRQChangeDevMac" resultType="com.hot.manage.entity.krq.LKTKRQDevList">
+		select id as id , mac
+		as mac
+		from t_device_krq
+		where mac = #{mac}
+	</select>
+	<update id="LKTKRQChangeDev">
+		UPDATE t_device_krq t
+		SET t.mac=#{mac}
+		WHERE t.id =
+		#{devid}
+	</update>
+
+	<!-- 更换责任人 changeDevOwn -->
+	<update id="changeDevOwn" parameterType="java.util.List">
+		UPDATE t_device_krq SET
+		own_id=#{kRQChangeUser.ownid} WHERE id in
+		<foreach collection="kRQChangeUser.devid" index="index" item="item"
+			open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</update>
+	<!-- LKTAddSignDevList -->
+	<select id="LKTAddSignDevList" resultType="java.lang.Integer">
+		CALL
+		Get_AddSignDevList(#{moduleid,jdbcType=INTEGER},#{devid,jdbcType=VARCHAR},#{patrolid,jdbcType=INTEGER});
+	</select>
+	<select id="selectKRQAlarmForDay" resultType="com.hot.manage.entity.common.groupgk.AlarmTendency">
+		SELECT
+		temp1.TheDate, COUNT(dgr.groupid) as Alarmtime
+		FROM
+		(
+		SELECT
+		ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate ,@d :=@d - 1 DAY
+		FROM
+		t_power,
+		(SELECT @d := 0) temp
+		WHERE
+		ADDDATE(CURDATE(), INTERVAL @d DAY) >= date_add(CURDATE(), INTERVAL - 1 MONTH)
+		ORDER BY
+		DAY
+		) temp1
+		LEFT JOIN t_dev_alarm tda ON DATE_FORMAT(tda.addtime,
+		'%Y-%m-%d') = temp1.TheDate AND tda.moduleid = 12
+		LEFT JOIN
+		t_device_group_relation dgr ON dgr.isdelete!=1 AND dgr.moduleid=12 AND
+		dgr.deviceid=tda.deviceid
+		<if test="groupid !=null and groupid !=''">AND dgr.groupid=#{groupid}</if>
+		GROUP BY
+		temp1.TheDate
+		ORDER BY
+		temp1.TheDate desc
+	</select>
+	<select id="selectKRQAlarmForMonth" resultType="com.hot.manage.entity.common.groupgk.AlarmTendency">
+		SELECT
+		temp1.TheDate, COUNT(dgr.groupid) as Alarmtime
+		FROM
+		(
+		SELECT
+		DATE_FORMAT(ADDDATE(CURDATE(), INTERVAL @d MONTH),'%Y-%m') AS TheDate ,@d :=@d - 1 as DateTime
+		FROM
+		t_power,
+		(SELECT @d := 0) temp
+		WHERE
+		ADDDATE(CURDATE(), INTERVAL @d MONTH) >= date_sub(CURDATE(), INTERVAL 5 MONTH)
+		ORDER BY
+		TheDate
+		) temp1
+		LEFT JOIN t_dev_alarm tda ON DATE_FORMAT(tda.addtime, '%Y-%m') =
+		temp1.TheDate AND tda.moduleid = 12
+		LEFT JOIN t_device_group_relation
+		dgr ON dgr.isdelete!=1 AND dgr.moduleid=12 AND
+		dgr.deviceid=tda.deviceid
+		<if test="groupid !=null and groupid !=''">AND dgr.groupid=#{groupid}</if>
+		GROUP BY
+		temp1.TheDate
+		ORDER BY
+		temp1.TheDate desc
+	</select>
+	<select id="selectKRQAlarmForThreeYear" resultType="com.hot.manage.entity.common.groupgk.AlarmTendency">
+		SELECT
+		DATE_FORMAT(temp1.TheDate, '%Y-%m') as TheDate, COUNT(dgr.groupid) as
+		Alarmtime,(YEAR(NOW())-YEAR(temp1.TheDate)) as differ
+		FROM
+		(
+		SELECT
+		DATE_FORMAT(ADDDATE(CONCAT(YEAR(NOW()),'-1-1'), INTERVAL @d MONTH),'%Y-%m-%d') AS TheDate ,@d :=@d - 1 as DateTime
+		FROM
+		t_power,
+		(SELECT @d := 11) temp
+		WHERE
+		ADDDATE(CONCAT(YEAR(NOW()),'-1-1'), INTERVAL @d MONTH) BETWEEN date_sub(CONCAT(YEAR(NOW()),'-1-1'),
+		INTERVAL 24 MONTH) AND DATE_ADD(CONCAT(YEAR(NOW()),'-1-1'),INTERVAL 12
+		MONTH)
+		ORDER BY
+		TheDate
+		) temp1
+		LEFT JOIN t_dev_alarm tda ON DATE_FORMAT(tda.addtime, '%Y-%m') =
+		DATE_FORMAT(temp1.TheDate, '%Y-%m') AND tda.moduleid = 12
+		LEFT JOIN
+		t_device_group_relation dgr ON dgr.isdelete!=1 AND dgr.moduleid=12 AND
+		dgr.deviceid=tda.deviceid
+		<if test="groupid !=null and groupid !=''">AND dgr.groupid=#{groupid}</if>
+		GROUP BY
+		temp1.TheDate
+		ORDER BY
+		temp1.TheDate desc
+	</select>
+
+	<select id="selectKRQAlarmForState"
+		resultType="com.hot.manage.entity.common.groupgk.AlarmStateStatistics">
+		SELECT
+		s.state_name AS stateName,
+		COUNT(dg.groupid) AS Num
+		FROM
+		t_dev_handle_state s
+		LEFT JOIN t_dev_alarm a ON a.moduleid = s.module_id AND s.id =
+		a.alarmstateid
+		<if test="TheType==1">
+			AND (a.addtime between DATE_FORMAT(DATE_SUB(NOW(),INTERVAL
+			1 MONTH),'%Y-%m-%d') AND NOW())
+		</if>
+		<if test="TheType==2">
+			AND (a.addtime between DATE_FORMAT(DATE_SUB(NOW(),INTERVAL
+			6 MONTH),'%Y-%m-%d') AND NOW())
+		</if>
+		<if test="TheType==3">
+			AND (a.addtime between DATE_FORMAT(DATE_SUB(NOW(),INTERVAL
+			24 MONTH),'%Y-%m-%d') AND NOW())
+		</if>
+		LEFT JOIN t_device_group_relation dg ON dg.moduleid = s.module_id AND
+		dg.deviceid = a.deviceid AND dg.isenable = 1
+		<if test="groupid !=null and groupid !=''">AND dg.groupid=#{groupid}</if>
+		LEFT JOIN t_user_dgroup_relation ug ON ug.userid =1 AND
+		ug.devicegroupid = dg.groupid AND ug.isenable = 1
+		WHERE
+		s.module_id = 12 AND s.isdelete = 0
+		GROUP BY
+		s.id
+	</select>
+	<select id="selectKRQAlarmForWeeken"
+		resultType="com.hot.manage.entity.common.groupgk.AlarmHandleStatistics">
+		select
+		temp2.TheDate,SUM(CASE WHEN temp2.handlestate = 0 AND temp2.groupid is not NULL THEN 1 ELSE
+		0 END) as unhandlecount,
+		SUM(CASE WHEN temp2.handlestate=1 AND temp2.groupid is not NULL THEN 1 ELSE 0
+		END)as handlingcount,
+		SUM(CASE WHEN temp2.handlestate=2 AND temp2.groupid is not NULL THEN 1 ELSE 0
+		END)as handlecount,
+		SUM(CASE WHEN temp2.handlestate is not NULL AND temp2.groupid is not NULL THEN
+		1 ELSE 0 END) as num
+		FROM (
+		SELECT
+		temp1.TheDate, tda.handlestate,tda.moduleid,dgr.groupid
+		FROM
+		(
+		SELECT
+		ADDDATE(CURDATE(), INTERVAL @d DAY) AS TheDate ,@d :=@d - 1 DAY
+		FROM
+		t_power,
+		(SELECT @d := 0) temp
+		WHERE
+		ADDDATE(CURDATE(), INTERVAL @d DAY) >= date_add(CURDATE(), INTERVAL - 6 DAY)
+		ORDER BY
+		DAY
+		) temp1
+		LEFT JOIN t_dev_alarm tda ON DATE_FORMAT(tda.addtime, '%Y-%m-%d') =
+		temp1.TheDate AND tda.moduleid = 12
+		LEFT JOIN t_device_group_relation dgr ON dgr.isdelete!=1 AND
+		dgr.moduleid=12 AND dgr.deviceid=tda.deviceid
+		<if test="groupid !=null and groupid !=''">AND dgr.groupid=#{groupid}</if>
+		ORDER BY
+		TheDate
+		) temp2
+		GROUP BY temp2.TheDate
+		ORDER BY temp2.TheDate desc
+	</select>
+</mapper>

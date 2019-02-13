@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.item.TDeviceGroupMapper">
+	
+	<select id="selectDevNum" resultType="int">
+		SELECT COUNT(y.id) FROM t_device_yg y
+		LEFT JOIN t_device_group_relation r ON y.id=r.deviceid AND r.isenable=1
+		LEFT JOIN t_user_dgroup_relation u ON u.devicegroupid=r.groupid AND u.isenable=1
+		WHERE u.userid=#{params.userid}
+		AND r.moduleid=#{params.moduleid}
+		AND y.isenable=1
+	</select>
+	<select id="selectItemNum" resultType="int">
+		SELECT COUNT(DISTINCT (r.devicegroupid)) FROM t_user_dgroup_relation r 
+		LEFT JOIN t_device_group g ON g.id=r.devicegroupid AND g.isenable=1
+		WHERE r.userid=#{userid}
+		AND g.moduleid=#{moduleid}
+		AND r.isenable=1
+	</select>
+	<select id="selectItems" resultType="com.hot.manage.entity.item.TDeviceGroupVo">
+		SELECT g.*,s.contacts,COUNT(DISTINCT y.id) as devtotal,
+		SUM(CASE WHEN y.state=1 THEN 1 ELSE 0 END) as alarmCount,
+		SUM(CASE WHEN y.state=2 THEN 1 ELSE 0 END) as faultCount
+		FROM t_device_group g
+		LEFT JOIN t_device_group_relation d ON g.id=d.groupid AND d.isenable=1 AND g.moduleid=d.moduleid
+		LEFT JOIN t_device_yg y ON y.id=d.deviceid AND d.isenable=1
+		LEFT JOIN t_user_dgroup_relation u ON u.devicegroupid=g.id AND u.isenable=1
+		LEFT JOIN t_user s ON s.id=g.managerid AND s.isenable=1
+		WHERE u.userid=#{userid}
+		AND g.moduleid=#{moduleid}
+		AND g.isenable=1
+		<if test="starttime!=null and starttime!=''">
+			AND g.addtime &gt;=#{starttime}
+		</if>
+		<if test="endtime!=null and endtime!=''">
+			AND g.addtime &lt;=#{endtime}
+		</if>
+		<if test="context!=null and context!=''">
+			AND (g.groupname LIKE  CONCAT('%',#{context},'%') or g.itemnum LIKE CONCAT('%',#{context},'%'))
+		</if>
+		GROUP BY g.id
+		ORDER BY g.addtime DESC
+	</select>
+	<select id="selectItemByGroupId" resultType="com.hot.manage.entity.item.TDeviceGroupVo">
+		SELECT g.*,s.contacts,COUNT(DISTINCT y.id) as devtotal,
+		SUM(CASE WHEN y.state=1 THEN 1 ELSE 0 END) as alarmCount,
+		SUM(CASE WHEN y.state=2 THEN 1 ELSE 0 END) as faultCount
+		FROM t_device_group g
+		LEFT JOIN t_device_group_relation d ON g.id=d.groupid AND d.isenable=1 AND g.moduleid=d.moduleid
+		LEFT JOIN t_device_yg y ON y.id=d.deviceid AND d.isenable=1
+		LEFT JOIN t_user s ON s.id=g.managerid AND s.isenable=1
+		WHERE g.id=#{params.groupid}
+		AND g.moduleid=#{params.moduleid}
+		AND g.isenable=1
+	</select>
+	<select id="selectItemByExemple" resultType="com.hot.manage.entity.item.TDeviceGroup">
+		SELECT g.* FROM t_device_group g
+		LEFT JOIN t_user_dgroup_relation u ON g.id=u.devicegroupid AND u.isenable=1
+		WHERE u.userid=#{params.userid}
+		AND g.moduleid=#{params.moduleid}
+		AND g.isenable=1
+	</select>
+	<select id="selectAllItems" resultType="com.hot.manage.entity.item.TDeviceGroupVo">
+		SELECT g.*,s.contacts,COUNT(DISTINCT y.id) as devtotal,
+		SUM(CASE WHEN y.state=1 THEN 1 ELSE 0 END) as alarmCount,
+		SUM(CASE WHEN y.state=2 THEN 1 ELSE 0 END) as faultCount
+		FROM t_device_group g
+		LEFT JOIN t_device_group_relation d ON g.id=d.groupid AND d.isenable=1 AND g.moduleid=d.moduleid
+		LEFT JOIN t_device_yg y ON y.id=d.deviceid AND d.isenable=1
+		LEFT JOIN t_user_dgroup_relation u ON u.devicegroupid=g.id AND u.isenable=1
+		LEFT JOIN t_user s ON s.id=g.managerid AND s.isenable=1
+		WHERE u.userid=#{userid}
+		AND g.moduleid=#{moduleid}
+		AND g.isenable=1
+		GROUP BY g.id
+		ORDER BY g.addtime DESC
+	</select>
+	<select id="selectYgItemData" resultType="com.hot.manage.entity.mc.ItemData">
+		SELECT g.id,g.groupname,g.x,g.y,g.itemnum,COUNT(DISTINCT y.id) as devtotal,SUM(CASE WHEN y.state=1 THEN 1 ELSE 0 END) as alarmCount,
+		SUM(CASE WHEN y.state=2 THEN 1 ELSE 0 END) as faultCount
+		FROM t_device_group g
+		LEFT JOIN t_device_group_relation d ON g.id=d.groupid AND d.isenable=1 AND g.moduleid=d.moduleid
+		LEFT JOIN t_device_yg y ON y.id=d.deviceid AND d.isenable=1
+		LEFT JOIN t_user_dgroup_relation u ON u.devicegroupid=g.id
+		AND u.isenable=1
+		WHERE u.userid=#{userid}
+		AND g.moduleid=#{moduleid}
+		GROUP BY g.id
+	</select>
+</mapper>

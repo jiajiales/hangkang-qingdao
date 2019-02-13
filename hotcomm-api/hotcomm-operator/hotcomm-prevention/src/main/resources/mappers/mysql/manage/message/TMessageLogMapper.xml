@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.prevention.db.mysql.manage.message.TMessageLogMapper">
+	<select id="selectByReceiverId" resultType="com.hotcomm.prevention.bean.mysql.manage.message.TMessageLog">
+		SELECT * FROM
+		t_message_log WHERE receiverid=#{receiverid}
+	</select>
+	<select id="selectByUserid" resultType="com.hotcomm.prevention.bean.mysql.manage.message.TMessageLog">
+		SELECT * FROM
+		t_message_log WHERE userid=#{userid}
+	</select>
+	<select id="selectUnsent" resultType="com.hotcomm.prevention.bean.mysql.manage.message.TMessageLog">
+		SELECT * FROM
+		t_message_log
+		WHERE receiverid=#{receiverid}
+		and state=0
+	</select>
+	<update id="update">
+		UPDATE t_message_log
+		<set>
+			<if test="userid != null">
+				userid = #{userid},
+			</if>
+			<if test="message != null">
+				message = #{message},
+			</if>
+			<if test="receiverid != null">
+				receiverid = #{receiverid},
+			</if>
+			<if test="sendtime != null">
+				sendtime = #{sendtime},
+			</if>
+			<if test="receivetime != null">
+				receivetime = #{receivetime},
+			</if>
+			<if test="state != null">
+				state = #{state},
+			</if>
+		</set>
+		<where>
+			1=1
+			<if test="id!=null">
+				and id = #{id,jdbcType=INTEGER}
+			</if>
+			<if test="receiverid != null">
+				and receiverid = #{receiverid}
+			</if>
+		</where>
+	</update>
+	<insert id="insertBacth">
+		insert into t_message_log
+		(userid,message,receiverid,sendtime)
+		values
+		<foreach collection="params" item="item" index="index"
+			separator=",">
+			(#{item.userid},#{item.message},#{item.receiverid},NOW())
+		</foreach>
+	</insert>
+</mapper>

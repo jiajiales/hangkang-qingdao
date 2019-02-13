@@ -1,0 +1,19 @@
+<form class="app-form" id="deviceGroup-form">
+	<div class="field">
+		<input class="easyui-textbox" id="groupName" name="groupName" style="width: 100%" 
+			data-options="label:'设备组名称:',labelWidth:102,required:true,validType:['notSpecial','length[2,30]']" />
+	</div>
+	<div class="field">
+		<input class="easyui-textbox" id="remark" name="remark" maxlength="200" style="width: 100%"
+			data-options="label:'设备组备注:',labelWidth:102,validType:['notSpecial','length[1,200]']" />
+	</div>
+	<div class="field">
+		<input class="easyui-numberspinner" id="maxNums" name="maxNums" style="width: 100%"
+			data-options="label:'设备数量阀值：',labelWidth:102,min:1,max:30000,increment:1000,required:true,validType:'maxDeviceNums'" />
+	</div>
+	<div class="field">
+		<label class="textbox-label textbox-label-before" style="width: 93px">设备组状态：</label>
+		<input class="easyui-switchbutton" id="groupStatus" name="groupStatus"
+			data-options="onText:'有效',offText:'无效',checked:true" value="1" />
+	</div>
+</form>

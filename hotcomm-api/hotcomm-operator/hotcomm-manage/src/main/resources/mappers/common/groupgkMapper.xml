@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.common.groupgk.GroupgkMapper">
+	<sql id="motab">
+		<if test="moduleid==1">t_device_dc</if><if test="moduleid==2">t_device_yg</if><if test="moduleid==3">t_device_jg</if>
+		<if test="moduleid==4">t_device_pm</if><if test="moduleid==5">t_device_wt</if><if test="moduleid==6">t_device_et</if>
+		<if test="moduleid==7">t_device_sl</if><if test="moduleid==8">t_device_hw</if><if test="moduleid==9">t_device_ljt</if>
+		<if test="moduleid==10">t_device_sj</if><if test="moduleid==11">t_device_mc</if><if test="moduleid==12">t_device_krq</if>
+		<if test="moduleid==13">t_device_ywj</if><if test="moduleid==14">t_device_sxdl</if><if test="moduleid==15">t_device_sxdy</if>
+		<if test="moduleid==16">t_device_sy</if><if test="moduleid==17">t_device_sydl</if>
+	</sql>
+
+	<select id="groupgkcount" resultType="com.hot.manage.entity.common.groupgk.Groupgkcount">
+		select
+		<!--项目数-->
+		(select count(g.id)from( t_user_dgroup_relation as ug left join t_device_group as g on ug.devicegroupid=g.id ) where g.moduleid=#{moduleid} and ug.userid=#{userid} and g.isdelete=0 and ug.isdelete=0) as groupcount,
+		<!--设备数-->
+		(select count(dg.id) from t_device_group_relation as dg RIGHT JOIN <include refid="motab"></include> yg on yg.id = dg.deviceid and yg.isdelete = 0 and yg.isenable = 1 RIGHT join t_user_dgroup_relation as ug on dg.groupid=ug.devicegroupid  where moduleid=#{moduleid} and ug.userid=#{userid} and dg.isdelete=0) as devcount,
+		<!--未处理报警数-->
+		<!-- (select count(alarm.id) from t_dev_alarm as alarm left join (select dg.deviceid as deviceid from t_device_group_relation as dg left join t_user_dgroup_relation as ug on dg.groupid=ug.devicegroupid where ug.userid=#{userid} and moduleid=#{moduleid} and dg.isdelete=0)as devid on alarm.deviceid=devid.deviceid where moduleid=#{moduleid} and handlestate=0) as alarmcount, -->
+		(SELECT COUNT(alarm.id) FROM t_dev_alarm AS alarm WHERE moduleid =#{moduleid} AND deviceid in (	SELECT dg.deviceid AS deviceid FROM	t_device_group_relation AS dg LEFT JOIN t_user_dgroup_relation AS ug ON dg.groupid = ug.devicegroupid AND ug.isdelete=0 WHERE ug.userid =#{userid} AND moduleid =#{moduleid} AND dg.isdelete = 0 ) AND handlestate = 0 ) as alarmcount,
+		<!--未处理事件-->
+		(select count(ev.id) from t_hk_event as ev left join t_hk_evdevrelation evdev on ev.id=evdev.eventid inner join (select dg.deviceid from t_user_dgroup_relation as ug left join t_device_group_relation as dg on ug.devicegroupid=dg.groupid where moduleid=#{moduleid} and dg.isdelete=0 and ug.userid=#{userid})as devnew on evdev.devid =devnew.deviceid where ev.moduleid=#{moduleid} and ev.state=0)as eventcount,
+		<!--未处理工单-->
+		(select count(wo.id) from t_hk_wo as wo left join t_hk_wodevrelation wodev on wo.id=wodev.woid RIGHT JOIN <include refid="motab"></include> yg on yg.id = wodev.devid and yg.isdelete = 0 and yg.isenable = 1
+		 RIGHT join (select dg.deviceid from t_user_dgroup_relation as ug left join t_device_group_relation as dg on ug.devicegroupid=dg.groupid where moduleid=#{moduleid} and dg.isdelete=0 and ug.userid=#{userid}) as devnew on devnew.deviceid=wodev.devid  where wodev.moduleid=#{moduleid} and wo.state=0)as wocount,
+		<!--涉及人员-->
+		(select count(distinct own_id) from <include refid="motab"></include> where isdelete=0)as personcount
+	</select>
+
+
+	<!--每月报警数-->
+	<select id="select_alarm_count_month" resultType="com.hot.manage.entity.common.groupgk.alarmcount_month">
+		select date_format(alarm.addtime, '%m')as month,count(alarm.id)as alarm_totalcount from t_dev_alarm as alarm left join  (select dg.deviceid as deviceid from t_device_group_relation as dg left join t_user_dgroup_relation as ug on dg.groupid=ug.devicegroupid where ug.userid=#{userid} and moduleid=#{moduleid} and dg.isdelete=0) as devid on alarm.deviceid=devid.deviceid where alarm.moduleid=#{moduleid} and date_format(alarm.addtime, '%Y')=#{yyyy} group by date_format(alarm.addtime, '%Y-%m')
+	</select>
+
+	<!--斤7天警数-->
+	<select id="select_alarm_count_day" resultType="com.hot.manage.entity.common.groupgk.alarmcount_day">
+	select date_format(alarm.addtime, '%m-%d') as day,count(alarm.id)as alarmcount_total,count(handlestate=0 OR NULL)as alarmcount_state0,count(handlestate=1 OR NULL)as alarmcount_state1 from
+	t_dev_alarm as alarm inner join (select dg.deviceid as deviceid from t_device_group_relation as dg left join t_user_dgroup_relation as ug on dg.groupid=ug.devicegroupid where ug.userid=#{userid} and moduleid=#{moduleid} and dg.isdelete=0)as devid on alarm.deviceid=devid.deviceid
+	where alarm.moduleid=#{moduleid} and DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(alarm.addtime) group by day(alarm.addtime);
+	</select>
+
+
+	<!--组报设备状态统计-->
+	<select id="select_alarm_count_class" resultType="com.hot.manage.entity.common.groupgk.alarmcount_class">
+		select alarmnew.state_name,alarmnew.id as alarmclass,count(alarmnew.alarmstateid)as alarmcount from (select alarmstate.state_name,alarmstate.id,alarm.alarmstateid,alarm.deviceid from t_dev_alarm_state as alarmstate left join t_dev_alarm as alarm on alarmstate.id=alarm.alarmstateid and (alarm.moduleid=#{moduleid} and date_format(alarm.addtime, '%Y')=#{yyyy}) where alarmstate.module_id=#{moduleid} ) as alarmnew left join (select dg.deviceid as deviceid from t_device_group_relation as dg left join t_user_dgroup_relation as ug on dg.groupid=ug.devicegroupid where ug.userid=#{userid} and moduleid=#{moduleid} and dg.isdelete=0)as devid on devid.deviceid=alarmnew.deviceid group by alarmnew.id
+	</select>
+
+</mapper>

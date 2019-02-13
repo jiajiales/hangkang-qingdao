@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/code/hotcomm/hotcomm.iml" filepath="$PROJECT_DIR$/code/hotcomm/hotcomm.iml" />
+      <module fileurl="file://$PROJECT_DIR$/code/hotcomm/hotcomm-api/hotcomm-operator/hotcomm-analysis/hotcomm-analysis.iml" filepath="$PROJECT_DIR$/code/hotcomm/hotcomm-api/hotcomm-operator/hotcomm-analysis/hotcomm-analysis.iml" />
+      <module fileurl="file://$PROJECT_DIR$/code/hotcomm/hotcomm-api/hotcomm-api.iml" filepath="$PROJECT_DIR$/code/hotcomm/hotcomm-api/hotcomm-api.iml" />
+      <module fileurl="file://$PROJECT_DIR$/code/hotcomm/hotcomm-applys/hotcomm-api-shaoxin/hotcomm-api-shaoxin.iml" filepath="$PROJECT_DIR$/code/hotcomm/hotcomm-applys/hotcomm-api-shaoxin/hotcomm-api-shaoxin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/code/hotcomm/hotcomm-applys/hotcomm-apply-guangqi/hotcomm-apply-guangqi.iml" filepath="$PROJECT_DIR$/code/hotcomm/hotcomm-applys/hotcomm-apply-guangqi/hotcomm-apply-guangqi.iml" />
+      <module fileurl="file://$PROJECT_DIR$/code/hotcomm/hotcomm-applys/hotcomm-applys.iml" filepath="$PROJECT_DIR$/code/hotcomm/hotcomm-applys/hotcomm-applys.iml" />
+      <module fileurl="file://$PROJECT_DIR$/code/hotcomm/hotcomm-data/hotcomm-data.iml" filepath="$PROJECT_DIR$/code/hotcomm/hotcomm-data/hotcomm-data.iml" />
+      <module fileurl="file://$PROJECT_DIR$/code/hotcomm/hotcomm-data/hotcomm-data-mqtt/hotcomm-data-mqtt.iml" filepath="$PROJECT_DIR$/code/hotcomm/hotcomm-data/hotcomm-data-mqtt/hotcomm-data-mqtt.iml" />
+      <module fileurl="file://$PROJECT_DIR$/code/hotcomm/hotcomm-data/hotcomm-data-service/hotcomm-data-service.iml" filepath="$PROJECT_DIR$/code/hotcomm/hotcomm-data/hotcomm-data-service/hotcomm-data-service.iml" />
+      <module fileurl="file://$PROJECT_DIR$/code/hotcomm/hotcomm-data/hotcomm-data-source/hotcomm-data-source.iml" filepath="$PROJECT_DIR$/code/hotcomm/hotcomm-data/hotcomm-data-source/hotcomm-data-source.iml" />
+      <module fileurl="file://$PROJECT_DIR$/code/hotcomm/hotcomm-view/hotcomm-data-view/hotcomm-data-view.iml" filepath="$PROJECT_DIR$/code/hotcomm/hotcomm-view/hotcomm-data-view/hotcomm-data-view.iml" />
+      <module fileurl="file://$PROJECT_DIR$/code/hotcomm/hotcomm-framework/hotcomm-framework.iml" filepath="$PROJECT_DIR$/code/hotcomm/hotcomm-framework/hotcomm-framework.iml" />
+      <module fileurl="file://$PROJECT_DIR$/code/hotcomm/hotcomm-api/hotcomm-operator/hotcomm-manage/hotcomm-manage.iml" filepath="$PROJECT_DIR$/code/hotcomm/hotcomm-api/hotcomm-operator/hotcomm-manage/hotcomm-manage.iml" />
+      <module fileurl="file://$PROJECT_DIR$/code/hotcomm/hotcomm-api/hotcomm-operator/hotcomm-operator.iml" filepath="$PROJECT_DIR$/code/hotcomm/hotcomm-api/hotcomm-operator/hotcomm-operator.iml" />
+      <module fileurl="file://$PROJECT_DIR$/code/hotcomm/hotcomm-parse/hotcomm-parse.iml" filepath="$PROJECT_DIR$/code/hotcomm/hotcomm-parse/hotcomm-parse.iml" />
+      <module fileurl="file://$PROJECT_DIR$/code/hotcomm/hotcomm-view/hotcomm-view.iml" filepath="$PROJECT_DIR$/code/hotcomm/hotcomm-view/hotcomm-view.iml" />
+      <module fileurl="file://$PROJECT_DIR$/code/hotcomm/hotcomm-api/hotcomm_loginService/loginService.iml" filepath="$PROJECT_DIR$/code/hotcomm/hotcomm-api/hotcomm_loginService/loginService.iml" />
+      <module fileurl="file://$PROJECT_DIR$/code/hotcomm/hotcomm-api/hotcomm-socketioService/socketTest.iml" filepath="$PROJECT_DIR$/code/hotcomm/hotcomm-api/hotcomm-socketioService/socketTest.iml" />
+    </modules>
+  </component>
+</project>

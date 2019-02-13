@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.system.TModuleMapper">
+	
+	<select id="selectTModule" resultType="com.hot.manage.entity.system.TModule">
+		SELECT * FROM t_module
+		WHERE isenable=1 
+		ORDER BY id ASC
+	</select>
+	
+	<select id="selectTModuleByUserId" resultType="com.hot.manage.entity.system.TModule">
+		SELECT m.* FROM t_module m
+		LEFT JOIN t_device_group g ON m.id=g.moduleid AND g.isenable=1
+		LEFT JOIN t_user_dgroup_relation r ON g.id=r.devicegroupid AND r.isenable=1
+		WHERE r.userid=#{userid}
+		GROUP BY m.id
+	</select>
+</mapper>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hotcomm.data.db.RoleMapper">
+
+	<insert id="addRoleResources">
+		insert into sys_role_resource(role_id,resource_id) values
+		<foreach collection="resourceIds" item="resourceId" index="index" separator=",">
+			(#{roleId}, #{resourceId})
+		</foreach>
+	</insert>
+
+	<delete id="delRoleResources">
+		delete from sys_role_resource where role_id = #{roleId}
+	</delete>
+
+	<select id="getRoleResources" resultType="java.lang.Integer">
+		select resource_id resId from sys_role_resource sys where sys.role_id = #{roleId}
+	</select>
+
+	<select id="chexisRole" resultType="java.lang.Long">
+		SELECT COUNT(0) FROM sys_member_role WHERE role_id = #{roleId}
+	</select>
+
+</mapper>

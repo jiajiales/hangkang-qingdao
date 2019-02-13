@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.common.patrol.THkSignlogMapper">
+	<!--查询终端设备的签到历史  -->
+	<select id="selectPageForDev" resultType="com.hot.manage.entity.common.patrol.SignRecordVo">
+		SELECT l.id,y.id as deviceid,g.moduleid,y.devnum,g.id as groupid,g.groupname,u.id as userid,u.contacts as username,l.addtime,l.signstate 
+		FROM t_hk_signdevice s
+		LEFT JOIN t_hk_signlog l ON s.id=l.signid
+		LEFT JOIN 
+		<if test="moduleid==1">t_device_dc</if>
+		<if test="moduleid==2">t_device_yg</if>
+		<if test="moduleid==3">t_device_jg</if>
+		<if test="moduleid==4">t_device_pm</if>
+		<if test="moduleid==5">t_device_wt</if>
+		<if test="moduleid==6">t_device_et</if>
+		<if test="moduleid==7">t_device_sl</if>
+		<if test="moduleid==8">t_device_hw</if>
+		<if test="moduleid==9">t_device_ljt</if>
+		<if test="moduleid==10">t_device_sj</if>
+		<if test="moduleid==11">t_device_mc</if>
+		<if test="moduleid==12">t_device_krq</if>
+		<if test="moduleid==13">t_device_ywj</if>
+		<if test="moduleid==14">t_device_sxdl</if>
+		<if test="moduleid==15">t_device_sxdy</if>
+		<if test="moduleid==16">t_device_sy</if>
+		<if test="moduleid==17">t_device_sydl</if>
+		y ON s.deviceid=y.id AND y.isenable=1
+		LEFT JOIN t_device_group_relation r ON r.deviceid=y.id AND s.moduleid=r.moduleid AND r.isenable=1
+		LEFT JOIN t_device_group g ON g.id=r.groupid AND g.moduleid=r.moduleid AND g.isenable=1
+		LEFT JOIN t_user u ON u.id=l.userid AND u.isenable=1
+		WHERE s.deviceid=#{deviceid}
+		<if test="starttime!=null and starttime!=''">
+			AND l.addtime &gt;=#{starttime}
+		</if>
+		<if test="endtime!=null and endtime!=''">
+			AND l.addtime &lt;=#{endtime}
+		</if>
+		<if test="context!=null and context!=''">
+			AND (y.devnum LIKE CONCAT('%',#{context},'%') OR g.groupname LIKE CONCAT('%',#{context},'%'))
+		</if>
+		AND s.moduleid=#{moduleid}
+		AND l.type=1
+		GROUP BY y.id
+	</select>
+	<!--摇一摇签到设备历史记录  -->
+	<select id="selectPageForShake" resultType="com.hot.manage.entity.common.patrol.SignRecordVo">
+		SELECT l.id,s.id as deviceid,g.moduleid,s.devnum,g.id as groupid,g.groupname,u.id as userid,u.contacts as username,l.addtime,l.signstate 
+		FROM t_hk_signlog l
+		LEFT JOIN t_hk_sign s ON  s.id=l.signid AND s.isdelete=0
+		LEFT JOIN t_device_group g ON g.id=s.itemid AND g.isenable=1
+		LEFT JOIN t_user u ON u.id=l.userid AND u.isenable=1
+		WHERE l.signid=#{id}
+		<if test="starttime!=null and starttime!=''">
+			AND l.addtime &gt;=#{starttime}
+		</if>
+		<if test="endtime!=null and endtime!=''">
+			AND l.addtime &lt;=#{endtime}
+		</if>
+		<if test="context!=null and context!=''">
+			AND (s.devnum LIKE CONCAT('%',#{context},'%') OR g.groupname LIKE CONCAT('%',#{context},'%'))
+		</if>
+		AND l.type=0
+	</select>
+	<select id="selectPageInfoAllForDev" resultType="com.hot.manage.entity.common.patrol.SignRecordVo">
+		SELECT l.id,y.id as deviceid,g.moduleid,y.devnum,g.id as groupid,g.groupname,u.id as userid,u.contacts as username,l.addtime,l.signstate 
+		FROM t_hk_signdevice s
+		LEFT JOIN t_hk_signlog l ON s.id=l.signid
+		LEFT JOIN 
+		<if test="moduleid==1">t_device_dc</if>
+		<if test="moduleid==2">t_device_yg</if>
+		<if test="moduleid==3">t_device_jg</if>
+		<if test="moduleid==4">t_device_pm</if>
+		<if test="moduleid==5">t_device_wt</if>
+		<if test="moduleid==6">t_device_et</if>
+		<if test="moduleid==7">t_device_sl</if>
+		<if test="moduleid==8">t_device_hw</if>
+		<if test="moduleid==9">t_device_ljt</if>
+		<if test="moduleid==10">t_device_sj</if>
+		<if test="moduleid==11">t_device_mc</if>
+		<if test="moduleid==12">t_device_krq</if>
+		<if test="moduleid==13">t_device_ywj</if>
+		<if test="moduleid==14">t_device_sxdl</if>
+		<if test="moduleid==15">t_device_sxdy</if>
+		<if test="moduleid==16">t_device_sy</if>
+		<if test="moduleid==17">t_device_sydl</if>
+		y ON s.deviceid=y.id AND y.isenable=1
+		LEFT JOIN t_device_group_relation r ON r.deviceid=y.id AND s.moduleid=r.moduleid AND r.isenable=1
+		LEFT JOIN t_device_group g ON g.id=r.groupid AND g.moduleid=r.moduleid AND g.isenable=1
+		LEFT JOIN t_user_dgroup_relation n ON n.devicegroupid=g.id AND n.isenable=1
+		LEFT JOIN t_user u ON u.id=l.userid AND u.isenable=1
+		WHERE s.moduleid=#{moduleid}
+		AND n.userid=#{userid}
+		<if test="starttime!=null and starttime!=''">
+			AND l.addtime &gt;=#{starttime}
+		</if>
+		<if test="endtime!=null and endtime!=''">
+			AND l.addtime &lt;=#{endtime}
+		</if>
+		<if test="groupname!=null and groupname!=''">
+			AND g.groupname=#{groupname}
+		</if>
+		<if test="context!=null and context!=''">
+			AND (y.devnum LIKE CONCAT('%',#{context},'%') OR u.contacts LIKE CONCAT('%',#{context},'%'))
+		</if>
+		AND l.type=1
+		GROUP BY y.id
+	</select>
+</mapper>

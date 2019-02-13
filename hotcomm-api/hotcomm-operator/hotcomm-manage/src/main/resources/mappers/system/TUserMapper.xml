@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hot.manage.db.system.TUserMapper">
+	<select id="selectPageInfo" resultType="com.hot.manage.entity.system.TUser">
+		select * FROM t_user WHERE
+			<if test="id!=null">
+				fatherid=#{id}
+			</if>
+			<if test="userNum!=null">
+				AND userNum LIKE CONCAT('%',#{userNum},'%')
+			</if>
+			<if test="telephone!=null">
+				AND telephone LIKE CONCAT('%',#{telephone},'%')
+			</if>
+			<if test="status!=null">
+				AND `isenable`=#{status}
+			</if>
+			And isdelete=0
+			ORDER BY fatherid ASC
+	</select>
+	<select id="selectByUserId" resultType="com.hot.manage.entity.system.TUser">
+		select * FROM t_user
+		<where>
+			1=1
+			<if test="userid!=null">
+				And fatherid=#{userid}
+				And isenable=1
+				ORDER BY fatherid ASC
+			</if>
+		</where>
+	</select>
+	<select id="selectDeviceOwn" resultType="int">
+		SELECT COUNT(t_getAppAlarm.own_id)
+		FROM t_getAppAlarm
+		WHERE own_id=#{ownid}
+	</select>
+</mapper>
